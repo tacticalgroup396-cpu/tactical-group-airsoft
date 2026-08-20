@@ -435,14 +435,14 @@ export default async function handler(req,res){
     if(action==='attendance'&&req.method==='POST'){
       const u=await requireUser(req,res,'commander');if(!u)return;
       const b=await body(req);
-      const before=(await sql`SELECT gp.present,gp.elo_awarded,g.elo_reward FROM game_participants gp JOIN games g ON g.id=gp.game_id WHERE gp.game_id=${b.game_id} AND gp.operator_id=${b.operator_id} LIMIT 1`)[0];
+      const before=(await sql`SELECT gp.present,gp.response,gp.elo_awarded,gp.absence_processed,g.elo_reward FROM game_participants gp JOIN games g ON g.id=gp.game_id WHERE gp.game_id=${b.game_id} AND gp.operator_id=${b.operator_id} LIMIT 1`)[0];
       const present=!!b.present;
       await sql`UPDATE game_participants SET present=${present},response=CASE WHEN ${present} THEN 'attended' ELSE response END,absence_processed=false WHERE game_id=${b.game_id} AND operator_id=${b.operator_id}`;
       await sql`UPDATE operators SET games_count=(SELECT count(*) FROM game_participants WHERE operator_id=${b.operator_id} AND present=true),absences=(SELECT count(*) FROM game_participants WHERE operator_id=${b.operator_id} AND response='going' AND present=false AND absence_processed=true) WHERE id=${b.operator_id}`;
       if(present && (!before || !before.present) && !before?.elo_awarded){
         await changeEloLevel(b.operator_id,'attendance',b.reason||'Presença confirmada pelo comando',u.id,b.game_id,Math.max(1,Number(before?.elo_reward||1)));
         await sql`UPDATE game_participants SET elo_awarded=true,absence_processed=false WHERE game_id=${b.game_id} AND operator_id=${b.operator_id}`;
-      } else if(!present && before?.present){
+      } else if(!present && before && before.response==='going' && !before.absence_processed){
         await changeEloLevel(b.operator_id,'absence',b.reason||'Falta registrada pelo comando',u.id,b.game_id,1);
         await sql`UPDATE game_participants SET elo_awarded=false,absence_processed=true WHERE game_id=${b.game_id} AND operator_id=${b.operator_id}`;
       }

@@ -285,6 +285,7 @@ async function compressMatchPhoto(file){
   throw new Error('Não foi possível reduzir a foto para o tamanho aceito.');
 }
 
+async function renderFinancePage(d){return `<section>${commandHeader('Financeiro','Mensalidades e situação de cada operador.')}${commandSubnav('financeiro')}${await financePanel(d)}</section>`}
 async function commanderPage(page='equipe'){const d=await commanderData();app.innerHTML=page==='jogos'?renderGamesPage(d):page==='patentes-elos'?renderRanksPage(d):page==='historico'?renderHistoryPage(d):page==='financeiro'?await renderFinancePage(d):page==='visitas'?renderVisitsPage(d):page==='configuracoes'?renderSettingsPage(d):renderTeamPage(d);bindCommander(page,d)}
 
 function closeGameModal(){document.getElementById('gameEditModal')?.remove()}
