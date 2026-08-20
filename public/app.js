@@ -161,7 +161,7 @@ async function financePanel(d){
   const settings=d.financeSettings||{monthly_fee:0,due_day:10,grace_days:0,currency:'BRL',active:true,pix_key:'',pix_holder:''};
   const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:settings.currency||'BRL'});
   const current=(d.dues||[]);
-  const financePeriod=new URLSearchParams(location.search).get('period')==='weekly'?'weekly':'monthly'; const ledger=await api('finance-ledger&period='+financePeriod);
+  const financePeriod=new URLSearchParams(location.search).get('period')==='weekly'?'weekly':'monthly'; const ledger=financePeriod==='monthly'&&d.financeLedger?d.financeLedger:await api('finance-ledger&period='+financePeriod);
   const cash=Number(ledger.summary?.total_income||0)-Number(ledger.summary?.total_expense||0);
   return `<section id="finance" class="financeSection"><div class="sectionHead compact"><div><div class="eyebrow">FINANCEIRO</div><h2>Caixa da equipe</h2><p class="muted">Controle mensalidades, receitas, despesas e saldo em caixa.</p></div></div>
   <div class="financeStats"><div><b>${money(cash)}</b><span>Valor em caixa</span></div><div><b>${money(ledger.summary?.total_income)}</b><span>Receitas</span></div><div><b>${money(ledger.summary?.total_expense)}</b><span>Despesas</span></div><div><b>${current.filter(x=>x.status==='pending'||x.status==='overdue').length}</b><span>Mensalidades pendentes</span></div></div>
