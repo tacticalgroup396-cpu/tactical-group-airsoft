@@ -21,7 +21,7 @@ async function ensureSchema(){
         ['operators','email','TEXT'],['operators','is_primary_commander','BOOLEAN NOT NULL DEFAULT FALSE'],['operators','last_promotion_period','DATE'],['operators','invite_code_hash','TEXT'],['operators','invite_expires_at','TIMESTAMPTZ'],['operators','invite_used_at','TIMESTAMPTZ'],
         ['operators','age','INTEGER'],['operators','blood_type','TEXT'],['operators','airsoft_years','NUMERIC'],['operators','play_style','TEXT'],['operators','primary_replica','TEXT'],['operators','secondary_replica','TEXT'],
         ['operators','absences','INTEGER NOT NULL DEFAULT 0'],['operators','suspension_until','DATE'],['operators','public_profile','BOOLEAN NOT NULL DEFAULT TRUE'],['operators','photo_url','TEXT'],['operators','bio','TEXT'],['operators','equipment_summary','TEXT'],['operators','elo','INTEGER NOT NULL DEFAULT 0'],
-        ['games','game_time','TIME'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','description','TEXT'],['games','briefing','TEXT'],['games','maps_url','TEXT'],['games','field_id','UUID'],
+        ['games','game_time','TIME'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','rsvp_deadline_date','DATE'],['games','rsvp_deadline_time','TIME'],['games','description','TEXT'],['games','briefing','TEXT'],['games','maps_url','TEXT'],['games','field_id','UUID'],
         ["game_participants","response","TEXT NOT NULL DEFAULT 'pending'"],['game_participants','loadout','JSONB'],['game_participants','responded_at','TIMESTAMPTZ'],['game_participants','absence_processed','BOOLEAN NOT NULL DEFAULT FALSE']
       ]
       for(const [table,col,type] of cols) await sql.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col} ${type}`)
@@ -40,6 +40,7 @@ async function ensureSchema(){
       await sql`CREATE TABLE IF NOT EXISTS membership_dues (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, period DATE NOT NULL, amount NUMERIC(12,2) NOT NULL DEFAULT 0, due_date DATE NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','waived','overdue')), paid_at TIMESTAMPTZ, payment_note TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(operator_id, period))`
       await sql`CREATE INDEX IF NOT EXISTS membership_dues_operator_idx ON membership_dues(operator_id, period DESC)`
       await sql`CREATE INDEX IF NOT EXISTS membership_dues_status_idx ON membership_dues(status, due_date)`
+      await sql`UPDATE operators SET is_primary_commander=true WHERE id=(SELECT id FROM operators WHERE role='commander' ORDER BY created_at ASC NULLS LAST, nickname ASC LIMIT 1) AND NOT EXISTS (SELECT 1 FROM operators WHERE role='commander' AND is_primary_commander=true)`
     })().catch(e=>{schemaReady=null;throw e})
   }
   return schemaReady
@@ -73,6 +74,18 @@ async function autoPromoteEligible(){
   const rows=await sql`SELECT o.id,o.rank,o.last_promotion_period,COUNT(gp.game_id) FILTER (WHERE gp.present=true AND gp.game_id IN (SELECT id FROM games WHERE game_date>=date_trunc('month',CURRENT_DATE)::date AND game_date<date_trunc('month',CURRENT_DATE)::date+interval '1 month'))::int attended FROM operators o LEFT JOIN game_participants gp ON gp.operator_id=o.id WHERE o.active=true AND o.role='operator' GROUP BY o.id,o.rank,o.last_promotion_period`
   for(const r of rows){if(r.last_promotion_period&&String(r.last_promotion_period).slice(0,10)===String(period).slice(0,10))continue;const idx=ranks.indexOf(r.rank);if(idx<0||idx>=ranks.length-1)continue;const threshold=promotionThresholds[Math.min(idx,promotionThresholds.length-1)];if(Number(r.attended)>=threshold){const next=ranks[idx+1];await sql`UPDATE operators SET rank=${next},last_promotion_period=${period},elo=COALESCE(elo,0)+${Number(r.attended)*10} WHERE id=${r.id}`;await sql`INSERT INTO rank_history(operator_id,old_rank,new_rank,reason) VALUES(${r.id},${r.rank},${next},${`Promoção automática por ${Number(r.attended)} participações no mês`})`;await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${r.id},'rank-up','Promoção de patente',${`Você foi promovido para ${next} por participação nos jogos deste mês.`},'/operador')`}}
 }
+async function reconcileGameDeadlines(){
+  const games=await sql`SELECT id,title,game_date,game_time,min_players,status FROM games WHERE status<>'cancelado' AND rsvp_deadline_date IS NOT NULL AND (rsvp_deadline_date < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date OR (rsvp_deadline_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date AND COALESCE(rsvp_deadline_time,'23:59:59')::time <= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::time))`;
+  for(const g of games){
+    const c=(await sql`SELECT count(*)::int c FROM game_participants WHERE game_id=${g.id} AND response='going'`)[0].c||0;
+    if(c < Number(g.min_players||4)){
+      await sql`UPDATE games SET status='cancelado' WHERE id=${g.id} AND status<>'cancelado'`;
+      const ops=await sql`SELECT id FROM operators WHERE active=true AND role='operator'`;
+      for(const o of ops) await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${o.id},'game-cancelled','Jogo cancelado',${`${g.title} foi cancelado por não atingir o mínimo de ${Number(g.min_players||4)} operadores até o prazo.`},'/operador')`;
+    }
+  }
+}
+
 async function notifyOperatorsForGame(game){
   const ops=await sql`SELECT id FROM operators WHERE active=true AND role='operator'`;const title='Novo jogo criado';const bodyText=`${game.title} · ${game.game_date}${game.game_time?` · ${game.game_time}`:''} · ${game.location}`;
   for(const o of ops) await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${o.id},'new-game',${title},${bodyText},'/operador')`;
@@ -83,12 +96,22 @@ async function financeForOperator(id){await ensureCurrentDues();return (await sq
 export default async function handler(req,res){
   try{
     await ensureSchema()
+    await reconcileGameDeadlines()
     if(req.method==='OPTIONS'){res.statusCode=204;res.end();return}
     const url=new URL(req.url,'http://localhost');const action=url.searchParams.get('action')||'public'
 
+    if(action==='cron'&&req.method==='GET'){
+      const secret=req.headers['x-cron-secret']||url.searchParams.get('secret');
+      if(process.env.CRON_SECRET&&secret!==process.env.CRON_SECRET)return json(res,401,{error:'Não autorizado.'});
+      await reconcileGameDeadlines();
+      await reconcileAbsences();
+      await autoPromoteEligible();
+      return json(res,200,{ok:true});
+    }
+
     if(action==='public'){
       const operators=await sql`SELECT * FROM operators WHERE active=true AND public_profile=true ORDER BY CASE WHEN role='commander' THEN 0 ELSE 1 END,nickname`
-      const games=await sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.notes,g.briefing,g.max_players,gf.name field_name,gf.maps_url field_maps_url FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id WHERE g.game_date>=CURRENT_DATE AND COALESCE(g.status,'')<>'cancelado' ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 20`
+      const games=await sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.notes,g.briefing,g.max_players,g.min_players,g.rsvp_deadline_date,g.rsvp_deadline_time,gf.name field_name,gf.maps_url field_maps_url FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id WHERE g.game_date>=CURRENT_DATE AND COALESCE(g.status,'')<>'cancelado' ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 20`
       return json(res,200,{operators:operators.map(publicOperatorRow),games,ranks})
     }
 
@@ -188,7 +211,24 @@ export default async function handler(req,res){
       const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const period=b.period||new Date().toISOString().slice(0,7)+'-01';const status=['paid','waived','pending'].includes(b.status)?b.status:'paid';await sql`INSERT INTO membership_dues(operator_id,period,amount,due_date,status,paid_at,payment_note) VALUES(${b.operator_id},${period},COALESCE(${Number(b.amount)||0},0),COALESCE(${b.due_date||period},${period}),${status},${status==='paid'?'now()':null},${b.note||null}) ON CONFLICT(operator_id,period) DO UPDATE SET status=EXCLUDED.status,amount=EXCLUDED.amount,due_date=EXCLUDED.due_date,paid_at=EXCLUDED.paid_at,payment_note=EXCLUDED.payment_note`;return json(res,200,{ok:true})
     }
 
-    if(action==='rsvp'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);const response=b.response==='going'?'going':'not_going';if(response==='going'){const settings=await currentFinanceSettings();const due=await financeForOperator(u.id);if(settings.active&&Number(settings.monthly_fee)>0&&due?.status!=='paid'&&due?.status!=='waived')return json(res,402,{error:'Mensalidade pendente. Regularize o financeiro para confirmar presença nos jogos.'});const game=(await sql`SELECT id,max_players FROM games WHERE id=${b.game_id} LIMIT 1`)[0];if(!game)return json(res,404,{error:'Jogo não encontrado.'});if(game.max_players){const count=(await sql`SELECT count(*)::int AS c FROM game_participants WHERE game_id=${b.game_id} AND response='going' AND operator_id<>${u.id}`)[0].c||0;if(count>=Number(game.max_players))return json(res,409,{error:'Este jogo atingiu o limite de operadores.'})}}await sql`INSERT INTO game_participants(game_id,operator_id,response,responded_at,present) VALUES(${b.game_id},${u.id},${response},now(),false) ON CONFLICT(game_id,operator_id) DO UPDATE SET response=EXCLUDED.response,responded_at=now(),present=CASE WHEN EXCLUDED.response='going' THEN false ELSE game_participants.present END,absence_processed=false`;return json(res,200,{ok:true})}
+    if(action==='rsvp'&&req.method==='POST'){
+      const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);
+      const response=['going','not_going','pending'].includes(b.response)?b.response:'pending';
+      const game=(await sql`SELECT id,max_players,status,rsvp_deadline_date,rsvp_deadline_time FROM games WHERE id=${b.game_id} LIMIT 1`)[0];
+      if(!game)return json(res,404,{error:'Jogo não encontrado.'});
+      if(game.status==='cancelado')return json(res,409,{error:'Este jogo foi cancelado.'});
+      if(response==='going'){
+        const deadline=game.rsvp_deadline_date ? new Date(`${game.rsvp_deadline_date}T${String(game.rsvp_deadline_time||'23:59:59').slice(0,8)}`) : null;
+        if(deadline && Date.now()>=deadline.getTime())return json(res,409,{error:'O prazo para confirmar presença já terminou.'});
+        const settings=await currentFinanceSettings();const due=await financeForOperator(u.id);
+        if(settings.active&&Number(settings.monthly_fee)>0&&due?.status!=='paid'&&due?.status!=='waived')return json(res,402,{error:'Mensalidade pendente. Regularize o financeiro para confirmar presença nos jogos.'});
+        if(game.max_players){const count=(await sql`SELECT count(*)::int AS c FROM game_participants WHERE game_id=${b.game_id} AND response='going' AND operator_id<>${u.id}`)[0].c||0;if(count>=Number(game.max_players))return json(res,409,{error:'Este jogo atingiu o limite de operadores.'})}
+      }
+      if(response==='pending'){await sql`DELETE FROM game_participants WHERE game_id=${b.game_id} AND operator_id=${u.id}`;return json(res,200,{ok:true,response:'pending'})}
+      await sql`INSERT INTO game_participants(game_id,operator_id,response,responded_at,present) VALUES(${b.game_id},${u.id},${response},now(),false) ON CONFLICT(game_id,operator_id) DO UPDATE SET response=EXCLUDED.response,responded_at=now(),present=false,absence_processed=false`;
+      return json(res,200,{ok:true,response})
+    }
+
     if(action==='loadout'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);await sql`INSERT INTO game_participants(game_id,operator_id,response,loadout,responded_at) VALUES(${b.game_id},${u.id},COALESCE(${b.response||'pending'},'pending'),${JSON.stringify(b.loadout||{})}::jsonb,now()) ON CONFLICT(game_id,operator_id) DO UPDATE SET loadout=EXCLUDED.loadout,response=CASE WHEN EXCLUDED.response='pending' THEN game_participants.response ELSE EXCLUDED.response END,responded_at=now()`;return json(res,200,{ok:true})}
 
     if(action==='commander'){
@@ -206,12 +246,13 @@ export default async function handler(req,res){
     if(action==='create-game'&&req.method==='POST'){
       const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);if(!b.title||!b.game_date||!b.field_id)return json(res,400,{error:'Preencha nome, data e selecione o campo.'});
       const min=Math.max(1,Number(b.min_players||4));const max=b.max_players?Number(b.max_players):null;if(max&&max<min)return json(res,400,{error:'O máximo de operadores não pode ser menor que o mínimo.'});const field=(await sql`SELECT id,name,address,maps_url FROM game_fields WHERE id=${b.field_id} AND active=true LIMIT 1`)[0];if(!field)return json(res,400,{error:'Selecione um campo válido.'});
-      const rows=await sql`INSERT INTO games(title,game_date,game_time,location,status,description,notes,briefing,min_players,max_players,maps_url,commander_id,field_id) VALUES(${b.title},${b.game_date},${b.game_time||null},${field.name},${b.status||'confirmado'},${b.description||null},${b.notes||null},${b.briefing||null},${min},${max},${field.maps_url},${u.id},${field.id}) RETURNING *`
+      if(b.rsvp_deadline_date){const deadlineLocal=new Date(`${b.rsvp_deadline_date}T${String(b.rsvp_deadline_time||'23:59').slice(0,5)}:00-03:00`);const gameLocal=new Date(`${b.game_date}T${String(b.game_time||'23:59').slice(0,5)}:00-03:00`);if(Number.isNaN(deadlineLocal.getTime())||deadlineLocal>=gameLocal)return json(res,400,{error:'O prazo de confirmação deve ser antes do início do jogo.'})}
+      const rows=await sql`INSERT INTO games(title,game_date,game_time,location,status,description,notes,briefing,min_players,max_players,maps_url,commander_id,field_id,rsvp_deadline_date,rsvp_deadline_time) VALUES(${b.title},${b.game_date},${b.game_time||null},${field.name},${b.status||'confirmado'},${b.description||null},${b.notes||null},${b.briefing||null},${min},${max},${field.maps_url},${u.id},${field.id},${b.rsvp_deadline_date||null},${b.rsvp_deadline_time||null}) RETURNING *`
       await notifyOperatorsForGame(rows[0]);
       return json(res,201,{game:rows[0]})
     }
 
-    if(action==='edit-game'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const min=Math.max(1,Number(b.min_players||4));const max=b.max_players?Number(b.max_players):null;if(max&&max<min)return json(res,400,{error:'O máximo não pode ser menor que o mínimo.'});await sql`UPDATE games SET min_players=${min},max_players=${max},maps_url=${String(b.maps_url||'').trim()||null},status=${b.status||'confirmado'} WHERE id=${b.game_id}`;return json(res,200,{ok:true})}
+    if(action==='edit-game'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const min=Math.max(1,Number(b.min_players||4));const max=b.max_players?Number(b.max_players):null;if(max&&max<min)return json(res,400,{error:'O máximo não pode ser menor que o mínimo.'});await sql`UPDATE games SET min_players=${min},max_players=${max},maps_url=${String(b.maps_url||'').trim()||null},status=${b.status||'confirmado'},rsvp_deadline_date=${b.rsvp_deadline_date||null},rsvp_deadline_time=${b.rsvp_deadline_time||null} WHERE id=${b.game_id}`;return json(res,200,{ok:true})}
     if(action==='create-invite'&&req.method==='POST'){
       const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const nickname=String(b.nickname||'').trim().toUpperCase()
       if(!nickname)return json(res,400,{error:'Informe o apelido.'});const existing=await sql`SELECT id FROM operators WHERE lower(nickname)=lower(${nickname}) LIMIT 1`;if(existing.length)return json(res,409,{error:'Esse apelido já está cadastrado.'})
