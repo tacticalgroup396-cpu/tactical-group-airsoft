@@ -113,6 +113,7 @@
 }
 @media(max-width:420px){.operatorEloTop>summary h2{font-size:18px!important}.statsBox{grid-template-columns:1fr!important}}
 #disciplineBulkForm select[multiple]{min-height:150px}
+.operatorRealName{display:block;color:var(--muted,#9aa0a6);font-size:.9rem;margin:.18rem 0 .28rem}.profileName{font-size:1rem}.pageRealName{font-size:1.15rem;margin-top:-.2rem}.participantName{display:block;color:var(--muted,#9aa0a6);font-size:.9rem;margin:.12rem 0}
 
 
 /* V48 - celebração visual de progressão */
@@ -133,3 +134,5 @@
 @keyframes celebrationGlow{0%,100%{transform:scale(.95);opacity:.55}50%{transform:scale(1.08);opacity:1}}
 @keyframes confettiFall{0%{opacity:0;transform:translate(-50%,-20px) rotate(0deg)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--x)),220px) rotate(420deg)}}
 @media (max-width:640px){.progressCelebrationCard{padding:28px 18px 22px;border-radius:20px}.progressCelebrationCard h2{font-size:28px}.celebrationStat{font-size:16px}.celebrationStat b{font-size:18px}}
+
+.operatorPage .gameParticipantAdmin{display:none!important}
