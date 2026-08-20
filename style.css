@@ -52,14 +52,4 @@
 
 .eloSymbol{font-size:1.05em;margin-right:.25rem}.eloSymbolBig{font-size:2rem;min-width:3rem;text-align:center}.eloLadder{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.eloLadderItem{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#111}.eloLadderItem small{display:block;color:var(--muted);margin-top:4px}.eloBadge.diamond{border-color:#7cc7ff}.eloBadge.emerald{border-color:#37c77b}.eloBadge.platinum{border-color:#8aa4c8}.eloBadge.gold{border-color:#dca41e}.eloBadge.silver{border-color:#adb7c4}.eloBadge.bronze{border-color:#9a6b44}.eloBadge.iron{border-color:#60656b}.operatorEloTop{margin:18px 0}.finishGameWrap{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.finishGameWrap input[type=file]{max-width:280px}.historyGallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.historyGameCard{overflow:hidden;border:1px solid var(--line);border-radius:16px;background:#111}.historyGameCard img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}.historyGameBody{padding:14px}.historyMeta{display:flex;gap:14px;margin-top:10px;color:var(--muted)}.completedGamesPublic{margin-top:32px}
 
-
-/* V36 — graduação visual e YouTube */
-.rankLadder{display:grid;gap:10px;margin-top:16px}
-.rankStep{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.025);transition:.2s}
-.rankStepIcon{width:34px;height:34px;display:grid;place-items:center;font-size:20px;border-radius:10px;background:rgba(255,199,54,.08)}
-.rankStep b{display:block}.rankStep small{display:block;margin-top:2px;opacity:.65}
-.rankStep.passed{opacity:.78;border-color:rgba(255,199,54,.15)}
-.rankStep.current{border-color:rgba(255,199,54,.55);box-shadow:0 0 0 1px rgba(255,199,54,.12),0 10px 30px rgba(0,0,0,.14);background:linear-gradient(90deg,rgba(255,199,54,.12),rgba(255,255,255,.025))}
-.rankStep.current .rankStepIcon{box-shadow:0 0 0 2px rgba(255,199,54,.35)}
-.rankStep.upcoming{opacity:.45}
-.commanderOnboardingCard{border-color:rgba(255,199,54,.35);background:linear-gradient(135deg,rgba(255,199,54,.08),rgba(255,255,255,.02))}
+.collapsibleCard{overflow:hidden}.collapsibleCard>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0;margin:0}.collapsibleCard>summary::-webkit-details-marker{display:none}.collapsibleCard>summary::after{content:'⌄';font-size:22px;line-height:1;color:#f1c15c;border:1px solid #6e561d;border-radius:999px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;transition:transform .18s ease,background .18s ease}.collapsibleCard[open]>summary::after{transform:rotate(180deg);background:#1a160c}.collapsibleBody{padding-top:12px}.collapsibleCard>summary h2{margin:0}.collapsibleCard>summary .sectionHead{margin:0}.collapsibleCard>summary .sectionHead.compact{padding:0}

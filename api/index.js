@@ -20,7 +20,7 @@ async function ensureSchema(){
       const cols=[
         ['operators','email','TEXT'],['operators','is_primary_commander','BOOLEAN NOT NULL DEFAULT FALSE'],['operators','last_promotion_period','DATE'],['operators','invite_code_hash','TEXT'],['operators','invite_expires_at','TIMESTAMPTZ'],['operators','invite_used_at','TIMESTAMPTZ'],
         ['operators','age','INTEGER'],['operators','birth_date','DATE'],['operators','blood_type','TEXT'],['operators','airsoft_years','NUMERIC'],['operators','play_style','TEXT'],['operators','primary_replica','TEXT'],['operators','secondary_replica','TEXT'],
-        ['operators','absences','INTEGER NOT NULL DEFAULT 0'],['operators','suspension_until','DATE'],['operators','public_profile','BOOLEAN NOT NULL DEFAULT TRUE'],['operators','photo_url','TEXT'],['operators','youtube_url','TEXT'],['operators','bio','TEXT'],['operators','equipment_summary','TEXT'],['operators','elo','INTEGER NOT NULL DEFAULT 0'],['operators','elo_level','INTEGER NOT NULL DEFAULT 7'],
+        ['operators','absences','INTEGER NOT NULL DEFAULT 0'],['operators','suspension_until','DATE'],['operators','public_profile','BOOLEAN NOT NULL DEFAULT TRUE'],['operators','photo_url','TEXT'],['operators','bio','TEXT'],['operators','equipment_summary','TEXT'],['operators','elo','INTEGER NOT NULL DEFAULT 0'],['operators','elo_level','INTEGER NOT NULL DEFAULT 7'],
         ['games','game_time','TIME'],['games','elo_reward','INTEGER NOT NULL DEFAULT 1'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','rsvp_deadline_date','DATE'],['games','rsvp_deadline_time','TIME'],['games','description','TEXT'],['games','briefing','TEXT'],['games','maps_url','TEXT'],['games','field_id','UUID'],['games','match_photo_url','TEXT'],['games','completed_at','TIMESTAMPTZ'],
         ["game_participants","response","TEXT NOT NULL DEFAULT 'pending'"], ["game_participants","elo_awarded","BOOLEAN NOT NULL DEFAULT FALSE"],['game_participants','loadout','JSONB'],['game_participants','responded_at','TIMESTAMPTZ'],['game_participants','absence_processed','BOOLEAN NOT NULL DEFAULT FALSE']
       ]
@@ -122,7 +122,7 @@ async function reconcileAbsences(){
   const rows=await sql`SELECT gp.game_id,gp.operator_id FROM game_participants gp JOIN games g ON g.id=gp.game_id WHERE g.game_date<CURRENT_DATE AND gp.response='going' AND gp.present=false AND gp.absence_processed=false`
   for(const r of rows){await sql`UPDATE game_participants SET absence_processed=true WHERE game_id=${r.game_id} AND operator_id=${r.operator_id} AND absence_processed=false`;await sql`UPDATE operators SET absences=COALESCE(absences,0)+1 WHERE id=${r.operator_id}`}
 }
-function publicOperatorRow(o){return {id:o.id,name:o.name,nickname:o.nickname,rank:o.rank,function:o.function||'Operador',games_count:o.games_count||0,absences:o.absences||0,photo_url:o.photo_url||null,youtube_url:o.youtube_url||null,bio:o.bio||'',equipment_summary:o.equipment_summary||'',elo:o.elo||0,elo_level:clampEloLevel(o.elo_level),elo_label:eloNames[clampEloLevel(o.elo_level)],age:o.age||null,birth_date:o.birth_date||null,blood_type:o.blood_type||null,airsoft_years:o.airsoft_years||null,play_style:o.play_style||'',primary_replica:o.primary_replica||'',secondary_replica:o.secondary_replica||''}}
+function publicOperatorRow(o){return {id:o.id,name:o.name,nickname:o.nickname,rank:o.rank,function:o.function||'Operador',games_count:o.games_count||0,absences:o.absences||0,photo_url:o.photo_url||null,bio:o.bio||'',equipment_summary:o.equipment_summary||'',elo:o.elo||0,elo_level:clampEloLevel(o.elo_level),elo_label:eloNames[clampEloLevel(o.elo_level)],age:o.age||null,birth_date:o.birth_date||null,blood_type:o.blood_type||null,airsoft_years:o.airsoft_years||null,play_style:o.play_style||'',primary_replica:o.primary_replica||'',secondary_replica:o.secondary_replica||''}}
 
 async function currentFinanceSettings(){return (await sql`SELECT * FROM finance_settings WHERE id=1 LIMIT 1`)[0]||{monthly_fee:0,due_day:10,grace_days:0,currency:'BRL',active:true,instagram_url:null}}
 async function ensureCurrentDues(){
@@ -213,7 +213,7 @@ export default async function handler(req,res){
 
     if(action==='logout'){const token=parseCookies(req)[COOKIE];if(token)await sql`DELETE FROM sessions WHERE token_hash=${hashToken(token)}`;setCookie(res,'',0);return json(res,200,{ok:true})}
 
-    if(action==='me'){const u=await userFromSession(req);return json(res,200,{user:u?{id:u.id,name:u.name,nickname:u.nickname,email:u.email||null,role:u.role,is_primary_commander:!!u.is_primary_commander,rank:u.rank,function:u.function||null,bio:u.bio||null,absences:u.absences||0,suspension_until:u.suspension_until||null,age:u.age||null,blood_type:u.blood_type||null,airsoft_years:u.airsoft_years||null,play_style:u.play_style||'',primary_replica:u.primary_replica||'',secondary_replica:u.secondary_replica||'',birth_date:u.birth_date||null,equipment_summary:u.equipment_summary||'',photo_url:u.photo_url||null,public_profile:u.public_profile,youtube_url:u.youtube_url||null}:null})}
+    if(action==='me'){const u=await userFromSession(req);return json(res,200,{user:u?{id:u.id,name:u.name,nickname:u.nickname,email:u.email||null,role:u.role,is_primary_commander:!!u.is_primary_commander,rank:u.rank,function:u.function||null,bio:u.bio||null,absences:u.absences||0,suspension_until:u.suspension_until||null,age:u.age||null,blood_type:u.blood_type||null,airsoft_years:u.airsoft_years||null,play_style:u.play_style||'',primary_replica:u.primary_replica||'',secondary_replica:u.secondary_replica||'',birth_date:u.birth_date||null,equipment_summary:u.equipment_summary||'',photo_url:u.photo_url||null,public_profile:u.public_profile}:null})}
 
     if(action==='push-config'){const enabled=!!(process.env.VAPID_PUBLIC_KEY&&process.env.VAPID_PRIVATE_KEY&&process.env.VAPID_SUBJECT);return json(res,200,{enabled,publicKey:enabled?process.env.VAPID_PUBLIC_KEY:null})}
     if(action==='push-subscribe'&&req.method==='POST'){const u=await requireUser(req,res);if(!u)return;const b=await body(req);const sub=b.subscription||{};if(!sub.endpoint||!sub.keys?.p256dh||!sub.keys?.auth)return json(res,400,{error:'Assinatura de notificação inválida.'});await sql`INSERT INTO push_subscriptions(operator_id,endpoint,p256dh,auth) VALUES(${u.id},${sub.endpoint},${sub.keys.p256dh},${sub.keys.auth}) ON CONFLICT(endpoint) DO UPDATE SET operator_id=EXCLUDED.operator_id,p256dh=EXCLUDED.p256dh,auth=EXCLUDED.auth`;return json(res,200,{ok:true})}
@@ -232,14 +232,10 @@ export default async function handler(req,res){
       const u=await requireUser(req,res);if(!u)return;const b=await body(req)
       const age=b.age===''||b.age==null?null:Number(b.age);const years=b.airsoft_years===''||b.airsoft_years==null?null:Number(b.airsoft_years)
       const birthDate=String(b.birth_date||'').trim()||null
-      const youtube=String(b.youtube_url||'').trim();
       if(birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(birthDate))return json(res,400,{error:'Data de nascimento inválida.'})
-      if(youtube&&!/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(youtube))return json(res,400,{error:'Informe uma URL válida do YouTube.'})
-      await sql`UPDATE operators SET name=COALESCE(NULLIF(${String(b.name||'').trim()},''),name),email=COALESCE(NULLIF(${String(b.email||'').trim().toLowerCase()},''),email),age=${age},birth_date=${birthDate},blood_type=${b.blood_type||null},airsoft_years=${years},play_style=${b.play_style||null},primary_replica=${b.primary_replica||null},secondary_replica=${b.secondary_replica||null},function=${b.function||null},bio=${b.bio||null},equipment_summary=${b.equipment_summary||null},youtube_url=${youtube||null},public_profile=${b.public_profile!==false} WHERE id=${u.id}`
+      await sql`UPDATE operators SET name=COALESCE(NULLIF(${String(b.name||'').trim()},''),name),email=COALESCE(NULLIF(${String(b.email||'').trim().toLowerCase()},''),email),age=${age},birth_date=${birthDate},blood_type=${b.blood_type||null},airsoft_years=${years},play_style=${b.play_style||null},primary_replica=${b.primary_replica||null},secondary_replica=${b.secondary_replica||null},function=${b.function||null},bio=${b.bio||null},equipment_summary=${b.equipment_summary||null},public_profile=${b.public_profile!==false} WHERE id=${u.id}`
       return json(res,200,{ok:true})
     }
-
-    if(action==='update-youtube'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);const youtube=String(b.youtube_url||'').trim();if(youtube&&!/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(youtube))return json(res,400,{error:'Informe uma URL válida do YouTube.'});await sql`UPDATE operators SET youtube_url=${youtube||null} WHERE id=${u.id}`;return json(res,200,{ok:true,youtube_url:youtube||null})}
 
     if(action==='upload-photo'&&req.method==='POST'){
       const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);const data=String(b.image_data||'');if(!data.startsWith('data:image/'))return json(res,400,{error:'Envie uma imagem válida.'});if(data.length>4_200_000)return json(res,400,{error:'Imagem muito grande. Use uma foto de até 3 MB.'});await sql`UPDATE operators SET photo_url=${data} WHERE id=${u.id}`;return json(res,200,{ok:true,photo_url:data})
@@ -337,7 +333,7 @@ export default async function handler(req,res){
 
     if(action==='commander'){
       const u=await requireUser(req,res,'commander');if(!u)return;await reconcileAbsences()
-      const operators=await sql`SELECT id,name,nickname,role,rank,function,games_count,absences,elo,elo_level,suspension_until,active,email,photo_url,invite_expires_at,invite_used_at,is_primary_commander,last_promotion_period,youtube_url FROM operators ORDER BY role DESC,active DESC,nickname`
+      const operators=await sql`SELECT id,name,nickname,role,rank,function,games_count,absences,elo,elo_level,suspension_until,active,email,photo_url,invite_expires_at,invite_used_at,is_primary_commander,last_promotion_period FROM operators ORDER BY role DESC,active DESC,nickname`
       const fields=await sql`SELECT * FROM game_fields WHERE active=true ORDER BY name`;const eloSettings=await currentEloSettings();const games=await sql`SELECT g.*,g.match_photo_url,g.completed_at,gf.name field_name,gf.maps_url field_maps_url,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id)::int participant_count,COALESCE((SELECT json_agg(json_build_object('id',o2.id,'nickname',o2.nickname,'rank',o2.rank,'function',o2.function,'photo_url',o2.photo_url,'loadout',gp2.loadout) ORDER BY o2.nickname) FROM game_participants gp2 JOIN operators o2 ON o2.id=gp2.operator_id WHERE gp2.game_id=g.id AND gp2.response='going' AND o2.active=true),'[]'::json) participants FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date>=CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
       const history=await sql`SELECT g.*,g.match_photo_url,g.completed_at,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id) FILTER (WHERE gp.present=true)::int present_count,count(gp.operator_id) FILTER (WHERE gp.response='going' AND gp.present=false AND gp.absence_processed=true)::int absence_count FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date<CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date DESC,g.game_time DESC NULLS LAST LIMIT 100`
       const requests=await sql`SELECT vr.*,greq.title AS requested_game_title,greq.game_date AS requested_game_date,COALESCE(json_agg(json_build_object('game_id',vga.game_id,'title',g.title,'game_date',g.game_date,'location',g.location)) FILTER (WHERE vga.id IS NOT NULL),'[]') assignments FROM visitor_requests vr LEFT JOIN games greq ON greq.id=vr.requested_game_id LEFT JOIN visitor_game_assignments vga ON vga.visitor_request_id=vr.id LEFT JOIN games g ON g.id=vga.game_id GROUP BY vr.id,greq.title,greq.game_date ORDER BY vr.created_at DESC LIMIT 50`
@@ -377,33 +373,7 @@ export default async function handler(req,res){
     }
     if(action==='revoke-invite'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);await sql`DELETE FROM operators WHERE id=${b.operator_id} AND active=false AND role='operator'`;return json(res,200,{ok:true})}
     if(action==='delete-operator'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);if(String(b.operator_id)===String(u.id))return json(res,400,{error:'O comandante não pode excluir a própria conta.'});const op=(await sql`SELECT id,role FROM operators WHERE id=${b.operator_id} LIMIT 1`)[0];if(!op||op.role!=='operator')return json(res,404,{error:'Operador não encontrado.'});await sql`DELETE FROM operators WHERE id=${op.id}`;return json(res,200,{ok:true})}
-    if(action==='change-role'&&req.method==='POST'){
-      const u=await requireUser(req,res,'commander');if(!u)return;
-      if(!u.is_primary_commander)return json(res,403,{error:'Somente o comandante principal pode alterar comandantes.'});
-      const b=await body(req);
-      const op=(await sql`SELECT id,nickname,name,email,role,is_primary_commander FROM operators WHERE id=${b.operator_id} LIMIT 1`)[0];
-      if(!op)return json(res,404,{error:'Operador não encontrado.'});
-      if(String(op.id)===String(u.id))return json(res,400,{error:'A conta principal não pode ser alterada.'});
-      const role=b.role==='commander'?'commander':'operator';
-      await sql`UPDATE operators SET role=${role},is_primary_commander=false WHERE id=${op.id}`;
-      if(role==='commander' && op.role!=='commander'){
-        const title='👑 Acesso de Comandante liberado';
-        const bodyText=`${op.nickname || op.name || 'Operador'}, você foi promovido a Comandante do Tactical Group Airsoft. Você foi escolhido para ser Comandante do Tactical Group Airsoft. Use a mesma conta de Operador e abra a Área do Comandante para concluir a configuração do seu acesso.`;
-        const link='/comandante/configuracoes';
-        await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${op.id},'commander-promoted',${title},${bodyText},${link})`;
-        if(process.env.VAPID_PUBLIC_KEY&&process.env.VAPID_PRIVATE_KEY&&process.env.VAPID_SUBJECT){
-          try{
-            webpush.setVapidDetails(process.env.VAPID_SUBJECT,process.env.VAPID_PUBLIC_KEY,process.env.VAPID_PRIVATE_KEY);
-            const subs=await sql`SELECT * FROM push_subscriptions WHERE operator_id=${op.id}`;
-            for(const sub of subs){
-              try{await webpush.sendNotification({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},JSON.stringify({title,body:bodyText,url:link}))}
-              catch(e){if(e?.statusCode===404||e?.statusCode===410)await sql`DELETE FROM push_subscriptions WHERE id=${sub.id}`}
-            }
-          }catch(_e){}
-        }
-      }
-      return json(res,200,{ok:true,notified:role==='commander' && op.role!=='commander'})
-    }
+    if(action==='change-role'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;if(!u.is_primary_commander)return json(res,403,{error:'Somente o comandante principal pode alterar comandantes.'});const b=await body(req);const op=(await sql`SELECT id,role,is_primary_commander FROM operators WHERE id=${b.operator_id} LIMIT 1`)[0];if(!op)return json(res,404,{error:'Operador não encontrado.'});if(String(op.id)===String(u.id))return json(res,400,{error:'A conta principal não pode ser alterada.'});const role=b.role==='commander'?'commander':'operator';await sql`UPDATE operators SET role=${role},is_primary_commander=false WHERE id=${op.id}`;return json(res,200,{ok:true})}
 
     if(action==='rank'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const op=(await sql`SELECT id,rank,elo FROM operators WHERE id=${b.operator_id}`)[0];if(!op)return json(res,404,{error:'Operador não encontrado.'});if(!ranks.includes(b.rank))return json(res,400,{error:'Patente inválida.'});await sql`UPDATE operators SET rank=${b.rank},elo=GREATEST(0,COALESCE(elo,0)+${Number(b.elo_delta||0)}) WHERE id=${op.id}`;await sql`INSERT INTO rank_history(operator_id,old_rank,new_rank,reason,changed_by) VALUES(${op.id},${op.rank},${b.rank},${b.reason||null},${u.id})`;return json(res,200,{ok:true})}
     if(action==='penalty'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const days=Math.max(0,Number(b.days||0));if(days)await sql`UPDATE operators SET suspension_until=CURRENT_DATE + ${days}::int WHERE id=${b.operator_id}`;else await sql`UPDATE operators SET suspension_until=NULL WHERE id=${b.operator_id}`;await sql`INSERT INTO penalties(operator_id,type,reason,days,ends_at) VALUES(${b.operator_id},${b.type||'suspensão'},${b.reason||null},${days},${days?new Date(Date.now()+days*86400000):null})`;return json(res,200,{ok:true})}
