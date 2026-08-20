@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { sql } from "./_db.ts";
+from "./db.js"
 import { currentUser } from "./_auth.ts";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
