@@ -20,12 +20,14 @@ async function ensureSchema(){
         ['operators','email','TEXT'],['operators','invite_code_hash','TEXT'],['operators','invite_expires_at','TIMESTAMPTZ'],['operators','invite_used_at','TIMESTAMPTZ'],
         ['operators','age','INTEGER'],['operators','blood_type','TEXT'],['operators','airsoft_years','NUMERIC'],['operators','play_style','TEXT'],['operators','primary_replica','TEXT'],['operators','secondary_replica','TEXT'],
         ['operators','absences','INTEGER NOT NULL DEFAULT 0'],['operators','suspension_until','DATE'],['operators','public_profile','BOOLEAN NOT NULL DEFAULT TRUE'],['operators','photo_url','TEXT'],['operators','bio','TEXT'],['operators','equipment_summary','TEXT'],['operators','elo','INTEGER NOT NULL DEFAULT 0'],
-        ['games','game_time','TIME'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','description','TEXT'],['games','briefing','TEXT'],['games','maps_url','TEXT'],
+        ['games','game_time','TIME'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','description','TEXT'],['games','briefing','TEXT'],['games','maps_url','TEXT'],['games','field_id','UUID'],
         ["game_participants","response","TEXT NOT NULL DEFAULT 'pending'"],['game_participants','loadout','JSONB'],['game_participants','responded_at','TIMESTAMPTZ'],['game_participants','absence_processed','BOOLEAN NOT NULL DEFAULT FALSE']
       ]
       for(const [table,col,type] of cols) await sql.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col} ${type}`)
       await sql`CREATE UNIQUE INDEX IF NOT EXISTS operators_email_unique_idx ON operators (lower(email)) WHERE email IS NOT NULL`
       await sql`CREATE INDEX IF NOT EXISTS operators_invite_idx ON operators(invite_code_hash) WHERE invite_code_hash IS NOT NULL`
+      await sql`CREATE TABLE IF NOT EXISTS game_fields (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT NOT NULL UNIQUE, address TEXT, maps_url TEXT NOT NULL, notes TEXT, active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
+      await sql`CREATE INDEX IF NOT EXISTS game_fields_active_idx ON game_fields(active,name)`
       await sql`CREATE TABLE IF NOT EXISTS operator_gallery (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, image_data TEXT NOT NULL, caption TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
       await sql`CREATE INDEX IF NOT EXISTS operator_gallery_operator_idx ON operator_gallery(operator_id,created_at DESC)`
       await sql`CREATE TABLE IF NOT EXISTS finance_settings (id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), monthly_fee NUMERIC(12,2) NOT NULL DEFAULT 0, due_day INTEGER NOT NULL DEFAULT 10 CHECK (due_day BETWEEN 1 AND 28), grace_days INTEGER NOT NULL DEFAULT 0 CHECK (grace_days BETWEEN 0 AND 30), currency TEXT NOT NULL DEFAULT 'BRL', active BOOLEAN NOT NULL DEFAULT TRUE, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_by UUID REFERENCES operators(id) ON DELETE SET NULL)`
@@ -70,7 +72,7 @@ export default async function handler(req,res){
 
     if(action==='public'){
       const operators=await sql`SELECT * FROM operators WHERE active=true AND public_profile=true ORDER BY CASE WHEN role='commander' THEN 0 ELSE 1 END,nickname`
-      const games=await sql`SELECT id,title,game_date,game_time,location,status,description,notes,briefing,max_players FROM games WHERE game_date>=CURRENT_DATE ORDER BY game_date,game_time NULLS LAST LIMIT 20`
+      const games=await sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.notes,g.briefing,g.max_players,gf.name field_name,gf.maps_url field_maps_url FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id WHERE g.game_date>=CURRENT_DATE ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 20`
       return json(res,200,{operators:operators.map(publicOperatorRow),games,ranks})
     }
 
@@ -144,7 +146,7 @@ export default async function handler(req,res){
 
     if(action==='games'){
       await reconcileAbsences();const u=await requireUser(req,res);if(!u)return;
-      const games=await sql`SELECT g.*,COALESCE(gp.response,'pending') response,gp.loadout FROM games g LEFT JOIN game_participants gp ON gp.game_id=g.id AND gp.operator_id=${u.id} WHERE g.game_date>=CURRENT_DATE-interval '1 day' ORDER BY g.game_date,g.game_time NULLS LAST`;
+      const games=await sql`SELECT g.*,gf.name field_name,gf.address field_address,gf.maps_url field_maps_url,COALESCE(gp.response,'pending') response,gp.loadout FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id AND gp.operator_id=${u.id} WHERE g.game_date>=CURRENT_DATE-interval '1 day' ORDER BY g.game_date,g.game_time NULLS LAST`;
       const finance=u.role==='operator'?await financeForOperator(u.id):null;
       return json(res,200,{games,finance})
     }
@@ -170,17 +172,19 @@ export default async function handler(req,res){
     if(action==='commander'){
       const u=await requireUser(req,res,'commander');if(!u)return;await reconcileAbsences()
       const operators=await sql`SELECT id,name,nickname,role,rank,function,games_count,absences,elo,suspension_until,active,email,invite_expires_at,invite_used_at FROM operators ORDER BY role DESC,active DESC,nickname`
-      const games=await sql`SELECT g.*,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id)::int participant_count FROM games g LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date>=CURRENT_DATE GROUP BY g.id ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
-      const history=await sql`SELECT g.*,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id) FILTER (WHERE gp.present=true)::int present_count,count(gp.operator_id) FILTER (WHERE gp.response='going' AND gp.present=false AND gp.absence_processed=true)::int absence_count FROM games g LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date<CURRENT_DATE GROUP BY g.id ORDER BY g.game_date DESC,g.game_time DESC NULLS LAST LIMIT 100`
+      const fields=await sql`SELECT * FROM game_fields WHERE active=true ORDER BY name`;const games=await sql`SELECT g.*,gf.name field_name,gf.maps_url field_maps_url,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id)::int participant_count FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date>=CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
+      const history=await sql`SELECT g.*,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id) FILTER (WHERE gp.present=true)::int present_count,count(gp.operator_id) FILTER (WHERE gp.response='going' AND gp.present=false AND gp.absence_processed=true)::int absence_count FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date<CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date DESC,g.game_time DESC NULLS LAST LIMIT 100`
       const requests=await sql`SELECT vr.*,COALESCE(json_agg(json_build_object('game_id',vga.game_id,'title',g.title,'game_date',g.game_date,'location',g.location)) FILTER (WHERE vga.id IS NOT NULL),'[]') assignments FROM visitor_requests vr LEFT JOIN visitor_game_assignments vga ON vga.visitor_request_id=vr.id LEFT JOIN games g ON g.id=vga.game_id GROUP BY vr.id ORDER BY vr.created_at DESC LIMIT 50`
       await ensureCurrentDues();const financeSettings=await currentFinanceSettings();const dues=await sql`SELECT d.*,o.nickname,o.rank,o.active,o.email FROM membership_dues d JOIN operators o ON o.id=d.operator_id WHERE d.period=date_trunc('month',CURRENT_DATE)::date ORDER BY CASE d.status WHEN 'overdue' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END,o.nickname`;
-      return json(res,200,{me:u,operators,games,history,requests,ranks,financeSettings,dues})
+      return json(res,200,{me:u,operators,games,history,requests,ranks,financeSettings,dues,fields})
     }
 
+    if(action==='create-field'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const name=String(b.name||'').trim();const maps=String(b.maps_url||'').trim();if(!name||!maps)return json(res,400,{error:'Informe nome e link do Google Maps.'});const rows=await sql`INSERT INTO game_fields(name,address,maps_url,notes) VALUES(${name},${String(b.address||'').trim()||null},${maps},${String(b.notes||'').trim()||null}) RETURNING *`;return json(res,201,{field:rows[0]})}
+    if(action==='delete-field'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const used=(await sql`SELECT count(*)::int c FROM games WHERE field_id=${b.id}`)[0].c||0;if(used>0)return json(res,409,{error:'Este campo já foi usado em jogos e não pode ser excluído.'});await sql`UPDATE game_fields SET active=false WHERE id=${b.id}`;return json(res,200,{ok:true})}
     if(action==='create-game'&&req.method==='POST'){
-      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);if(!b.title||!b.game_date||!b.location)return json(res,400,{error:'Preencha nome, data e local.'});
-      const min=Math.max(1,Number(b.min_players||4));const max=b.max_players?Number(b.max_players):null;if(max&&max<min)return json(res,400,{error:'O máximo de operadores não pode ser menor que o mínimo.'});const maps=String(b.maps_url||'').trim()||null
-      const rows=await sql`INSERT INTO games(title,game_date,game_time,location,status,description,notes,briefing,min_players,max_players,maps_url,commander_id) VALUES(${b.title},${b.game_date},${b.game_time||null},${b.location},${b.status||'confirmado'},${b.description||null},${b.notes||null},${b.briefing||null},${min},${max},${maps},${u.id}) RETURNING *`
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);if(!b.title||!b.game_date||!b.field_id)return json(res,400,{error:'Preencha nome, data e selecione o campo.'});
+      const min=Math.max(1,Number(b.min_players||4));const max=b.max_players?Number(b.max_players):null;if(max&&max<min)return json(res,400,{error:'O máximo de operadores não pode ser menor que o mínimo.'});const field=(await sql`SELECT id,name,address,maps_url FROM game_fields WHERE id=${b.field_id} AND active=true LIMIT 1`)[0];if(!field)return json(res,400,{error:'Selecione um campo válido.'});
+      const rows=await sql`INSERT INTO games(title,game_date,game_time,location,status,description,notes,briefing,min_players,max_players,maps_url,commander_id,field_id) VALUES(${b.title},${b.game_date},${b.game_time||null},${field.name},${b.status||'confirmado'},${b.description||null},${b.notes||null},${b.briefing||null},${min},${max},${field.maps_url},${u.id},${field.id}) RETURNING *`
       await sql`INSERT INTO game_participants(game_id,operator_id) SELECT ${rows[0].id},id FROM operators WHERE active=true AND role='operator' ON CONFLICT DO NOTHING`
       return json(res,201,{game:rows[0]})
     }

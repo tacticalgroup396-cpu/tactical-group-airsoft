@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#090b0d">
+  <link rel="manifest" href="/manifest.webmanifest">
   <meta name="description" content="Tactical Group Airsoft — operação, treino e comunidade.">
   <title>Tactical Group Airsoft</title>
   <link rel="stylesheet" href="/style.css">
@@ -21,6 +22,7 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft · PWA · Neon · Vercel</footer>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js"))}</script>
   <script src="/app.js"></script>
 </body>
 </html>
