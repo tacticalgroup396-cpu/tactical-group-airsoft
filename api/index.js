@@ -255,7 +255,8 @@ export default async function handler(req,res){
 
     if(action==='rsvp'&&req.method==='POST'){
       const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);
-      const response=['going','not_going','pending'].includes(b.response)?b.response:'pending';
+      const response=['going','not_going'].includes(b.response)?b.response:null;
+      if(!response)return json(res,400,{error:'Escolha Vou ou Não vou.'});
       const game=(await sql`SELECT id,max_players,status,rsvp_deadline_date,rsvp_deadline_time FROM games WHERE id=${b.game_id} LIMIT 1`)[0];
       if(!game)return json(res,404,{error:'Jogo não encontrado.'});
       if(game.status==='cancelado')return json(res,409,{error:'Este jogo foi cancelado.'});
@@ -266,7 +267,6 @@ export default async function handler(req,res){
         if(settings.active&&Number(settings.monthly_fee)>0&&due?.status!=='paid'&&due?.status!=='waived')return json(res,402,{error:'Mensalidade pendente. Regularize o financeiro para confirmar presença nos jogos.'});
         if(game.max_players){const count=(await sql`SELECT count(*)::int AS c FROM game_participants WHERE game_id=${b.game_id} AND response='going' AND operator_id<>${u.id}`)[0].c||0;if(count>=Number(game.max_players))return json(res,409,{error:'Este jogo atingiu o limite de operadores.'})}
       }
-      if(response==='pending'){await sql`DELETE FROM game_participants WHERE game_id=${b.game_id} AND operator_id=${u.id}`;return json(res,200,{ok:true,response:'pending'})}
       await sql`INSERT INTO game_participants(game_id,operator_id,response,responded_at,present) VALUES(${b.game_id},${u.id},${response},now(),false) ON CONFLICT(game_id,operator_id) DO UPDATE SET response=EXCLUDED.response,responded_at=now(),present=false,absence_processed=false`;
       return json(res,200,{ok:true,response})
     }

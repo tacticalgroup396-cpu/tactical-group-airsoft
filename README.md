@@ -7,7 +7,7 @@ Base limpa consolidada para substituir V14/V15 sem misturar arquivos.
 - Comandante principal protegido; pode promover/remover outros comandantes.
 - Convite por apelido; excluir convite remove também o cadastro pendente.
 - Operador com primeiro acesso por código, depois login por e-mail ou apelido.
-- Operador pode marcar Vou, Não vou ou Desmarcar.
+- Operador pode marcar Vou ou Não vou e alterar a resposta depois até o prazo.
 - Jogo com mínimo/máximo de operadores, data/hora e prazo de confirmação.
 - Cancelamento automático quando o prazo vence e o mínimo não foi atingido.
 - Campos cadastrados com Google Maps e seleção no jogo.
