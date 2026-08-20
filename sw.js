@@ -1,4 +1,4 @@
-const CACHE='tga-v13';
+const CACHE='tga-v14';
 const ASSETS=['/','/app.js','/style.css','/logo.webp','/manifest.webmanifest'];
 
 self.addEventListener('install', event => {
@@ -54,4 +54,16 @@ self.addEventListener('fetch', event => {
       });
     })
   );
+});
+
+
+self.addEventListener('push', event => {
+  let data={title:'Tactical Group Airsoft',body:'Nova atualização do comando.',url:'/operador'};
+  try{data=event.data?.json()||data}catch(e){}
+  event.waitUntil(self.registration.showNotification(data.title,{body:data.body,icon:'/logo.webp',badge:'/logo.webp',data:{url:data.url||'/operador'}}));
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url=event.notification.data?.url||'/';
+  event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(cs=>{for(const c of cs){if('focus' in c)return c.focus()}return clients.openWindow(url)}));
 });
