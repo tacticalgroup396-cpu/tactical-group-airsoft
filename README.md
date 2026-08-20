@@ -1,114 +1,34 @@
-# Tactical Group Airsoft — Neon + Vertex AI + GitHub + Vercel
+# Tactical Group Airsoft V16
 
-Este projeto transforma o protótipo enviado em uma aplicação web responsiva instalável como **PWA** no celular.
+Base limpa consolidada para substituir V14/V15 sem misturar arquivos.
 
-## Arquitetura
+## Incluído
+- Área do Comandante preservada e separada por páginas: Equipe, Jogos, Histórico, Financeiro, Visitas e Configurações.
+- Comandante principal protegido; pode promover/remover outros comandantes.
+- Convite por apelido; excluir convite remove também o cadastro pendente.
+- Operador com primeiro acesso por código, depois login por e-mail ou apelido.
+- Operador pode marcar Vou, Não vou ou Desmarcar.
+- Jogo com mínimo/máximo de operadores, data/hora e prazo de confirmação.
+- Cancelamento automático quando o prazo vence e o mínimo não foi atingido.
+- Campos cadastrados com Google Maps e seleção no jogo.
+- Visitante vê o próximo jogo ativo e pode solicitar visita vinculada ao jogo.
+- Progressão automática de patente por participações mensais.
+- Notificações internas e Web Push.
+- PWA instalável para Operador e Comandante; visitante não recebe botão de instalação.
+- Arquivos estáticos servidos a partir de /public e rewrites para rotas internas.
+- Service Worker sem cache de /api e com cache atualizado para V16.
 
-- **Frontend:** React 19 + Vite + Tailwind CSS.
-- **Banco:** Neon PostgreSQL.
-- **Backend:** Vercel Functions em `/api`.
-- **IA:** Google Vertex AI / Gemini.
-- **Código:** GitHub.
-- **Deploy:** Vercel.
-- **Celular:** PWA, com `manifest.webmanifest`.
+## Web Push na Vercel
+Configure no Environment Variables de Production e Preview, conforme necessário:
+- VAPID_PUBLIC_KEY
+- VAPID_PRIVATE_KEY
+- VAPID_SUBJECT (ex.: mailto:admin@seu-dominio.com)
 
-O Neon possui integração nativa com Vercel e pode criar branches isoladas para previews, o que é ideal para trabalhar com GitHub sem misturar dados de desenvolvimento e produção.
+Depois do deploy, o operador entra em sua conta e clica em **Ativar notificações**. O navegador precisa permitir notificações.
 
-## 1. Criar o banco Neon
-
-No Neon, crie um projeto PostgreSQL e execute `src/db/schema.sql` no SQL Editor.
-
-Depois copie a connection string e configure:
-
-```env
-DATABASE_URL=postgresql://...
-```
-
-No Vercel, a integração Neon também pode injetar as variáveis de banco automaticamente. Para previews, a integração suporta branches separados.
-
-## 2. Configurar Vertex AI
-
-No Google Cloud:
-
-1. Crie/selecione um projeto.
-2. Ative a Vertex AI API.
-3. Crie uma conta de serviço com permissão para usar Vertex AI.
-4. Para desenvolvimento local, use Application Default Credentials.
-5. Na Vercel, configure as variáveis:
-
-```env
-GOOGLE_CLOUD_PROJECT=seu-projeto
-GOOGLE_CLOUD_LOCATION=global
-VERTEX_MODEL=gemini-2.5-flash
-GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account", ...}
-```
-
-O backend grava somente o prompt/resposta no banco para auditoria; a chave/credencial nunca é enviada ao navegador.
-
-## 3. GitHub
-
-Crie um repositório, por exemplo `tactical-group-airsoft`, e envie todos os arquivos deste projeto.
-
-Não envie `.env` nem credenciais do Google.
-
-## 4. Vercel
-
-Importe o repositório do GitHub na Vercel.
-
-Build:
-
-```bash
-npm run build
-```
-
-Framework: Vite.
-
-Adicione as variáveis de ambiente da seção Neon e Vertex nos ambientes **Preview** e **Production**.
-
-## 5. Teste local
-
-```bash
-npm install
-npm run dev
-```
-
-Para testar as funções `/api` localmente como Vercel Functions, use a Vercel CLI:
-
-```bash
-npx vercel dev
-```
-
-## Banco incluído
-
-O schema cria:
-
-- `operators` — usuários, patentes, funções e participação.
-- `games` — operações/jogos.
-- `game_participants` — presença e função em cada jogo.
-- `rules` — regulamento editável.
-- `ai_logs` — auditoria das consultas do assistente Vertex AI.
-
-## Importante sobre autenticação
-
-O protótipo usa login persistido no navegador para o MVP. As senhas são armazenadas no banco somente como hash bcrypt.
-
-Para produção com equipe real, recomendo evoluir o login para sessões HTTP-only/JWT e autorização por função no backend antes de liberar ações administrativas.
-
-## Aplicativo para celular
-
-A interface é responsiva e pode ser instalada pelo navegador como PWA. Em Android/Chrome, abra o site e use "Instalar aplicativo". No iPhone, use "Adicionar à Tela de Início".
-
-Para publicar posteriormente como aplicativo nativo Android/iOS, o mesmo frontend pode ser empacotado com Capacitor.
-
-## Endpoints
-
-- `GET/POST /api/operators`
-- `POST /api/login`
-- `GET/POST /api/games`
-- `GET /api/rules`
-- `POST /api/ai`
-
-
-
-## Segurança
-O primeiro operador cadastrado recebe automaticamente a função `commander`; os demais recebem `operator`. O login cria sessão HttpOnly por 7 dias e a criação de jogos exige sessão de comandante.
+## Deploy
+1. Extraia por cima do repositório atual sem apagar .git.
+2. Faça commit: `Consolida V16 com comandante, jogos, notificacoes e prazos`.
+3. Push para `main`.
+4. Aguarde o Production Deployment ficar Ready.
+5. Acesse o domínio de produção: `https://tactical-group-airsoft.vercel.app`.
