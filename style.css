@@ -13,3 +13,4 @@
 .backLogin{display:inline-block;margin:0 0 14px;text-decoration:none;opacity:.85}
 
 .instagramHeader{display:inline-flex;align-items:center}.instagramLink{width:40px;height:40px;display:grid;place-items:center;border:1px solid #3a4046;border-radius:9px;background:#111417}.instagramLink:hover{border-color:#d39d24;background:#191b1e}.instagramLink svg{width:21px;height:21px;fill:none;stroke:#f0f1f2;stroke-width:1.8}.instagramLink svg .fill{fill:#f0f1f2;stroke:none}
+.adminIdentity{display:flex;align-items:center;gap:10px;min-width:0}.adminIdentity .profilePhoto{flex:0 0 52px}.commanderProfile .mini{display:inline-block;margin-top:6px}.commanderProfile{display:flex;gap:14px;align-items:center}.commanderProfile>div:last-child{display:flex;flex-direction:column;gap:3px}.commandGame .tag{justify-self:start}
