@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "latest",
-    "bcryptjs": "latest"
+    "bcryptjs": "latest",
+    "react": "latest",
+    "react-dom": "latest"
   },
   "devDependencies": {
     "@tailwindcss/vite": "latest",
