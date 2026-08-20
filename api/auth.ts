@@ -21,8 +21,7 @@ export function parseCookies(value = "") {
 }
 
 export async function currentUser(req: any) {
-  const token = parseCookies(req.headers?.cookie || {})["tg_session"];
-
+  const token = parseCookies(req.headers?.cookie || "")["tg_session"];
   if (!token) return null;
 
   const rows = await sql`
