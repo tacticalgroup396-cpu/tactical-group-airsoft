@@ -8,7 +8,7 @@ const COOKIE = 'tg_session'
 const ranks = ['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel']
 let schemaReady = null
 
-const json=(res,status,data)=>{res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify(data))}
+const json=(res,status,data)=>{res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store, max-age=0');res.end(JSON.stringify(data))}
 const parseCookies=req=>Object.fromEntries((req.headers.cookie||'').split(';').filter(Boolean).map(v=>{const i=v.indexOf('=');return [v.slice(0,i).trim(),decodeURIComponent(v.slice(i+1))]}))
 const hashToken=t=>crypto.createHash('sha256').update(t).digest('hex')
 const makeInviteCode=()=>`TGA-${crypto.randomBytes(3).toString('hex').toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
@@ -395,6 +395,9 @@ export default async function handler(req,res){
       const eloReward=Math.max(1,Number(b.elo_reward||1));const field=(await sql`SELECT id,name,maps_url FROM game_fields WHERE id=${b.field_id} AND active=true LIMIT 1`)[0];if(!field)return json(res,400,{error:'Campo inválido.'});
       const existing=(await sql`SELECT id,rsvp_closed FROM games WHERE id=${id} LIMIT 1`)[0];if(!existing)return json(res,404,{error:'Jogo não encontrado.'});
       await sql`UPDATE games SET title=${String(b.title).trim()},game_date=${b.game_date},game_time=${b.game_time||null},location=${field.name},field_id=${field.id},maps_url=${field.maps_url},min_players=${min},max_players=${max},elo_reward=${eloReward},status=${b.status||'confirmado'},description=${String(b.description||'').trim()||null},briefing=${String(b.briefing||'').trim()||null},notes=${String(b.notes||'').trim()||null},rsvp_deadline_date=${b.rsvp_deadline_date||null},rsvp_deadline_time=${b.rsvp_deadline_time||null} WHERE id=${id}`;
+      const changedTitle=String(b.title).trim();
+      const recipients=await sql`SELECT operator_id FROM game_participants WHERE game_id=${id} AND operator_id IS NOT NULL`;
+      for(const r of recipients){await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${r.operator_id},'game-updated','Jogo atualizado',${`As informações do jogo ${changedTitle} foram atualizadas pelo comando.`},'/operador')`}
       return json(res,200,{ok:true})
     }
     if(action==='close-rsvp'&&req.method==='POST'){
