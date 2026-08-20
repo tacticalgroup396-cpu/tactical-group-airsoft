@@ -17,7 +17,16 @@ const fmtTime=t=>t?String(t).slice(0,5):'';
 const photoOrInitial=(o,big=false)=>o.photo_url?`<img class="profilePhoto ${big?'big':''}" loading="lazy" decoding="async" src="${o.photo_url}" alt="Foto de ${esc(o.nickname)}">`:`<div class="avatar ${big?'big':''}">${esc((o.nickname||'?').slice(0,2))}</div>`;
 function toast(t){const x=document.createElement('div');x.className='toast';x.textContent=t;document.body.appendChild(x);setTimeout(()=>x.remove(),3500)}
 function installButton(){return me&&['operator','commander'].includes(me.role)?'<button id="installApp" class="ghost">Instalar app</button>':''}
-function shell(){nav.innerHTML=`<a href="/visitantes">Equipe</a><span id="instagramHeader" class="instagramHeader"></span>${me?'<a href="/operador">Operador</a>':''}${me?.role==='commander'?'<a href="/comandante">Comandante</a>':''}${me?`<div class="notifWrap"><button id="notifBell" class="ghost">🔔</button><div id="notifList" class="notifMenu"></div></div>`:''}${me?'<button class="ghost" id="logout">Sair</button>':''}${!me?'<a class="goldbtn small" href="/entrar">Entrar</a>':''}${installButton()}`;document.getElementById('logout')?.addEventListener('click',async()=>{await api('logout');location.href='/'});document.getElementById('installApp')?.addEventListener('click',installPWA);document.getElementById('notifBell')?.addEventListener('click',()=>{document.getElementById('notifList')?.classList.toggle('open');loadNotifications()});if(me){loadNotifications();pushSetup()}}
+function shell(){
+  const menu=document.getElementById('menuToggle');
+  nav.innerHTML=`<div class="navGroup"><a href="/visitantes">Equipe</a><span id="instagramHeader" class="instagramHeader"></span></div><div class="navGroup navAccess">${me?'<a href="/operador">Operador</a>':''}${me?.role==='commander'?'<a href="/comandante">Comandante</a>':''}${me?`<div class="notifWrap"><button id="notifBell" class="ghost">🔔</button><div id="notifList" class="notifMenu"></div></div>`:''}${me?'<button class="ghost" id="logout">Sair</button>':''}${!me?'<a class="goldbtn small" href="/entrar">Entrar</a>':''}${installButton()}</div>`;
+  menu?.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));});
+  nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');menu?.setAttribute('aria-expanded','false')}));
+  document.getElementById('logout')?.addEventListener('click',async()=>{await api('logout');location.href='/'});
+  document.getElementById('installApp')?.addEventListener('click',installPWA);
+  document.getElementById('notifBell')?.addEventListener('click',()=>{document.getElementById('notifList')?.classList.toggle('open');loadNotifications()});
+  if(me){loadNotifications();pushSetup()}
+}
 function syncInstagramHeader(url){const host=document.getElementById('instagramHeader');if(!host)return;if(url){host.innerHTML=`<a class="instagramLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram da equipe" title="Instagram da equipe"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" class="fill"></circle></svg></a>`}else host.innerHTML=''}
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.documentElement.classList.add('pwa-ready')});
