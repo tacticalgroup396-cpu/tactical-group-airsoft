@@ -72,7 +72,8 @@ async function visitors(){
   const q=new URLSearchParams(location.search);let profile='';
   if(q.get('operator')){
     try{
-      const p=await api('operator&id='+q.get('operator')); const o=p.operator;
+      const profileId=q.get('operator');
+      const p=await fetch('/api/index.js?action=operator&id='+encodeURIComponent(profileId),{headers:{'Content-Type':'application/json'}}).then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Erro ao carregar perfil.');return data}); const o=p.operator;
       profile=`<section class="profilePanel"><div class="profileHero">${photoOrInitial(o,true)}<div><div class="eyebrow">PERFIL DO OPERADOR</div><h2>@${esc(o.nickname)}</h2><div class="rank">${esc(o.rank)} · ${esc(o.function||'Operador')}</div><p>${esc(o.bio||'Sem descrição cadastrada.')}</p></div></div>
       <div class="profileStats"><div><b>Idade</b><span>${o.age?esc(o.age)+' anos':'Não informado'}</span></div><div><b>Airsoft</b><span>${o.airsoft_years?esc(o.airsoft_years)+' anos':'Não informado'}</span></div><div><b>Estilo</b><span>${esc(o.play_style||'Não informado')}</span></div><div><b>Jogos</b><span>${o.games_count||0}</span></div></div>
       <div class="profileCols"><div><h3>Loadout</h3><p><b>Principal:</b> ${esc(o.primary_replica||'Não informado')}</p><p><b>Secundária:</b> ${esc(o.secondary_replica||'Não informado')}</p><h3>Equipamentos</h3><div class="chips">${p.equipment.length?p.equipment.map(e=>`<span>${esc(e.name)}${e.details?' · '+esc(e.details):''}</span>`).join(''):'<span>Nenhum equipamento público.</span>'}</div></div><div><h3>Galeria</h3><div class="gallery">${p.gallery.length?p.gallery.map(g=>`<img loading="lazy" decoding="async" src="${g.image_data}" alt="${esc(g.caption||'Foto do operador')}">`).join(''):'<div class="muted">Nenhuma foto cadastrada.</div>'}</div></div></div>
