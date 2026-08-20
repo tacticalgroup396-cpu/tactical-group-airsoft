@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { sql } from "./_db";
+import { sql } from "./db.js";
 
 export function hashToken(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-from "./db.js"
-import { sql } from "./_db.ts";
+import bcrypt from "bcryptjs";
+import { sql } from "./db.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
