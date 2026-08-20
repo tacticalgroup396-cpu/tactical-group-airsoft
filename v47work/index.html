@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#090b0d">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="Tactical Group Airsoft — operação, treino e comunidade.">
+  <title>Tactical Group Airsoft</title>
+  <link rel="stylesheet" href="/style.css?v=43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <a class="brand" href="/" aria-label="Tactical Group Airsoft">
+      <img src="/logo.webp" alt="Tactical Group Airsoft">
+      <span>Tactical <b>Airsoft</b></span><span id="instagramHeader" class="instagramHeader" aria-live="polite"></span>
+    </a>
+    <button id="menuToggle" class="menuToggle" aria-label="Abrir menu" aria-expanded="false" type="button"><span></span><span></span><span></span></button>
+    <nav id="nav"></nav>
+  </header>
+  <main id="app"><div class="loading">Carregando...</div></main>
+  <footer>© 2026 Tactical Group Airsoft</footer>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=41"))}</script>
+  <script src="/app.js?v=43"></script>
+</body>
+</html>

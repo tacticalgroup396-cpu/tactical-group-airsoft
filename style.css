@@ -114,3 +114,23 @@
 @media(max-width:420px){.operatorEloTop>summary h2{font-size:18px!important}.statsBox{grid-template-columns:1fr!important}}
 #disciplineBulkForm select[multiple]{min-height:150px}
 .operatorRealName{display:block;color:var(--muted,#9aa0a6);font-size:.9rem;margin:.18rem 0 .28rem}.profileName{font-size:1rem}.pageRealName{font-size:1.15rem;margin-top:-.2rem}.participantName{display:block;color:var(--muted,#9aa0a6);font-size:.9rem;margin:.12rem 0}
+
+
+/* V48 - celebração visual de progressão */
+.progressCelebrationOverlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.78);backdrop-filter:blur(7px);opacity:0;transition:opacity .22s ease}
+.progressCelebrationOverlay.show{opacity:1}
+.progressCelebrationCard{position:relative;overflow:hidden;width:min(92vw,520px);padding:34px 28px 28px;border:1px solid rgba(227,169,31,.7);border-radius:24px;background:linear-gradient(180deg,#171a1d,#0b0d0f);box-shadow:0 20px 80px rgba(0,0,0,.55),0 0 50px rgba(227,169,31,.18);text-align:center;transform:translateY(24px) scale(.95);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.progressCelebrationOverlay.show .progressCelebrationCard{transform:translateY(0) scale(1)}
+.celebrationBurst{font-size:54px;line-height:1;margin-bottom:8px;animation:celebrationPulse 1.1s ease-in-out infinite}
+.progressCelebrationCard h2{font-size:34px;margin:6px 0 8px}
+.progressCelebrationCard p{margin:0 auto 18px;max-width:420px;color:#c7cbd1}
+.celebrationStats{display:grid;gap:10px;margin:16px 0 22px}
+.celebrationStat{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 16px;border-radius:14px;background:#111417;border:1px solid #2b3036;font-size:18px}
+.celebrationStat b{font-size:20px}
+.celebrationGlow{position:absolute;inset:-30%;pointer-events:none;background:radial-gradient(circle,rgba(227,169,31,.15),transparent 45%);animation:celebrationGlow 2s ease-in-out infinite}
+.celebrationConfetti{position:absolute;left:50%;top:52%;width:8px;height:18px;border-radius:2px;background:#e3a91f;transform:translate(-50%,-50%) rotate(var(--r));animation:confettiFall 1.5s ease-out forwards;animation-delay:calc(var(--i)*.03s);}
+.celebrationConfetti:nth-of-type(3n){background:#dfe8f2}.celebrationConfetti:nth-of-type(4n){background:#51a36f}
+@keyframes celebrationPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@keyframes celebrationGlow{0%,100%{transform:scale(.95);opacity:.55}50%{transform:scale(1.08);opacity:1}}
+@keyframes confettiFall{0%{opacity:0;transform:translate(-50%,-20px) rotate(0deg)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--x)),220px) rotate(420deg)}}
+@media (max-width:640px){.progressCelebrationCard{padding:28px 18px 22px;border-radius:20px}.progressCelebrationCard h2{font-size:28px}.celebrationStat{font-size:16px}.celebrationStat b{font-size:18px}}

@@ -1,0 +1,17 @@
+{
+  "name": "Tactical Group Airsoft",
+  "short_name": "TGA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080a0c",
+  "theme_color": "#d39d24",
+  "description": "Tactical Group Airsoft",
+  "icons": [
+    {
+      "src": "/logo.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    }
+  ]
+}

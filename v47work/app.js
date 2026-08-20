@@ -146,47 +146,8 @@ async function operatorSettings(){
     }catch(x){toast(x.message)}
   };
 }
-function showProgressCelebration(previous,current){
-  if(!previous||!current)return;
-  const rankList=current.ranks||ranks;
-  const oldRankIndex=rankList.indexOf(previous.rank||'');
-  const newRankIndex=rankList.indexOf(current.rank||'');
-  const rankUp=newRankIndex>oldRankIndex && oldRankIndex>=0;
-  const oldElo=Number(previous.elo_level)||7;
-  const newElo=Number(current.elo_level)||7;
-  const eloUp=newElo<oldElo;
-  if(!rankUp&&!eloUp)return;
-  const parts=[];
-  if(eloUp)parts.push(`<div class="celebrationStat">${eloMeta(newElo).symbol}<b>Elo ${newElo} · ${eloMeta(newElo).label}</b></div>`);
-  if(rankUp)parts.push(`<div class="celebrationStat">${rankIcon(current.rank||'Recruta')}<b>Patente ${esc(current.rank||'')}</b></div>`);
-  const overlay=document.createElement('div');
-  overlay.className='progressCelebrationOverlay';
-  overlay.innerHTML=`<div class="progressCelebrationCard" role="dialog" aria-modal="true" aria-label="Parabéns pela progressão"><div class="celebrationBurst">🎉</div><div class="eyebrow">PARABÉNS!</div><h2>Você evoluiu!</h2><p>Você alcançou uma nova posição na equipe.</p><div class="celebrationStats">${parts.join('')}</div><div class="celebrationGlow"></div><button type="button" class="goldbtn" data-close-celebration>Continuar</button></div>`;
-  document.body.appendChild(overlay);
-  requestAnimationFrame(()=>overlay.classList.add('show'));
-  const close=()=>{overlay.classList.remove('show');setTimeout(()=>overlay.remove(),220)};
-  overlay.querySelector('[data-close-celebration]')?.addEventListener('click',close);
-  overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
-  document.addEventListener('keydown',function escClose(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',escClose)}},{once:false});
-  setTimeout(()=>close(),12000);
-  // confetes leves, sem bloquear a interface
-  for(let i=0;i<18;i++){
-    const piece=document.createElement('span');piece.className='celebrationConfetti';piece.style.setProperty('--i',i);piece.style.setProperty('--x',`${(Math.random()*180-90).toFixed(1)}px`);piece.style.setProperty('--r',`${(Math.random()*360).toFixed(0)}deg`);overlay.querySelector('.progressCelebrationCard')?.appendChild(piece);
-  }
-}
-
-function trackOperatorProgress(u,ranksList){
-  try{
-    const key=`tga-progress-${u.id}`;
-    const previous=JSON.parse(localStorage.getItem(key)||'null');
-    const current={rank:u.rank||'Recruta',elo_level:Number(u.elo_level)||7,ranks:ranksList||ranks};
-    localStorage.setItem(key,JSON.stringify(current));
-    if(previous) setTimeout(()=>showProgressCelebration(previous,current),300);
-  }catch{}
-}
-
 async function operator(){
-  const [profile,d]=await Promise.all([api('profile-data'),api('games')]); syncInstagramHeader(d.instagram_url); const u=profile.user; const finance=d.finance; trackOperatorProgress(u,d.ranks||ranks);
+  const [profile,d]=await Promise.all([api('profile-data'),api('games')]); syncInstagramHeader(d.instagram_url); const u=profile.user; const finance=d.finance;
   app.innerHTML=`<section><div class="pageTitle"><div class="pageBrand">${photoOrInitial(u,true)}<div><div class="eyebrow">ÁREA DO OPERADOR</div><h1>${esc(u.nickname)}</h1>${u.name?`<div class="operatorRealName pageRealName">${esc(u.name)}</div>`:''}<p>Patente <b>${esc(u.rank)}</b> · ${u.absences||0} faltas${u.suspension_until?' · suspensão até '+fmt(u.suspension_until):''}${d.instagram_url?` · <a href="${esc(d.instagram_url)}" target="_blank" rel="noopener">Instagram</a>`:''}</p></div></div></div>
   ${operatorSubnav('visao')}
   <details class="card operatorEloHero operatorEloTop collapsibleCard" open>

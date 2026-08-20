@@ -1,0 +1,37 @@
+{
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/:path*/app.js",
+      "destination": "/app.js"
+    },
+    {
+      "source": "/:path*/style.css",
+      "destination": "/style.css"
+    },
+    {
+      "source": "/:path*/logo.webp",
+      "destination": "/logo.webp"
+    },
+    {
+      "source": "/:path*/manifest.webmanifest",
+      "destination": "/manifest.webmanifest"
+    },
+    {
+      "source": "/:path*/sw.js",
+      "destination": "/sw.js"
+    },
+    {
+      "source": "/((?!api/)(?!.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
