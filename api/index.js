@@ -35,7 +35,8 @@ async function ensureSchema(){
       await sql`CREATE INDEX IF NOT EXISTS game_fields_active_idx ON game_fields(active,name)`
       await sql`CREATE TABLE IF NOT EXISTS operator_gallery (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, image_data TEXT NOT NULL, caption TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
       await sql`CREATE INDEX IF NOT EXISTS operator_gallery_operator_idx ON operator_gallery(operator_id,created_at DESC)`
-      await sql`CREATE TABLE IF NOT EXISTS finance_settings (id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), monthly_fee NUMERIC(12,2) NOT NULL DEFAULT 0, due_day INTEGER NOT NULL DEFAULT 10 CHECK (due_day BETWEEN 1 AND 28), grace_days INTEGER NOT NULL DEFAULT 0 CHECK (grace_days BETWEEN 0 AND 30), currency TEXT NOT NULL DEFAULT 'BRL', active BOOLEAN NOT NULL DEFAULT TRUE, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_by UUID REFERENCES operators(id) ON DELETE SET NULL)`
+      await sql`CREATE TABLE IF NOT EXISTS finance_settings (id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), monthly_fee NUMERIC(12,2) NOT NULL DEFAULT 0, due_day INTEGER NOT NULL DEFAULT 10 CHECK (due_day BETWEEN 1 AND 28), grace_days INTEGER NOT NULL DEFAULT 0 CHECK (grace_days BETWEEN 0 AND 30), currency TEXT NOT NULL DEFAULT 'BRL', active BOOLEAN NOT NULL DEFAULT TRUE, instagram_url TEXT, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_by UUID REFERENCES operators(id) ON DELETE SET NULL)`
+      await sql`ALTER TABLE finance_settings ADD COLUMN IF NOT EXISTS instagram_url TEXT`
       await sql`INSERT INTO finance_settings(id) VALUES(1) ON CONFLICT(id) DO NOTHING`
       await sql`CREATE TABLE IF NOT EXISTS membership_dues (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, period DATE NOT NULL, amount NUMERIC(12,2) NOT NULL DEFAULT 0, due_date DATE NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','waived','overdue')), paid_at TIMESTAMPTZ, payment_note TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(operator_id, period))`
       await sql`CREATE INDEX IF NOT EXISTS membership_dues_operator_idx ON membership_dues(operator_id, period DESC)`
@@ -52,14 +53,14 @@ async function userFromSession(req){
   return rows[0]||null
 }
 function setCookie(res,token,maxAge=60*60*24*14){res.setHeader('Set-Cookie',`${COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${maxAge}`)}
-async function requireUser(req,res,role){const u=await userFromSession(req);if(!u){json(res,401,{error:'Faça login.'});return null}if(role&&u.role!==role){json(res,403,{error:'Acesso restrito.'});return null}return u}
+async function requireUser(req,res,role){const u=await userFromSession(req);if(!u){json(res,401,{error:'Faça login.'});return null}if(role==='operator' && !['operator','commander'].includes(u.role)){json(res,403,{error:'Acesso restrito.'});return null}if(role==='commander' && !['commander'].includes(u.role)){json(res,403,{error:'Acesso restrito.'});return null}return u}
 async function reconcileAbsences(){
   const rows=await sql`SELECT gp.game_id,gp.operator_id FROM game_participants gp JOIN games g ON g.id=gp.game_id WHERE g.game_date<CURRENT_DATE AND gp.response='going' AND gp.present=false AND gp.absence_processed=false`
   for(const r of rows){await sql`UPDATE game_participants SET absence_processed=true WHERE game_id=${r.game_id} AND operator_id=${r.operator_id} AND absence_processed=false`;await sql`UPDATE operators SET absences=COALESCE(absences,0)+1 WHERE id=${r.operator_id}`}
 }
 function publicOperatorRow(o){return {id:o.id,name:o.name,nickname:o.nickname,rank:o.rank,function:o.function||'Operador',games_count:o.games_count||0,absences:o.absences||0,photo_url:o.photo_url||null,bio:o.bio||'',equipment_summary:o.equipment_summary||'',elo:o.elo||0,age:o.age||null,blood_type:o.blood_type||null,airsoft_years:o.airsoft_years||null,play_style:o.play_style||'',primary_replica:o.primary_replica||'',secondary_replica:o.secondary_replica||''}}
 
-async function currentFinanceSettings(){return (await sql`SELECT * FROM finance_settings WHERE id=1 LIMIT 1`)[0]||{monthly_fee:0,due_day:10,grace_days:0,currency:'BRL',active:true}}
+async function currentFinanceSettings(){return (await sql`SELECT * FROM finance_settings WHERE id=1 LIMIT 1`)[0]||{monthly_fee:0,due_day:10,grace_days:0,currency:'BRL',active:true,instagram_url:null}}
 async function ensureCurrentDues(){
   const settings=await currentFinanceSettings();
   const periodRows=await sql`SELECT date_trunc('month', CURRENT_DATE)::date AS period`;
@@ -193,7 +194,7 @@ export default async function handler(req,res){
       await reconcileAbsences();const u=await requireUser(req,res);if(!u)return;
       const games=await sql`SELECT g.*,gf.name field_name,gf.address field_address,gf.maps_url field_maps_url,COALESCE(gp.response,'pending') response,gp.loadout FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id AND gp.operator_id=${u.id} WHERE g.game_date>=CURRENT_DATE-interval '1 day' ORDER BY g.game_date,g.game_time NULLS LAST`;
       const finance=u.role==='operator'?await financeForOperator(u.id):null;
-      return json(res,200,{games,finance})
+      const siteSettings=await currentFinanceSettings();return json(res,200,{games,finance,instagram_url:siteSettings.instagram_url||null})
     }
     if(action==='finance'&&req.method==='GET'){
       const u=await requireUser(req,res);if(!u)return;await ensureCurrentDues();
@@ -202,8 +203,9 @@ export default async function handler(req,res){
       return json(res,200,{settings,dues})
     }
     if(action==='finance-settings'&&req.method==='POST'){
-      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const monthly=Number(b.monthly_fee);const dueDay=Math.min(28,Math.max(1,Number(b.due_day||10)));const grace=Math.min(30,Math.max(0,Number(b.grace_days||0)));if(!Number.isFinite(monthly)||monthly<0)return json(res,400,{error:'Mensalidade inválida.'});await sql`UPDATE finance_settings SET monthly_fee=${monthly},due_day=${dueDay},grace_days=${grace},currency=${b.currency||'BRL'},active=${b.active!==false},updated_at=now(),updated_by=${u.id} WHERE id=1`;await ensureCurrentDues();return json(res,200,{ok:true})
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const monthly=Number(b.monthly_fee);const dueDay=Math.min(28,Math.max(1,Number(b.due_day||10)));const grace=Math.min(30,Math.max(0,Number(b.grace_days||0)));if(!Number.isFinite(monthly)||monthly<0)return json(res,400,{error:'Mensalidade inválida.'});await sql`UPDATE finance_settings SET monthly_fee=${monthly},due_day=${dueDay},grace_days=${grace},currency=${b.currency||'BRL'},active=${b.active!==false},instagram_url=${String(b.instagram_url||'').trim()||null},updated_at=now(),updated_by=${u.id} WHERE id=1`;await ensureCurrentDues();return json(res,200,{ok:true})
     }
+    if(action==='site-settings'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const instagram=String(b.instagram_url||'').trim();if(instagram&&!/^https?:\/\/(www\.)?instagram\.com\//i.test(instagram))return json(res,400,{error:'Informe uma URL válida do Instagram.'});await sql`UPDATE finance_settings SET instagram_url=${instagram||null},updated_at=now(),updated_by=${u.id} WHERE id=1`;return json(res,200,{ok:true,instagram_url:instagram||null})}
     if(action==='finance-generate'&&req.method==='POST'){
       const u=await requireUser(req,res,'commander');if(!u)return;await ensureCurrentDues();return json(res,200,{ok:true})
     }

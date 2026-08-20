@@ -9,3 +9,5 @@
 .notifWrap{position:relative}.notifMenu{display:none;position:absolute;right:0;top:calc(100% + 8px);width:340px;max-height:420px;overflow:auto;background:#121518;border:1px solid #2d3237;border-radius:12px;padding:8px;z-index:20;box-shadow:0 12px 30px rgba(0,0,0,.4)}.notifMenu.open{display:grid;gap:6px}.notifItem{display:grid;gap:4px;text-align:left;background:#171b1f;border:1px solid #2a3035;color:inherit;padding:10px;border-radius:9px}.notifItem.unread{border-color:#d39d24}.notifItem span,.notifItem small{color:#9ba4ad}.notifBadge{display:inline-block;margin-left:4px;background:#d39d24;color:#101214;border-radius:999px;font-size:10px;padding:1px 5px}.notifInline{display:grid;gap:6px}.rankRules{line-height:1.8;color:#aeb6bf}.operatorAdminRow{align-items:center;gap:10px}.operatorAdminRow .mini{white-space:nowrap}
 
 .accessChoiceGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.accessChoiceGrid a{text-align:center}@media(max-width:640px){.accessChoiceGrid{grid-template-columns:1fr}}
+
+.backLogin{display:inline-block;margin:0 0 14px;text-decoration:none;opacity:.85}
