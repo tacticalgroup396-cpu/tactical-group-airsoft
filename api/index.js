@@ -26,6 +26,11 @@ async function ensureSchema(){
       await sql`CREATE INDEX IF NOT EXISTS operators_invite_idx ON operators(invite_code_hash) WHERE invite_code_hash IS NOT NULL`
       await sql`CREATE TABLE IF NOT EXISTS operator_gallery (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, image_data TEXT NOT NULL, caption TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
       await sql`CREATE INDEX IF NOT EXISTS operator_gallery_operator_idx ON operator_gallery(operator_id,created_at DESC)`
+      await sql`CREATE TABLE IF NOT EXISTS finance_settings (id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), monthly_fee NUMERIC(12,2) NOT NULL DEFAULT 0, due_day INTEGER NOT NULL DEFAULT 10 CHECK (due_day BETWEEN 1 AND 28), grace_days INTEGER NOT NULL DEFAULT 0 CHECK (grace_days BETWEEN 0 AND 30), currency TEXT NOT NULL DEFAULT 'BRL', active BOOLEAN NOT NULL DEFAULT TRUE, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_by UUID REFERENCES operators(id) ON DELETE SET NULL)`
+      await sql`INSERT INTO finance_settings(id) VALUES(1) ON CONFLICT(id) DO NOTHING`
+      await sql`CREATE TABLE IF NOT EXISTS membership_dues (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, period DATE NOT NULL, amount NUMERIC(12,2) NOT NULL DEFAULT 0, due_date DATE NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','waived','overdue')), paid_at TIMESTAMPTZ, payment_note TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(operator_id, period))`
+      await sql`CREATE INDEX IF NOT EXISTS membership_dues_operator_idx ON membership_dues(operator_id, period DESC)`
+      await sql`CREATE INDEX IF NOT EXISTS membership_dues_status_idx ON membership_dues(status, due_date)`
     })().catch(e=>{schemaReady=null;throw e})
   }
   return schemaReady
@@ -43,6 +48,17 @@ async function reconcileAbsences(){
   for(const r of rows){await sql`UPDATE game_participants SET absence_processed=true WHERE game_id=${r.game_id} AND operator_id=${r.operator_id} AND absence_processed=false`;await sql`UPDATE operators SET absences=COALESCE(absences,0)+1 WHERE id=${r.operator_id}`}
 }
 function publicOperatorRow(o){return {id:o.id,name:o.name,nickname:o.nickname,rank:o.rank,function:o.function||'Operador',games_count:o.games_count||0,absences:o.absences||0,photo_url:o.photo_url||null,bio:o.bio||'',equipment_summary:o.equipment_summary||'',elo:o.elo||0,age:o.age||null,blood_type:o.blood_type||null,airsoft_years:o.airsoft_years||null,play_style:o.play_style||'',primary_replica:o.primary_replica||'',secondary_replica:o.secondary_replica||''}}
+
+async function currentFinanceSettings(){return (await sql`SELECT * FROM finance_settings WHERE id=1 LIMIT 1`)[0]||{monthly_fee:0,due_day:10,grace_days:0,currency:'BRL',active:true}}
+async function ensureCurrentDues(){
+  const settings=await currentFinanceSettings();
+  const periodRows=await sql`SELECT date_trunc('month', CURRENT_DATE)::date AS period`;
+  const period=periodRows[0].period;
+  const dueDate=await sql`SELECT make_date(EXTRACT(YEAR FROM ${period})::int, EXTRACT(MONTH FROM ${period})::int, ${Number(settings.due_day)})::date AS due_date`;
+  await sql`INSERT INTO membership_dues(operator_id,period,amount,due_date) SELECT id,${period},${Number(settings.monthly_fee)},${dueDate[0].due_date} FROM operators WHERE active=true AND role='operator' ON CONFLICT(operator_id,period) DO UPDATE SET amount=EXCLUDED.amount,due_date=EXCLUDED.due_date WHERE membership_dues.status='pending'`;
+  if(Number(settings.monthly_fee)>0) await sql`UPDATE membership_dues SET status='overdue' WHERE status='pending' AND due_date < CURRENT_DATE AND CURRENT_DATE > due_date + (COALESCE(${Number(settings.grace_days)},0)||' days')::interval`;
+}
+async function financeForOperator(id){await ensureCurrentDues();return (await sql`SELECT d.*, to_char(d.period,'YYYY-MM') AS period_label, s.monthly_fee, s.due_day, s.grace_days, s.currency, s.active AS finance_active FROM membership_dues d CROSS JOIN finance_settings s WHERE d.operator_id=${id} AND d.period=date_trunc('month',CURRENT_DATE)::date LIMIT 1`)[0]||null}
 
 export default async function handler(req,res){
   try{
@@ -125,11 +141,28 @@ export default async function handler(req,res){
     if(action==='delete-equipment'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);await sql`DELETE FROM operator_equipment WHERE id=${b.id} AND operator_id=${u.id}`;return json(res,200,{ok:true})}
 
     if(action==='games'){
-      await reconcileAbsences();const u=await requireUser(req,res);if(!u)return
-      const games=await sql`SELECT g.*,COALESCE(gp.response,'pending') response,gp.loadout FROM games g LEFT JOIN game_participants gp ON gp.game_id=g.id AND gp.operator_id=${u.id} WHERE g.game_date>=CURRENT_DATE-interval '1 day' ORDER BY g.game_date,g.game_time NULLS LAST`
-      return json(res,200,{games})
+      await reconcileAbsences();const u=await requireUser(req,res);if(!u)return;
+      const games=await sql`SELECT g.*,COALESCE(gp.response,'pending') response,gp.loadout FROM games g LEFT JOIN game_participants gp ON gp.game_id=g.id AND gp.operator_id=${u.id} WHERE g.game_date>=CURRENT_DATE-interval '1 day' ORDER BY g.game_date,g.game_time NULLS LAST`;
+      const finance=u.role==='operator'?await financeForOperator(u.id):null;
+      return json(res,200,{games,finance})
     }
-    if(action==='rsvp'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);const response=b.response==='going'?'going':'not_going';await sql`INSERT INTO game_participants(game_id,operator_id,response,responded_at,present) VALUES(${b.game_id},${u.id},${response},now(),false) ON CONFLICT(game_id,operator_id) DO UPDATE SET response=EXCLUDED.response,responded_at=now(),present=CASE WHEN EXCLUDED.response='going' THEN false ELSE game_participants.present END,absence_processed=false`;return json(res,200,{ok:true})}
+    if(action==='finance'&&req.method==='GET'){
+      const u=await requireUser(req,res);if(!u)return;await ensureCurrentDues();
+      const settings=await currentFinanceSettings();
+      const dues=u.role==='commander'?await sql`SELECT d.*,o.nickname,o.rank FROM membership_dues d JOIN operators o ON o.id=d.operator_id ORDER BY d.period DESC,o.nickname LIMIT 300`:await sql`SELECT d.* FROM membership_dues d WHERE d.operator_id=${u.id} ORDER BY d.period DESC LIMIT 12`;
+      return json(res,200,{settings,dues})
+    }
+    if(action==='finance-settings'&&req.method==='POST'){
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const monthly=Number(b.monthly_fee);const dueDay=Math.min(28,Math.max(1,Number(b.due_day||10)));const grace=Math.min(30,Math.max(0,Number(b.grace_days||0)));if(!Number.isFinite(monthly)||monthly<0)return json(res,400,{error:'Mensalidade inválida.'});await sql`UPDATE finance_settings SET monthly_fee=${monthly},due_day=${dueDay},grace_days=${grace},currency=${b.currency||'BRL'},active=${b.active!==false},updated_at=now(),updated_by=${u.id} WHERE id=1`;await ensureCurrentDues();return json(res,200,{ok:true})
+    }
+    if(action==='finance-generate'&&req.method==='POST'){
+      const u=await requireUser(req,res,'commander');if(!u)return;await ensureCurrentDues();return json(res,200,{ok:true})
+    }
+    if(action==='finance-payment'&&req.method==='POST'){
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const period=b.period||new Date().toISOString().slice(0,7)+'-01';const status=['paid','waived','pending'].includes(b.status)?b.status:'paid';await sql`INSERT INTO membership_dues(operator_id,period,amount,due_date,status,paid_at,payment_note) VALUES(${b.operator_id},${period},COALESCE(${Number(b.amount)||0},0),COALESCE(${b.due_date||period},${period}),${status},${status==='paid'?'now()':null},${b.note||null}) ON CONFLICT(operator_id,period) DO UPDATE SET status=EXCLUDED.status,amount=EXCLUDED.amount,due_date=EXCLUDED.due_date,paid_at=EXCLUDED.paid_at,payment_note=EXCLUDED.payment_note`;return json(res,200,{ok:true})
+    }
+
+    if(action==='rsvp'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);const response=b.response==='going'?'going':'not_going';if(response==='going'){const settings=await currentFinanceSettings();const due=await financeForOperator(u.id);if(settings.active&&Number(settings.monthly_fee)>0&&due?.status!=='paid'&&due?.status!=='waived')return json(res,402,{error:'Mensalidade pendente. Regularize o financeiro para confirmar presença nos jogos.'})}await sql`INSERT INTO game_participants(game_id,operator_id,response,responded_at,present) VALUES(${b.game_id},${u.id},${response},now(),false) ON CONFLICT(game_id,operator_id) DO UPDATE SET response=EXCLUDED.response,responded_at=now(),present=CASE WHEN EXCLUDED.response='going' THEN false ELSE game_participants.present END,absence_processed=false`;return json(res,200,{ok:true})}
     if(action==='loadout'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);await sql`INSERT INTO game_participants(game_id,operator_id,response,loadout,responded_at) VALUES(${b.game_id},${u.id},COALESCE(${b.response||'pending'},'pending'),${JSON.stringify(b.loadout||{})}::jsonb,now()) ON CONFLICT(game_id,operator_id) DO UPDATE SET loadout=EXCLUDED.loadout,response=CASE WHEN EXCLUDED.response='pending' THEN game_participants.response ELSE EXCLUDED.response END,responded_at=now()`;return json(res,200,{ok:true})}
 
     if(action==='commander'){
@@ -137,7 +170,8 @@ export default async function handler(req,res){
       const operators=await sql`SELECT id,name,nickname,role,rank,function,games_count,absences,elo,suspension_until,active,email,invite_expires_at,invite_used_at FROM operators ORDER BY role DESC,active DESC,nickname`
       const games=await sql`SELECT g.*,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id)::int participant_count FROM games g LEFT JOIN game_participants gp ON gp.game_id=g.id GROUP BY g.id ORDER BY g.game_date DESC,g.game_time DESC NULLS LAST LIMIT 50`
       const requests=await sql`SELECT vr.*,COALESCE(json_agg(json_build_object('game_id',vga.game_id,'title',g.title,'game_date',g.game_date,'location',g.location)) FILTER (WHERE vga.id IS NOT NULL),'[]') assignments FROM visitor_requests vr LEFT JOIN visitor_game_assignments vga ON vga.visitor_request_id=vr.id LEFT JOIN games g ON g.id=vga.game_id GROUP BY vr.id ORDER BY vr.created_at DESC LIMIT 50`
-      return json(res,200,{me:u,operators,games,requests,ranks})
+      await ensureCurrentDues();const financeSettings=await currentFinanceSettings();const dues=await sql`SELECT d.*,o.nickname,o.rank,o.active,o.email FROM membership_dues d JOIN operators o ON o.id=d.operator_id WHERE d.period=date_trunc('month',CURRENT_DATE)::date ORDER BY CASE d.status WHEN 'overdue' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END,o.nickname`;
+      return json(res,200,{me:u,operators,games,requests,ranks,financeSettings,dues})
     }
 
     if(action==='create-game'&&req.method==='POST'){
