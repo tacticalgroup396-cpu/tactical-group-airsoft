@@ -27,3 +27,20 @@
 @media(max-width:760px){.brand .instagramLink{width:34px;height:34px}.brand .instagramLink svg{width:18px;height:18px}}
 
 .extraEquipmentWrap{grid-column:1/-1;border:1px solid #30353a;border-radius:10px;padding:10px;background:#101316}.extraEquipmentHead{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#d39d24;font-weight:700;letter-spacing:.5px;margin-bottom:8px}.extraEquipmentList{display:flex;flex-direction:column;gap:7px}.extraEquipmentRow{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center}.extraEquipmentRow input{width:100%}.addExtraEquipment{margin:0;min-width:34px;font-size:20px;line-height:1}
+
+/* V29 — navegação mobile e configurações do operador */
+.operatorNav{display:flex;align-items:center;gap:0;margin:18px 0 24px;background:#0e1113;border:1px solid #4a3a14;border-radius:12px;overflow:hidden}
+.operatorNav a{padding:12px 20px;border-right:1px solid #4a3a14;color:#d6d9dc;background:#15181b;font-weight:700}
+.operatorNav a:last-child{border-right:0}
+.operatorNav a.active{background:#d39d24;color:#08090a}
+.operatorNav a:hover{background:#b9861d;color:#08090a}
+.operatorLoginCard{max-width:900px}
+.mobileInstagramNav{display:none!important}
+@media(max-width:760px){
+  .operatorNav{width:100%;display:flex;overflow-x:auto;white-space:nowrap;margin-top:12px}
+  .operatorNav a{flex:1 0 auto;text-align:center;padding:11px 16px}
+  nav.open .mobileInstagramNav{display:block!important;background:#15181b!important}
+  .instagramHeader{margin-left:6px}
+  .brand .instagramLink{border-color:#d39d24;background:rgba(211,157,36,.10);box-shadow:0 0 0 1px rgba(211,157,36,.12)}
+  .brand{gap:6px}
+}

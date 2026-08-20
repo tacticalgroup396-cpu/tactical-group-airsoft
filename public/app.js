@@ -19,7 +19,7 @@ function toast(t){const x=document.createElement('div');x.className='toast';x.te
 function installButton(){return me&&['operator','commander'].includes(me.role)?'<button id="installApp" class="ghost">Instalar app</button>':''}
 function shell(){
   const menu=document.getElementById('menuToggle');
-  nav.innerHTML=`<div class="navGroup"><a href="/visitantes">Equipe</a></div><div class="navGroup navAccess">${me?'<a href="/operador">Operador</a>':''}${me?.role==='commander'?'<a href="/comandante">Comandante</a>':''}${me?`<div class="notifWrap"><button id="notifBell" class="ghost">🔔</button><div id="notifList" class="notifMenu"></div></div>`:''}${me?'<button class="ghost" id="logout">Sair</button>':''}${!me?'<a class="goldbtn small" href="/entrar">Entrar</a>':''}${installButton()}</div>`;
+  let storedInstagram='';try{storedInstagram=localStorage.getItem('tga_instagram_url')||''}catch{} nav.innerHTML=`<div class="navGroup"><a href="/visitantes">Equipe</a>${storedInstagram?`<a class="mobileInstagramNav" href="${esc(storedInstagram)}" target="_blank" rel="noopener">Instagram</a>`:''}</div><div class="navGroup navAccess">${me?'<a href="/operador">Operador</a>':''}${me?.role==='commander'?'<a href="/comandante">Comandante</a>':''}${me?`<div class="notifWrap"><button id="notifBell" class="ghost">🔔</button><div id="notifList" class="notifMenu"></div></div>`:''}${me?'<button class="ghost" id="logout">Sair</button>':''}${!me?'<a class="goldbtn small" href="/entrar">Entrar</a>':''}${installButton()}</div>`;
   menu?.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));});
   nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');menu?.setAttribute('aria-expanded','false')}));
   document.getElementById('logout')?.addEventListener('click',async()=>{await api('logout');location.href='/'});
@@ -27,7 +27,7 @@ function shell(){
   document.getElementById('notifBell')?.addEventListener('click',()=>{document.getElementById('notifList')?.classList.toggle('open');loadNotifications()});
   if(me){loadNotifications();pushSetup()}
 }
-function syncInstagramHeader(url){const host=document.getElementById('instagramHeader');if(!host)return;if(url){host.innerHTML=`<a class="instagramLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram da equipe" title="Instagram da equipe"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" class="fill"></circle></svg></a>`}else host.innerHTML=''}
+function syncInstagramHeader(url){try{if(url)localStorage.setItem('tga_instagram_url',String(url));else localStorage.removeItem('tga_instagram_url')}catch{} const host=document.getElementById('instagramHeader');if(!host)return;if(url){host.innerHTML=`<a class="instagramLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram da equipe" title="Instagram da equipe"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" class="fill"></circle></svg></a>`}else host.innerHTML=''}
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.documentElement.classList.add('pwa-ready')});
 async function installPWA(){if(!deferredPrompt){toast('A instalação ficará disponível quando o navegador liberar a instalação.');return}deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}
@@ -94,9 +94,44 @@ function loginBox(mode='operator'){
 function accessChoice(){app.innerHTML=`<div class="auth"><div class="modalBox accessBox"><img class="accessLogo" src="/logo.webp" alt="Logo"><div class="eyebrow">ACESSO RESTRITO</div><h1>Escolha seu acesso</h1><p class="muted">Comandantes também possuem acesso completo à área do operador.</p><div class="accessChoiceGrid"><a class="goldbtn" href="/operador">Entrar como Operador</a><a class="outlinebtn" href="/comandante">Entrar como Comandante</a></div><div class="accessLinks"><a href="/visitantes">Visitante</a><a href="/">Início</a></div></div></div>`}
 function firstAccess(){app.innerHTML=`<div class="auth"><form class="modalBox accessBox"><img class="accessLogo" src="/logo.webp"><div class="eyebrow">PRIMEIRO ACESSO</div><h1>Ativar conta de operador</h1><div id="err"></div><input name="code" placeholder="Código TGA-XXXXXX-XXXXXX" required><input name="email" type="email" placeholder="Seu e-mail" required><input name="password" type="password" placeholder="Crie uma senha (mínimo 8 caracteres)" minlength="8" required><input name="confirm_password" type="password" placeholder="Confirme a senha" minlength="8" required><button class="goldbtn">Ativar minha conta</button><a class="outlinebtn" href="/operador">Já tenho conta</a></form></div>`;app.querySelector('form').onsubmit=async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));if(d.password!==d.confirm_password)return toast('As senhas não conferem.');delete d.confirm_password;try{const r=await post('activate-operator',d);me=r.user;toast('Conta ativada');setTimeout(()=>location.href='/operador',250)}catch(x){document.getElementById('err').innerHTML=`<div class="error">${esc(x.message)}</div>`}}}
 
+
+function operatorSubnav(active){
+  const items=[['visao','Visão geral'],['configuracoes','Configurações']];
+  return `<div class="operatorNav">${items.map(([id,label])=>`<a class="${active===id?'active':''}" href="/operador${id==='visao'?'':'/configuracoes'}">${label}</a>`).join('')}</div>`;
+}
+async function operatorSettings(){
+  const d=await api('profile-data'); const u=d.user;
+  syncInstagramHeader(d.instagram_url);
+  app.innerHTML=`<section><div class="pageTitle"><div class="pageBrand">${photoOrInitial(u,true)}<div><div class="eyebrow">ÁREA DO OPERADOR</div><h1>Configurações</h1><p>Gerencie seu acesso, e-mail, apelido e senha.</p></div></div></div>
+  ${operatorSubnav('configuracoes')}
+  <div class="card formCard operatorLoginCard">
+    <div class="cardKicker">ACESSO</div>
+    <h2>Configurações de login</h2>
+    <p class="muted">Use estes dados para entrar como operador. Comandantes autorizados também usam a mesma conta para acessar a área de Comandante.</p>
+    <form id="operatorLoginSettingsForm">
+      <div class="formGrid">
+        <input name="nickname" value="${esc(u.nickname||'')}" placeholder="Apelido" required>
+        <input name="email" type="email" value="${esc(u.email||'')}" placeholder="E-mail">
+        <input name="current_password" type="password" placeholder="Senha atual" required>
+        <input name="new_password" type="password" placeholder="Nova senha (deixe vazio para manter)">
+      </div>
+      <small class="muted">A senha atual é obrigatória. Nova senha: mínimo de 8 caracteres.</small>
+      <div class="heroActions"><button class="goldbtn">Salvar configurações</button><a class="outlinebtn" href="/operador">← Voltar para o operador</a></div>
+    </form>
+  </div></section>`;
+  app.querySelector('#operatorLoginSettingsForm').onsubmit=async e=>{
+    e.preventDefault();
+    try{
+      const r=await post('update-login-settings',Object.fromEntries(new FormData(e.target)));
+      toast('Configurações de login atualizadas');
+      me=(await api('me')).user; shell(); location.replace('/operador');
+    }catch(x){toast(x.message)}
+  };
+}
 async function operator(){
-  const profile=await api('profile-data'); const d=await api('games'); const u=profile.user; const finance=d.finance;
+  const profile=await api('profile-data'); const d=await api('games'); syncInstagramHeader(d.instagram_url); const u=profile.user; const finance=d.finance;
   app.innerHTML=`<section><div class="pageTitle"><div class="pageBrand">${photoOrInitial(u,true)}<div><div class="eyebrow">ÁREA DO OPERADOR</div><h1>${esc(u.nickname)}</h1><p>Patente <b>${esc(u.rank)}</b> · ${u.absences||0} faltas${u.suspension_until?' · suspensão até '+fmt(u.suspension_until):''}${d.instagram_url?` · <a href="${esc(d.instagram_url)}" target="_blank" rel="noopener">Instagram</a>`:''}</p></div></div></div>
+  ${operatorSubnav('visao')}
   <div class="card operatorFinance ${finance?.status==='paid'||finance?.status==='waived'?'financeOk':'financePending'}"><div><div class="eyebrow">FINANCEIRO</div><h2>${finance?.status==='paid'?'Mensalidade em dia':finance?.status==='waived'?'Mensalidade isenta':finance?.status==='overdue'?'Mensalidade atrasada':'Mensalidade pendente'}</h2><p>${finance?`Valor: ${Number(finance.amount||0).toLocaleString('pt-BR',{style:'currency',currency:finance.currency||'BRL'})} · Vencimento ${fmt(finance.due_date)}`:'Nenhuma mensalidade configurada.'}</p></div><span class="tag">${finance?.status||'sem cobrança'}</span></div>
   <div class="operatorDashboard"><div class="card formCard"><div class="profileEditHead"><h2>Meu perfil</h2><span class="tag">Você edita</span></div><div class="uploadRow">${photoOrInitial(u,true)}<div><input id="photoInput" type="file" accept="image/*"><small>Até 3 MB. Use uma foto quadrada ou retrato de boa qualidade.</small></div></div><div class="formGrid"><input id="pfName" value="${esc(u.name||'')}" placeholder="Nome"><input id="pfEmail" value="${esc(u.email||'')}" placeholder="E-mail"><input id="pfBirth" value="${esc(u.birth_date||'')}" type="date" placeholder="Data de nascimento"><input id="pfAge" value="${esc(u.age||'')}" type="number" min="0" max="100" placeholder="Idade"><select id="pfBlood"><option value="">Tipo sanguíneo</option>${['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(x=>`<option ${u.blood_type===x?'selected':''}>${x}</option>`).join('')}</select><input id="pfYears" value="${esc(u.airsoft_years||'')}" type="number" min="0" max="80" step="0.5" placeholder="Anos de airsoft"><input id="pfStyle" value="${esc(u.play_style||'')}" placeholder="Estilo: Assault, Sniper, DMR..."><input id="pfPrimary" value="${esc(u.primary_replica||'')}" placeholder="Réplica principal"><input id="pfSecondary" value="${esc(u.secondary_replica||'')}" placeholder="Réplica secundária"><input id="pfFunction" value="${esc(u.function||'')}" placeholder="Função"><label class="checkline"><input id="pfPublic" type="checkbox" ${u.public_profile!==false?'checked':''}> Mostrar perfil para visitantes</label></div><textarea id="pfBio" placeholder="Descrição do operador">${esc(u.bio||'')}</textarea><textarea id="pfEquip" placeholder="Resumo de equipamentos">${esc(u.equipment_summary||'')}</textarea><button id="saveProfile" class="goldbtn">Salvar perfil</button></div>
   <div class="card"><div class="eyebrow">REGRAS</div><h2>Compromisso operacional</h2><p>Marcou <b>Vou</b>? Compareça. Faltas recorrentes podem levar a suspensão e perda de patente pelo comando.</p><div class="statsBox"><span><b>${u.games_count||0}</b> jogos</span><span><b>${u.absences||0}</b> faltas</span><span><b>${esc(u.elo||0)}</b> elo</span><span><b>${Math.max(0,3-Math.min(3,Number(u.elo||0)))}</b> para próxima patente</span></div></div></div>
@@ -144,6 +179,7 @@ async function start(){
   try{
     if(location.pathname==='/visitantes')return await visitors();
     if(location.pathname==='/operador'){if(me?.role==='operator'||me?.role==='commander')return operator();return loginBox('operator')}
+    if(location.pathname==='/operador/configuracoes'){if(me?.role==='operator'||me?.role==='commander')return operatorSettings();return loginBox('operator')}
     if(location.pathname==='/comandante'){if(me?.role==='commander')return commanderPage('equipe');return loginBox('commander')}
     if(location.pathname.startsWith('/comandante/')){if(me?.role!=='commander')return loginBox('commander');const page=location.pathname.split('/').filter(Boolean)[1];return commanderPage(page||'equipe')}
     return home()
