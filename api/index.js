@@ -19,7 +19,7 @@ async function ensureSchema(){
     schemaReady=(async()=>{
       const cols=[
         ['operators','email','TEXT'],['operators','is_primary_commander','BOOLEAN NOT NULL DEFAULT FALSE'],['operators','last_promotion_period','DATE'],['operators','invite_code_hash','TEXT'],['operators','invite_expires_at','TIMESTAMPTZ'],['operators','invite_used_at','TIMESTAMPTZ'],
-        ['operators','age','INTEGER'],['operators','blood_type','TEXT'],['operators','airsoft_years','NUMERIC'],['operators','play_style','TEXT'],['operators','primary_replica','TEXT'],['operators','secondary_replica','TEXT'],
+        ['operators','age','INTEGER'],['operators','birth_date','DATE'],['operators','blood_type','TEXT'],['operators','airsoft_years','NUMERIC'],['operators','play_style','TEXT'],['operators','primary_replica','TEXT'],['operators','secondary_replica','TEXT'],
         ['operators','absences','INTEGER NOT NULL DEFAULT 0'],['operators','suspension_until','DATE'],['operators','public_profile','BOOLEAN NOT NULL DEFAULT TRUE'],['operators','photo_url','TEXT'],['operators','bio','TEXT'],['operators','equipment_summary','TEXT'],['operators','elo','INTEGER NOT NULL DEFAULT 0'],
         ['games','game_time','TIME'],['games','elo_reward','INTEGER NOT NULL DEFAULT 1'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','rsvp_deadline_date','DATE'],['games','rsvp_deadline_time','TIME'],['games','description','TEXT'],['games','briefing','TEXT'],['games','maps_url','TEXT'],['games','field_id','UUID'],
         ["game_participants","response","TEXT NOT NULL DEFAULT 'pending'"], ["game_participants","elo_awarded","BOOLEAN NOT NULL DEFAULT FALSE"],['game_participants','loadout','JSONB'],['game_participants','responded_at','TIMESTAMPTZ'],['game_participants','absence_processed','BOOLEAN NOT NULL DEFAULT FALSE']
@@ -30,6 +30,7 @@ async function ensureSchema(){
       await sql`ALTER TABLE visitor_requests ADD COLUMN IF NOT EXISTS requested_game_id UUID REFERENCES games(id) ON DELETE SET NULL`
       await sql`CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, type TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, link TEXT, read_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
       await sql`CREATE INDEX IF NOT EXISTS notifications_operator_idx ON notifications(operator_id, created_at DESC)`
+      await sql`ALTER TABLE operator_equipment ADD COLUMN IF NOT EXISTS photo_url TEXT`
       await sql`CREATE TABLE IF NOT EXISTS push_subscriptions (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, endpoint TEXT NOT NULL UNIQUE, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
       await sql`CREATE TABLE IF NOT EXISTS game_fields (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT NOT NULL UNIQUE, address TEXT, maps_url TEXT NOT NULL, notes TEXT, active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
       await sql`CREATE INDEX IF NOT EXISTS game_fields_active_idx ON game_fields(active,name)`
@@ -56,11 +57,27 @@ function setCookie(res,token,maxAge=60*60*24*14){res.setHeader('Set-Cookie',`${C
 async function requireUser(req,res,role){const u=await userFromSession(req);if(!u){json(res,401,{error:'Faça login.'});return null}if(role==='operator' && !['operator','commander'].includes(u.role)){json(res,403,{error:'Acesso restrito.'});return null}if(role==='commander' && !['commander'].includes(u.role)){json(res,403,{error:'Acesso restrito.'});return null}return u}
 async function autoPromoteByElo(operatorId){const op=(await sql`SELECT id,rank,elo FROM operators WHERE id=${operatorId} LIMIT 1`)[0];if(!op)return;let idx=ranks.indexOf(op.rank);let elo=Number(op.elo||0);while(elo>=3&&idx>=0&&idx<ranks.length-1){const next=ranks[idx+1];elo-=3;await sql`UPDATE operators SET rank=${next},elo=${elo},last_promotion_period=CURRENT_DATE WHERE id=${operatorId}`;await sql`INSERT INTO rank_history(operator_id,old_rank,new_rank,reason) VALUES(${operatorId},${op.rank},${next},'Promoção por 3 elos de participação')`;await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${operatorId},'rank-up','Promoção de patente',${`Você alcançou 3 elos e subiu para ${next}.`},'/operador')`;idx+=1;op.rank=next}}
 
+async function ensureBirthdayNotifications(){
+  const birthdays=await sql`SELECT id,nickname FROM operators WHERE active=true AND birth_date IS NOT NULL AND EXTRACT(MONTH FROM birth_date)=EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(DAY FROM birth_date)=EXTRACT(DAY FROM CURRENT_DATE)`
+  for(const b of birthdays){
+    const already=await sql`SELECT id FROM notifications WHERE type='birthday' AND operator_id=${b.id} AND created_at::date=CURRENT_DATE LIMIT 1`
+    if(already.length)continue
+    const title='🎂 Aniversariante do dia'
+    const body=`Hoje é aniversário de @${b.nickname}. Deseje parabéns ao nosso operador!`
+    const all=await sql`SELECT id FROM operators WHERE active=true`
+    for(const recipient of all) await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${recipient.id},'birthday',${title},${body},${`/visitantes?operator=${b.id}`})`
+    if(process.env.VAPID_PUBLIC_KEY&&process.env.VAPID_PRIVATE_KEY&&process.env.VAPID_SUBJECT){
+      webpush.setVapidDetails(process.env.VAPID_SUBJECT,process.env.VAPID_PUBLIC_KEY,process.env.VAPID_PRIVATE_KEY)
+      const subs=await sql`SELECT ps.* FROM push_subscriptions ps JOIN operators o ON o.id=ps.operator_id WHERE o.active=true`
+      for(const sub of subs){try{await webpush.sendNotification({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},JSON.stringify({title,body,url:`/visitantes?operator=${b.id}`}))}catch(e){if(e?.statusCode===404||e?.statusCode===410)await sql`DELETE FROM push_subscriptions WHERE id=${sub.id}`}}
+    }
+  }
+}
 async function reconcileAbsences(){
   const rows=await sql`SELECT gp.game_id,gp.operator_id FROM game_participants gp JOIN games g ON g.id=gp.game_id WHERE g.game_date<CURRENT_DATE AND gp.response='going' AND gp.present=false AND gp.absence_processed=false`
   for(const r of rows){await sql`UPDATE game_participants SET absence_processed=true WHERE game_id=${r.game_id} AND operator_id=${r.operator_id} AND absence_processed=false`;await sql`UPDATE operators SET absences=COALESCE(absences,0)+1 WHERE id=${r.operator_id}`}
 }
-function publicOperatorRow(o){return {id:o.id,name:o.name,nickname:o.nickname,rank:o.rank,function:o.function||'Operador',games_count:o.games_count||0,absences:o.absences||0,photo_url:o.photo_url||null,bio:o.bio||'',equipment_summary:o.equipment_summary||'',elo:o.elo||0,age:o.age||null,blood_type:o.blood_type||null,airsoft_years:o.airsoft_years||null,play_style:o.play_style||'',primary_replica:o.primary_replica||'',secondary_replica:o.secondary_replica||''}}
+function publicOperatorRow(o){return {id:o.id,name:o.name,nickname:o.nickname,rank:o.rank,function:o.function||'Operador',games_count:o.games_count||0,absences:o.absences||0,photo_url:o.photo_url||null,bio:o.bio||'',equipment_summary:o.equipment_summary||'',elo:o.elo||0,age:o.age||null,birth_date:o.birth_date||null,blood_type:o.blood_type||null,airsoft_years:o.airsoft_years||null,play_style:o.play_style||'',primary_replica:o.primary_replica||'',secondary_replica:o.secondary_replica||''}}
 
 async function currentFinanceSettings(){return (await sql`SELECT * FROM finance_settings WHERE id=1 LIMIT 1`)[0]||{monthly_fee:0,due_day:10,grace_days:0,currency:'BRL',active:true,instagram_url:null}}
 async function ensureCurrentDues(){
@@ -100,6 +117,7 @@ export default async function handler(req,res){
   try{
     await ensureSchema()
     await reconcileGameDeadlines()
+    await ensureBirthdayNotifications()
     if(req.method==='OPTIONS'){res.statusCode=204;res.end();return}
     const url=new URL(req.url,'http://localhost');const action=url.searchParams.get('action')||'public'
 
@@ -123,7 +141,7 @@ export default async function handler(req,res){
       const id=url.searchParams.get('id');if(!id)return json(res,400,{error:'Operador não informado.'})
       const rows=await sql`SELECT * FROM operators WHERE id=${id} AND active=true AND public_profile=true LIMIT 1`;const op=rows[0]
       if(!op)return json(res,404,{error:'Operador não encontrado.'})
-      const equipment=await sql`SELECT id,category,name,details,public_visible FROM operator_equipment WHERE operator_id=${id} AND public_visible=true ORDER BY category,name`
+      const equipment=await sql`SELECT id,category,name,details,public_visible,photo_url FROM operator_equipment WHERE operator_id=${id} AND public_visible=true ORDER BY category,name`
       const gallery=await sql`SELECT id,image_data,caption,created_at FROM operator_gallery WHERE operator_id=${id} ORDER BY created_at DESC LIMIT 18`
       return json(res,200,{operator:publicOperatorRow(op),equipment,gallery})
     }
@@ -156,7 +174,7 @@ export default async function handler(req,res){
 
     if(action==='logout'){const token=parseCookies(req)[COOKIE];if(token)await sql`DELETE FROM sessions WHERE token_hash=${hashToken(token)}`;setCookie(res,'',0);return json(res,200,{ok:true})}
 
-    if(action==='me'){const u=await userFromSession(req);return json(res,200,{user:u?{id:u.id,name:u.name,nickname:u.nickname,email:u.email||null,role:u.role,is_primary_commander:!!u.is_primary_commander,rank:u.rank,function:u.function||null,bio:u.bio||null,absences:u.absences||0,suspension_until:u.suspension_until||null,age:u.age||null,blood_type:u.blood_type||null,airsoft_years:u.airsoft_years||null,play_style:u.play_style||'',primary_replica:u.primary_replica||'',secondary_replica:u.secondary_replica||'',equipment_summary:u.equipment_summary||'',photo_url:u.photo_url||null,public_profile:u.public_profile}:null})}
+    if(action==='me'){const u=await userFromSession(req);return json(res,200,{user:u?{id:u.id,name:u.name,nickname:u.nickname,email:u.email||null,role:u.role,is_primary_commander:!!u.is_primary_commander,rank:u.rank,function:u.function||null,bio:u.bio||null,absences:u.absences||0,suspension_until:u.suspension_until||null,age:u.age||null,blood_type:u.blood_type||null,airsoft_years:u.airsoft_years||null,play_style:u.play_style||'',primary_replica:u.primary_replica||'',secondary_replica:u.secondary_replica||'',birth_date:u.birth_date||null,equipment_summary:u.equipment_summary||'',photo_url:u.photo_url||null,public_profile:u.public_profile}:null})}
 
     if(action==='push-config'){const enabled=!!(process.env.VAPID_PUBLIC_KEY&&process.env.VAPID_PRIVATE_KEY&&process.env.VAPID_SUBJECT);return json(res,200,{enabled,publicKey:enabled?process.env.VAPID_PUBLIC_KEY:null})}
     if(action==='push-subscribe'&&req.method==='POST'){const u=await requireUser(req,res);if(!u)return;const b=await body(req);const sub=b.subscription||{};if(!sub.endpoint||!sub.keys?.p256dh||!sub.keys?.auth)return json(res,400,{error:'Assinatura de notificação inválida.'});await sql`INSERT INTO push_subscriptions(operator_id,endpoint,p256dh,auth) VALUES(${u.id},${sub.endpoint},${sub.keys.p256dh},${sub.keys.auth}) ON CONFLICT(endpoint) DO UPDATE SET operator_id=EXCLUDED.operator_id,p256dh=EXCLUDED.p256dh,auth=EXCLUDED.auth`;return json(res,200,{ok:true})}
@@ -166,7 +184,7 @@ export default async function handler(req,res){
 
     if(action==='profile-data'){
       const u=await requireUser(req,res,'operator');if(!u)return;await autoPromoteEligible()
-      const equipment=await sql`SELECT id,category,name,details,public_visible FROM operator_equipment WHERE operator_id=${u.id} ORDER BY category,name`
+      const equipment=await sql`SELECT id,category,name,details,public_visible,photo_url FROM operator_equipment WHERE operator_id=${u.id} ORDER BY category,name`
       const gallery=await sql`SELECT id,image_data,caption,created_at FROM operator_gallery WHERE operator_id=${u.id} ORDER BY created_at DESC LIMIT 30`
       return json(res,200,{user:u,equipment,gallery})
     }
@@ -174,7 +192,9 @@ export default async function handler(req,res){
     if(action==='update-profile'&&req.method==='POST'){
       const u=await requireUser(req,res);if(!u)return;const b=await body(req)
       const age=b.age===''||b.age==null?null:Number(b.age);const years=b.airsoft_years===''||b.airsoft_years==null?null:Number(b.airsoft_years)
-      await sql`UPDATE operators SET name=COALESCE(NULLIF(${String(b.name||'').trim()},''),name),email=COALESCE(NULLIF(${String(b.email||'').trim().toLowerCase()},''),email),age=${age},blood_type=${b.blood_type||null},airsoft_years=${years},play_style=${b.play_style||null},primary_replica=${b.primary_replica||null},secondary_replica=${b.secondary_replica||null},function=${b.function||null},bio=${b.bio||null},equipment_summary=${b.equipment_summary||null},public_profile=${b.public_profile!==false} WHERE id=${u.id}`
+      const birthDate=String(b.birth_date||'').trim()||null
+      if(birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(birthDate))return json(res,400,{error:'Data de nascimento inválida.'})
+      await sql`UPDATE operators SET name=COALESCE(NULLIF(${String(b.name||'').trim()},''),name),email=COALESCE(NULLIF(${String(b.email||'').trim().toLowerCase()},''),email),age=${age},birth_date=${birthDate},blood_type=${b.blood_type||null},airsoft_years=${years},play_style=${b.play_style||null},primary_replica=${b.primary_replica||null},secondary_replica=${b.secondary_replica||null},function=${b.function||null},bio=${b.bio||null},equipment_summary=${b.equipment_summary||null},public_profile=${b.public_profile!==false} WHERE id=${u.id}`
       return json(res,200,{ok:true})
     }
 
@@ -189,7 +209,7 @@ export default async function handler(req,res){
     if(action==='delete-gallery'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);await sql`DELETE FROM operator_gallery WHERE id=${b.id} AND operator_id=${u.id}`;return json(res,200,{ok:true})}
 
     if(action==='equipment'&&req.method==='POST'){
-      const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);if(!b.name)return json(res,400,{error:'Nome do equipamento é obrigatório.'});await sql`INSERT INTO operator_equipment(operator_id,category,name,details,public_visible) VALUES(${u.id},${b.category||'Equipamento'},${b.name},${b.details||null},${b.public_visible!==false})`;return json(res,201,{ok:true})
+      const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);if(!b.name)return json(res,400,{error:'Nome do equipamento é obrigatório.'});const photo=String(b.photo_url||'');if(photo&&!photo.startsWith('data:image/'))return json(res,400,{error:'Foto do equipamento inválida.'});if(photo.length>4_200_000)return json(res,400,{error:'Imagem do equipamento muito grande. Use até 3 MB.'});await sql`INSERT INTO operator_equipment(operator_id,category,name,details,public_visible,photo_url) VALUES(${u.id},${b.category||'Equipamento'},${b.name},${b.details||null},${b.public_visible!==false},${photo||null})`;return json(res,201,{ok:true})
     }
     if(action==='delete-equipment'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);await sql`DELETE FROM operator_equipment WHERE id=${b.id} AND operator_id=${u.id}`;return json(res,200,{ok:true})}
 
