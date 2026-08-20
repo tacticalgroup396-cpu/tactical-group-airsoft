@@ -54,7 +54,7 @@ async function ensureCurrentDues(){
   const settings=await currentFinanceSettings();
   const periodRows=await sql`SELECT date_trunc('month', CURRENT_DATE)::date AS period`;
   const period=periodRows[0].period;
-  const dueDate=await sql`SELECT make_date(EXTRACT(YEAR FROM ${period})::int, EXTRACT(MONTH FROM ${period})::int, ${Number(settings.due_day)})::date AS due_date`;
+  const dueDate=await sql`SELECT make_date(EXTRACT(YEAR FROM ${period}::date)::int, EXTRACT(MONTH FROM ${period}::date)::int, ${Number(settings.due_day)})::date AS due_date`;
   await sql`INSERT INTO membership_dues(operator_id,period,amount,due_date) SELECT id,${period},${Number(settings.monthly_fee)},${dueDate[0].due_date} FROM operators WHERE active=true AND role='operator' ON CONFLICT(operator_id,period) DO UPDATE SET amount=EXCLUDED.amount,due_date=EXCLUDED.due_date WHERE membership_dues.status='pending'`;
   if(Number(settings.monthly_fee)>0) await sql`UPDATE membership_dues SET status='overdue' WHERE status='pending' AND due_date < CURRENT_DATE AND CURRENT_DATE > due_date + (COALESCE(${Number(settings.grace_days)},0)||' days')::interval`;
 }
