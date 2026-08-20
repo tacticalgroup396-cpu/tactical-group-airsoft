@@ -113,3 +113,4 @@
 }
 @media(max-width:420px){.operatorEloTop>summary h2{font-size:18px!important}.statsBox{grid-template-columns:1fr!important}}
 #disciplineBulkForm select[multiple]{min-height:150px}
+.operatorRealName{display:block;color:var(--muted,#9aa0a6);font-size:.9rem;margin:.18rem 0 .28rem}.profileName{font-size:1rem}.pageRealName{font-size:1.15rem;margin-top:-.2rem}.participantName{display:block;color:var(--muted,#9aa0a6);font-size:.9rem;margin:.12rem 0}

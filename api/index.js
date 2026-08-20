@@ -303,6 +303,7 @@ export default async function handler(req,res){
       const b=await body(req);const current=String(b.current_password||'');
       if(!current)return json(res,400,{error:'Informe sua senha atual.'});
       if(!(await bcrypt.compare(current,u.password_hash)))return json(res,401,{error:'Senha atual incorreta.'});
+      const name=String(b.name||'').trim();
       const nickname=String(b.nickname||'').trim().toUpperCase();
       const email=String(b.email||'').trim().toLowerCase();
       const newPassword=String(b.new_password||'');
@@ -311,9 +312,10 @@ export default async function handler(req,res){
       const nickConflict=await sql`SELECT id FROM operators WHERE lower(nickname)=lower(${nickname}) AND id<>${u.id} LIMIT 1`;if(nickConflict.length)return json(res,409,{error:'Esse apelido já está em uso.'});
       if(email){const emailConflict=await sql`SELECT id FROM operators WHERE lower(coalesce(email,''))=${email} AND id<>${u.id} LIMIT 1`;if(emailConflict.length)return json(res,409,{error:'Esse e-mail já está em uso.'})}
       if(newPassword && newPassword.length<8)return json(res,400,{error:'A nova senha precisa ter pelo menos 8 caracteres.'});
-      if(newPassword){const hash=await bcrypt.hash(newPassword,12);await sql`UPDATE operators SET nickname=${nickname},email=${email||null},password_hash=${hash} WHERE id=${u.id}`}
-      else await sql`UPDATE operators SET nickname=${nickname},email=${email||null} WHERE id=${u.id}`;
-      return json(res,200,{ok:true,nickname,email:email||null});
+      if(!name)return json(res,400,{error:'Informe o nome completo.'});
+      if(newPassword){const hash=await bcrypt.hash(newPassword,12);await sql`UPDATE operators SET name=${name},nickname=${nickname},email=${email||null},password_hash=${hash} WHERE id=${u.id}`}
+      else await sql`UPDATE operators SET name=${name},nickname=${nickname},email=${email||null} WHERE id=${u.id}`;
+      return json(res,200,{ok:true,name,nickname,email:email||null});
     }
     if(action==='finance-ledger'&&req.method==='GET'){
       const u=await requireUser(req,res,'commander');if(!u)return;
