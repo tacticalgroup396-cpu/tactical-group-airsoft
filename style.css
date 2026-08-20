@@ -64,3 +64,22 @@
 .rankAllDetails > summary::-webkit-details-marker{display:none;}
 .rankAllDetails[open] .rankAllSummary span{transform:rotate(180deg);display:inline-block;}
 @media (max-width:700px){.rankAllSummary{width:100%;justify-content:center;}.rankAllDetails .rankProgressLadder{grid-template-columns:1fr;}.operatorProgressSection .progressSectionHead{align-items:flex-start;gap:8px;}}
+
+/* V40 - mobile progressao/patentes always visible and readable */
+@media (max-width: 700px){
+  .operatorEloTop{display:block!important;overflow:visible;}
+  .operatorEloTop > summary{display:flex!important;align-items:flex-start!important;}
+  .operatorEloTop .collapsibleBody{display:block!important;overflow:visible!important;}
+  .operatorProgressSection{display:block!important;visibility:visible!important;}
+  .rankAllDetails{display:block!important;}
+  .rankAllSummary{display:flex!important;width:100%!important;box-sizing:border-box;min-width:0!important;}
+  .rankAllDetails .rankProgressLadder{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;}
+  .rankProgressItem,.eloProgressItem{min-height:58px!important;width:100%;box-sizing:border-box;}
+  .operatorEloTop .statsBox{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;}
+}
+@media (max-width: 420px){
+  .operatorEloTop > summary h2{font-size:17px!important;}
+  .eloProgressItem,.rankProgressItem{padding:10px!important;}
+  .rankCurrentTag{font-size:8px!important;}
+  .operatorEloTop .statsBox{grid-template-columns:1fr!important;}
+}

@@ -56,3 +56,30 @@
 
 .operatorProgressSection{margin-top:16px}.progressSectionHead{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-bottom:8px}.progressSectionHead h3{margin:0}.progressSectionHead small{color:var(--muted)}.rankProgressLadder,.eloProgressLadder{display:grid;gap:8px}.rankProgressItem,.eloProgressItem{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#0f1215;min-width:0}.rankProgressItem.done,.eloProgressItem.done{opacity:.72}.rankProgressItem.current,.eloProgressItem.current{border-color:#f1c15c;background:linear-gradient(90deg,#17140c,#111315);box-shadow:0 0 0 1px rgba(241,193,92,.12)}.rankProgressItem.next,.eloProgressItem.next{opacity:.55}.rankProgressIcon{font-size:1.25rem;width:30px;text-align:center;flex:0 0 30px}.rankProgressItem>div,.eloProgressItem>div{display:flex;flex-direction:column;gap:2px;min-width:0}.rankProgressItem small,.eloProgressItem small{color:var(--muted);font-size:11px}.rankCurrentTag{margin-left:auto;font-size:10px;letter-spacing:.08em;font-weight:800;color:#f1c15c;white-space:nowrap}.eloProgressItem .eloSymbolBig{font-size:1.55rem;min-width:34px}.eloProgressItem.iron.current{border-color:#70757b}.eloProgressItem.bronze.current{border-color:#9a6b44}.eloProgressItem.silver.current{border-color:#adb7c4}.eloProgressItem.gold.current{border-color:#dca41e}.eloProgressItem.platinum.current{border-color:#8aa4c8}.eloProgressItem.emerald.current{border-color:#37c77b}.eloProgressItem.diamond.current{border-color:#7cc7ff}
 @media(max-width:580px){.operatorEloTop{margin:12px 0}.collapsibleCard>summary h2{font-size:18px;line-height:1.25}.rankProgressItem,.eloProgressItem{padding:9px}.rankCurrentTag{font-size:9px}.progressSectionHead{align-items:flex-start;flex-direction:column;gap:2px}}
+
+/* V39 - patent ladder toggle */
+.rankAllSummary{display:flex;align-items:center;justify-content:space-between;gap:10px;width:max-content;min-width:220px;cursor:pointer;}
+.rankAllDetails{margin-top:10px;}
+.rankAllDetails > summary{list-style:none;}
+.rankAllDetails > summary::-webkit-details-marker{display:none;}
+.rankAllDetails[open] .rankAllSummary span{transform:rotate(180deg);display:inline-block;}
+@media (max-width:700px){.rankAllSummary{width:100%;justify-content:center;}.rankAllDetails .rankProgressLadder{grid-template-columns:1fr;}.operatorProgressSection .progressSectionHead{align-items:flex-start;gap:8px;}}
+
+/* V40 - mobile progressao/patentes always visible and readable */
+@media (max-width: 700px){
+  .operatorEloTop{display:block!important;overflow:visible;}
+  .operatorEloTop > summary{display:flex!important;align-items:flex-start!important;}
+  .operatorEloTop .collapsibleBody{display:block!important;overflow:visible!important;}
+  .operatorProgressSection{display:block!important;visibility:visible!important;}
+  .rankAllDetails{display:block!important;}
+  .rankAllSummary{display:flex!important;width:100%!important;box-sizing:border-box;min-width:0!important;}
+  .rankAllDetails .rankProgressLadder{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;}
+  .rankProgressItem,.eloProgressItem{min-height:58px!important;width:100%;box-sizing:border-box;}
+  .operatorEloTop .statsBox{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;}
+}
+@media (max-width: 420px){
+  .operatorEloTop > summary h2{font-size:17px!important;}
+  .eloProgressItem,.rankProgressItem{padding:10px!important;}
+  .rankCurrentTag{font-size:8px!important;}
+  .operatorEloTop .statsBox{grid-template-columns:1fr!important;}
+}
