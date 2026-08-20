@@ -1,4 +1,4 @@
-const CACHE='tga-v40';
+const CACHE='tga-v42';
 const ASSETS=['/','/app.js','/style.css','/logo.webp','/manifest.webmanifest'];
 
 self.addEventListener('install', event => {
@@ -27,6 +27,20 @@ self.addEventListener('fetch', event => {
   // Never cache API/auth requests. Session state must always come from the server.
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Always fetch app JS/CSS fresh so deployed UI changes are not masked by stale PWA cache.
+  if (url.pathname === '/app.js' || url.pathname === '/style.css') {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(response => {
+          const copy = response.clone();
+          caches.open(CACHE).then(cache => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
 
