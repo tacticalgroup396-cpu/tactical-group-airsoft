@@ -21,7 +21,7 @@ async function ensureSchema(){
         ['operators','email','TEXT'],['operators','is_primary_commander','BOOLEAN NOT NULL DEFAULT FALSE'],['operators','last_promotion_period','DATE'],['operators','invite_code_hash','TEXT'],['operators','invite_expires_at','TIMESTAMPTZ'],['operators','invite_used_at','TIMESTAMPTZ'],
         ['operators','age','INTEGER'],['operators','birth_date','DATE'],['operators','blood_type','TEXT'],['operators','airsoft_years','NUMERIC'],['operators','play_style','TEXT'],['operators','primary_replica','TEXT'],['operators','secondary_replica','TEXT'],
         ['operators','absences','INTEGER NOT NULL DEFAULT 0'],['operators','suspension_until','DATE'],['operators','public_profile','BOOLEAN NOT NULL DEFAULT TRUE'],['operators','photo_url','TEXT'],['operators','bio','TEXT'],['operators','equipment_summary','TEXT'],['operators','elo','INTEGER NOT NULL DEFAULT 0'],['operators','elo_level','INTEGER NOT NULL DEFAULT 7'],
-        ['games','game_time','TIME'],['games','elo_reward','INTEGER NOT NULL DEFAULT 1'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','rsvp_deadline_date','DATE'],['games','rsvp_deadline_time','TIME'],['games','description','TEXT'],['games','briefing','TEXT'],['games','maps_url','TEXT'],['games','field_id','UUID'],['games','match_photo_url','TEXT'],['games','completed_at','TIMESTAMPTZ'],
+        ['games','game_time','TIME'],['games','elo_reward','INTEGER NOT NULL DEFAULT 1'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','rsvp_deadline_date','DATE'],['games','rsvp_deadline_time','TIME'],['games','rsvp_closed','BOOLEAN NOT NULL DEFAULT FALSE'],['games','rsvp_closed_at','TIMESTAMPTZ'],['games','description','TEXT'],['games','briefing','TEXT'],['games','notes','TEXT'],['games','maps_url','TEXT'],['games','field_id','UUID'],['games','match_photo_url','TEXT'],['games','completed_at','TIMESTAMPTZ'],
         ["game_participants","response","TEXT NOT NULL DEFAULT 'pending'"], ["game_participants","elo_awarded","BOOLEAN NOT NULL DEFAULT FALSE"],['game_participants','loadout','JSONB'],['game_participants','responded_at','TIMESTAMPTZ'],['game_participants','absence_processed','BOOLEAN NOT NULL DEFAULT FALSE']
       ]
       for(const [table,col,type] of cols) await sql.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col} ${type}`)
@@ -118,6 +118,31 @@ async function ensureBirthdayNotifications(){
     }
   }
 }
+
+async function closeGameRsvp(gameId, changedBy=null, reason='Lista encerrada pelo comando'){
+  const game=(await sql`SELECT id,title,rsvp_closed FROM games WHERE id=${gameId} LIMIT 1`)[0]
+  if(!game) throw new Error('Jogo não encontrado.')
+  if(game.rsvp_closed) return {closed:true,already:true,penalized:0}
+  const settings=await currentEloSettings()
+  const activeOps=await sql`SELECT id FROM operators WHERE active=true`
+  for(const op of activeOps){
+    await sql`INSERT INTO game_participants(game_id,operator_id,response,responded_at,present,absence_processed) VALUES(${gameId},${op.id},'pending',NULL,false,false) ON CONFLICT(game_id,operator_id) DO NOTHING`
+  }
+  const pending=await sql`SELECT operator_id FROM game_participants WHERE game_id=${gameId} AND response='pending' AND absence_processed=false`
+  for(const p of pending){
+    await changeEloLevel(p.operator_id,'absence',`${reason}: não respondeu à lista`,changedBy,gameId,Number(settings.absence_penalty_level||1))
+    await sql`UPDATE game_participants SET absence_processed=true WHERE game_id=${gameId} AND operator_id=${p.operator_id}`
+    await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${p.operator_id},'elo_penalty','Perda de Elo','Você não respondeu à lista do jogo e perdeu Elo por ausência de resposta.','/operador')`
+  }
+  await sql`UPDATE games SET rsvp_closed=true,rsvp_closed_at=now() WHERE id=${gameId}`
+  return {closed:true,already:false,penalized:pending.length}
+}
+
+async function autoCloseExpiredRsvp(){
+  const rows=await sql`SELECT id FROM games WHERE COALESCE(rsvp_closed,false)=false AND status NOT IN ('cancelado','finalizado') AND rsvp_deadline_date IS NOT NULL AND ((rsvp_deadline_date + COALESCE(rsvp_deadline_time,'23:59:59'::time)) AT TIME ZONE 'America/Sao_Paulo') <= now()`
+  for(const g of rows){ try{ await closeGameRsvp(g.id,null,'Prazo da lista encerrado automaticamente') }catch{} }
+}
+
 async function reconcileAbsences(){
   const rows=await sql`SELECT gp.game_id,gp.operator_id FROM game_participants gp JOIN games g ON g.id=gp.game_id WHERE g.game_date<CURRENT_DATE AND gp.response='going' AND gp.present=false AND gp.absence_processed=false`
   for(const r of rows){await sql`UPDATE game_participants SET absence_processed=true WHERE game_id=${r.game_id} AND operator_id=${r.operator_id} AND absence_processed=false`;await sql`UPDATE operators SET absences=COALESCE(absences,0)+1 WHERE id=${r.operator_id}`}
@@ -253,10 +278,15 @@ export default async function handler(req,res){
     if(action==='delete-equipment'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);await sql`DELETE FROM operator_equipment WHERE id=${b.id} AND operator_id=${u.id}`;return json(res,200,{ok:true})}
 
     if(action==='games'){
-      await reconcileAbsences();const u=await requireUser(req,res);if(!u)return;
-      const games=await sql`SELECT g.*,gf.name field_name,gf.address field_address,gf.maps_url field_maps_url,COALESCE(gp.response,'pending') response,gp.loadout FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id AND gp.operator_id=${u.id} WHERE g.game_date>=CURRENT_DATE-interval '1 day' ORDER BY g.game_date,g.game_time NULLS LAST`;
-      const finance=u.role==='operator'?await financeForOperator(u.id):null;
-      const siteSettings=await currentFinanceSettings();return json(res,200,{games,finance,financeSettings:siteSettings,instagram_url:siteSettings.instagram_url||null})
+      await reconcileAbsences(); await autoCloseExpiredRsvp(); const u=await requireUser(req,res);
+      if(!u)return;
+      const games=await sql`SELECT g.*,gf.name field_name,gf.address field_address,gf.maps_url field_maps_url,COALESCE(gp.response,'pending') response,gp.loadout,gp.responded_at,
+        COALESCE((SELECT count(*)::int FROM game_participants q WHERE q.game_id=g.id AND q.response='going'),0) going_count,
+        COALESCE((SELECT json_agg(json_build_object('id',o.id,'nickname',o.nickname,'rank',o.rank,'function',o.function,'photo_url',o.photo_url,'elo_level',o.elo_level,'loadout',q.loadout) ORDER BY o.nickname) FROM game_participants q JOIN operators o ON o.id=q.operator_id WHERE q.game_id=g.id AND q.response='going' AND o.active=true),'[]'::json) participants
+        FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id AND gp.operator_id=${u.id}
+        WHERE g.game_date>=CURRENT_DATE-interval '1 day' ORDER BY g.game_date,g.game_time NULLS LAST`;
+      const finance=u.role==='operator'?await financeForOperator(u.id):null; const siteSettings=await currentFinanceSettings();
+      return json(res,200,{games,finance,financeSettings:siteSettings,instagram_url:siteSettings.instagram_url||null})
     }
     if(action==='finance'&&req.method==='GET'){
       const u=await requireUser(req,res);if(!u)return;await ensureCurrentDues();
@@ -315,12 +345,15 @@ export default async function handler(req,res){
       const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);
       const response=['going','not_going'].includes(b.response)?b.response:null;
       if(!response)return json(res,400,{error:'Escolha Vou ou Não vou.'});
-      const game=(await sql`SELECT id,max_players,status,rsvp_deadline_date,rsvp_deadline_time FROM games WHERE id=${b.game_id} LIMIT 1`)[0];
+      const game=(await sql`SELECT id,max_players,status,rsvp_deadline_date,rsvp_deadline_time,rsvp_closed FROM games WHERE id=${b.game_id} LIMIT 1`)[0];
       if(!game)return json(res,404,{error:'Jogo não encontrado.'});
       if(game.status==='cancelado')return json(res,409,{error:'Este jogo foi cancelado.'});
+      const deadlinePassed=game.rsvp_deadline_date ? (await sql`SELECT (((rsvp_deadline_date + COALESCE(rsvp_deadline_time,'23:59:59'::time)) AT TIME ZONE 'America/Sao_Paulo') <= now()) AS passed FROM games WHERE id=${game.id}`)[0]?.passed : false;
+      if(!game.rsvp_closed && deadlinePassed) { try{ await closeGameRsvp(game.id,null,'Prazo da lista encerrado automaticamente') }catch{} }
+      const effectiveClosed=Boolean(game.rsvp_closed || deadlinePassed);
+      if(effectiveClosed && response==='not_going')return json(res,409,{error:'A lista foi encerrada. Não é mais permitido retirar sua presença. Só é possível marcar Vou.'});
+      if(!effectiveClosed && response==='going'){}
       if(response==='going'){
-        const deadline=game.rsvp_deadline_date ? new Date(`${game.rsvp_deadline_date}T${String(game.rsvp_deadline_time||'23:59:59').slice(0,8)}`) : null;
-        if(deadline && Date.now()>=deadline.getTime())return json(res,409,{error:'O prazo para confirmar presença já terminou.'});
         const settings=await currentFinanceSettings();const due=await financeForOperator(u.id);
         if(settings.active&&Number(settings.monthly_fee)>0&&due?.status!=='paid'&&due?.status!=='waived')return json(res,402,{error:'Mensalidade pendente. Regularize o financeiro para confirmar presença nos jogos.'});
         if(game.max_players){const count=(await sql`SELECT count(*)::int AS c FROM game_participants WHERE game_id=${b.game_id} AND response='going' AND operator_id<>${u.id}`)[0].c||0;if(count>=Number(game.max_players))return json(res,409,{error:'Este jogo atingiu o limite de operadores.'})}
@@ -332,9 +365,9 @@ export default async function handler(req,res){
     if(action==='loadout'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);await sql`INSERT INTO game_participants(game_id,operator_id,response,loadout,responded_at) VALUES(${b.game_id},${u.id},COALESCE(${b.response||'pending'},'pending'),${JSON.stringify(b.loadout||{})}::jsonb,now()) ON CONFLICT(game_id,operator_id) DO UPDATE SET loadout=EXCLUDED.loadout,response=CASE WHEN EXCLUDED.response='pending' THEN game_participants.response ELSE EXCLUDED.response END,responded_at=now()`;return json(res,200,{ok:true})}
 
     if(action==='commander'){
-      const u=await requireUser(req,res,'commander');if(!u)return;await reconcileAbsences()
+      const u=await requireUser(req,res,'commander');if(!u)return;await reconcileAbsences();await autoCloseExpiredRsvp()
       const operators=await sql`SELECT id,name,nickname,role,rank,function,games_count,absences,elo,elo_level,suspension_until,active,email,photo_url,invite_expires_at,invite_used_at,is_primary_commander,last_promotion_period FROM operators ORDER BY role DESC,active DESC,nickname`
-      const fields=await sql`SELECT * FROM game_fields WHERE active=true ORDER BY name`;const eloSettings=await currentEloSettings();const games=await sql`SELECT g.*,g.match_photo_url,g.completed_at,gf.name field_name,gf.maps_url field_maps_url,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id)::int participant_count,COALESCE((SELECT json_agg(json_build_object('id',o2.id,'nickname',o2.nickname,'rank',o2.rank,'function',o2.function,'photo_url',o2.photo_url,'loadout',gp2.loadout) ORDER BY o2.nickname) FROM game_participants gp2 JOIN operators o2 ON o2.id=gp2.operator_id WHERE gp2.game_id=g.id AND gp2.response='going' AND o2.active=true),'[]'::json) participants FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date>=CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
+      const fields=await sql`SELECT * FROM game_fields WHERE active=true ORDER BY name`;const eloSettings=await currentEloSettings();const games=await sql`SELECT g.*,g.match_photo_url,g.completed_at,g.rsvp_closed,g.rsvp_closed_at,gf.name field_name,gf.maps_url field_maps_url,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id) FILTER (WHERE gp.response='not_going')::int not_going_count,count(gp.operator_id) FILTER (WHERE gp.response='pending')::int pending_count,count(gp.operator_id)::int participant_count,COALESCE((SELECT json_agg(json_build_object('id',o2.id,'nickname',o2.nickname,'rank',o2.rank,'function',o2.function,'photo_url',o2.photo_url,'elo_level',o2.elo_level,'response',gp2.response,'loadout',gp2.loadout) ORDER BY CASE gp2.response WHEN 'going' THEN 0 WHEN 'not_going' THEN 1 ELSE 2 END,o2.nickname) FROM game_participants gp2 JOIN operators o2 ON o2.id=gp2.operator_id WHERE gp2.game_id=g.id AND o2.active=true),'[]'::json) participants FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date>=CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
       const history=await sql`SELECT g.*,g.match_photo_url,g.completed_at,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id) FILTER (WHERE gp.present=true)::int present_count,count(gp.operator_id) FILTER (WHERE gp.response='going' AND gp.present=false AND gp.absence_processed=true)::int absence_count FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date<CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date DESC,g.game_time DESC NULLS LAST LIMIT 100`
       const requests=await sql`SELECT vr.*,greq.title AS requested_game_title,greq.game_date AS requested_game_date,COALESCE(json_agg(json_build_object('game_id',vga.game_id,'title',g.title,'game_date',g.game_date,'location',g.location)) FILTER (WHERE vga.id IS NOT NULL),'[]') assignments FROM visitor_requests vr LEFT JOIN games greq ON greq.id=vr.requested_game_id LEFT JOIN visitor_game_assignments vga ON vga.visitor_request_id=vr.id LEFT JOIN games g ON g.id=vga.game_id GROUP BY vr.id,greq.title,greq.game_date ORDER BY vr.created_at DESC LIMIT 50`
       await ensureCurrentDues();const financeSettings=await currentFinanceSettings();const dues=await sql`SELECT d.*,o.nickname,o.rank,o.active,o.email FROM membership_dues d JOIN operators o ON o.id=d.operator_id WHERE d.period=date_trunc('month',CURRENT_DATE)::date ORDER BY CASE d.status WHEN 'overdue' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END,o.nickname`;
@@ -350,12 +383,28 @@ export default async function handler(req,res){
       const min=Math.max(1,Number(b.min_players||4));const max=b.max_players?Number(b.max_players):null;if(max&&max<min)return json(res,400,{error:'O máximo de operadores não pode ser menor que o mínimo.'});const field=(await sql`SELECT id,name,address,maps_url FROM game_fields WHERE id=${b.field_id} AND active=true LIMIT 1`)[0];if(!field)return json(res,400,{error:'Selecione um campo válido.'});
       if(b.rsvp_deadline_date){const deadlineLocal=new Date(`${b.rsvp_deadline_date}T${String(b.rsvp_deadline_time||'23:59').slice(0,5)}:00-03:00`);const gameLocal=new Date(`${b.game_date}T${String(b.game_time||'23:59').slice(0,5)}:00-03:00`);if(Number.isNaN(deadlineLocal.getTime())||deadlineLocal>=gameLocal)return json(res,400,{error:'O prazo de confirmação deve ser antes do início do jogo.'})}
       const eloReward=Math.max(1,Number(b.elo_reward||1)); const rows=await sql`INSERT INTO games(title,game_date,game_time,location,status,description,notes,briefing,min_players,max_players,elo_reward,maps_url,commander_id,field_id,rsvp_deadline_date,rsvp_deadline_time) VALUES(${b.title},${b.game_date},${b.game_time||null},${field.name},${b.status||'confirmado'},${b.description||null},${b.notes||null},${b.briefing||null},${min},${max},${eloReward},${field.maps_url},${u.id},${field.id},${b.rsvp_deadline_date||null},${b.rsvp_deadline_time||null}) RETURNING *`
+      await sql`INSERT INTO game_participants(game_id,operator_id,response,responded_at,present,absence_processed) SELECT ${rows[0].id},id,'pending',NULL,false,false FROM operators WHERE active=true ON CONFLICT(game_id,operator_id) DO NOTHING`;
       await notifyOperatorsForGame(rows[0]);
       return json(res,201,{game:rows[0]})
     }
 
-    if(action==='edit-game'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const min=Math.max(1,Number(b.min_players||4));const max=b.max_players?Number(b.max_players):null;if(max&&max<min)return json(res,400,{error:'O máximo não pode ser menor que o mínimo.'});const eloReward=Math.max(1,Number(b.elo_reward||1));await sql`UPDATE games SET title=${String(b.title||'').trim()||null},game_date=${b.game_date||null},game_time=${b.game_time||null},min_players=${min},max_players=${max},elo_reward=${eloReward},maps_url=${String(b.maps_url||'').trim()||null},status=${b.status||'confirmado'},description=${String(b.description||'').trim()||null},briefing=${String(b.briefing||'').trim()||null},rsvp_deadline_date=${b.rsvp_deadline_date||null},rsvp_deadline_time=${b.rsvp_deadline_time||null} WHERE id=${b.game_id}`;return json(res,200,{ok:true})}
-    if(action==='delete-game'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const id=String(b.game_id||'');if(!id)return json(res,400,{error:'Jogo inválido.'});await sql`DELETE FROM game_participants WHERE game_id=${id}`;await sql`DELETE FROM games WHERE id=${id}`;return json(res,200,{ok:true})}
+    if(action==='edit-game'&&req.method==='POST'){
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const id=String(b.game_id||'');
+      if(!id||!b.title||!b.game_date||!b.field_id)return json(res,400,{error:'Preencha nome, data e campo do jogo.'});
+      const min=Math.max(1,Number(b.min_players||4));const max=b.max_players?Number(b.max_players):null;if(max&&max<min)return json(res,400,{error:'O máximo não pode ser menor que o mínimo.'});
+      const eloReward=Math.max(1,Number(b.elo_reward||1));const field=(await sql`SELECT id,name,maps_url FROM game_fields WHERE id=${b.field_id} AND active=true LIMIT 1`)[0];if(!field)return json(res,400,{error:'Campo inválido.'});
+      const existing=(await sql`SELECT id,rsvp_closed FROM games WHERE id=${id} LIMIT 1`)[0];if(!existing)return json(res,404,{error:'Jogo não encontrado.'});
+      await sql`UPDATE games SET title=${String(b.title).trim()},game_date=${b.game_date},game_time=${b.game_time||null},location=${field.name},field_id=${field.id},maps_url=${field.maps_url},min_players=${min},max_players=${max},elo_reward=${eloReward},status=${b.status||'confirmado'},description=${String(b.description||'').trim()||null},briefing=${String(b.briefing||'').trim()||null},notes=${String(b.notes||'').trim()||null},rsvp_deadline_date=${b.rsvp_deadline_date||null},rsvp_deadline_time=${b.rsvp_deadline_time||null} WHERE id=${id}`;
+      return json(res,200,{ok:true})
+    }
+    if(action==='close-rsvp'&&req.method==='POST'){
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);if(!b.game_id)return json(res,400,{error:'Jogo inválido.'});
+      const result=await closeGameRsvp(b.game_id,u.id,'Lista encerrada pelo comando');return json(res,200,result)
+    }
+    if(action==='delete-game'&&req.method==='POST'){
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const id=String(b.game_id||'');if(!id)return json(res,400,{error:'Jogo inválido.'});
+      await sql`DELETE FROM game_participants WHERE game_id=${id}`;await sql`DELETE FROM match_photos WHERE game_id=${id}`;await sql`DELETE FROM visitor_game_assignments WHERE game_id=${id}`;await sql`DELETE FROM games WHERE id=${id}`;return json(res,200,{ok:true})
+    }
     if(action==='finish-game'&&req.method==='POST'){
       const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);
       const image=String(b.image_data||'');

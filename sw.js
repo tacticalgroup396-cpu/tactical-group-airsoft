@@ -1,4 +1,4 @@
-const CACHE='tga-v42';
+const CACHE='tga-v43';
 const ASSETS=['/','/app.js','/style.css','/logo.webp','/manifest.webmanifest'];
 
 self.addEventListener('install', event => {
