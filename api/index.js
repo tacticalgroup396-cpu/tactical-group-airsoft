@@ -19,7 +19,9 @@ async function ensureSchema(){
       const cols=[
         ['operators','email','TEXT'],['operators','invite_code_hash','TEXT'],['operators','invite_expires_at','TIMESTAMPTZ'],['operators','invite_used_at','TIMESTAMPTZ'],
         ['operators','age','INTEGER'],['operators','blood_type','TEXT'],['operators','airsoft_years','NUMERIC'],['operators','play_style','TEXT'],['operators','primary_replica','TEXT'],['operators','secondary_replica','TEXT'],
-        ['games','game_time','TIME'],['games','min_players','INTEGER'],['games','max_players','INTEGER'],['games','briefing','TEXT'],['games','maps_url','TEXT']
+        ['operators','absences','INTEGER NOT NULL DEFAULT 0'],['operators','suspension_until','DATE'],['operators','public_profile','BOOLEAN NOT NULL DEFAULT TRUE'],['operators','photo_url','TEXT'],['operators','bio','TEXT'],['operators','equipment_summary','TEXT'],['operators','elo','INTEGER NOT NULL DEFAULT 0'],
+        ['games','game_time','TIME'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','description','TEXT'],['games','briefing','TEXT'],['games','maps_url','TEXT'],
+        ["game_participants","response","TEXT NOT NULL DEFAULT 'pending'"],['game_participants','loadout','JSONB'],['game_participants','responded_at','TIMESTAMPTZ'],['game_participants','absence_processed','BOOLEAN NOT NULL DEFAULT FALSE']
       ]
       for(const [table,col,type] of cols) await sql.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col} ${type}`)
       await sql`CREATE UNIQUE INDEX IF NOT EXISTS operators_email_unique_idx ON operators (lower(email)) WHERE email IS NOT NULL`
@@ -54,7 +56,7 @@ async function ensureCurrentDues(){
   const settings=await currentFinanceSettings();
   const periodRows=await sql`SELECT date_trunc('month', CURRENT_DATE)::date AS period`;
   const period=periodRows[0].period;
-  const dueDate=await sql`SELECT make_date(EXTRACT(YEAR FROM ${period})::int, EXTRACT(MONTH FROM ${period})::int, ${Number(settings.due_day)})::date AS due_date`;
+  const dueDate=await sql`SELECT make_date(EXTRACT(YEAR FROM ${period}::date)::int, EXTRACT(MONTH FROM ${period}::date)::int, ${Number(settings.due_day)})::date AS due_date`;
   await sql`INSERT INTO membership_dues(operator_id,period,amount,due_date) SELECT id,${period},${Number(settings.monthly_fee)},${dueDate[0].due_date} FROM operators WHERE active=true AND role='operator' ON CONFLICT(operator_id,period) DO UPDATE SET amount=EXCLUDED.amount,due_date=EXCLUDED.due_date WHERE membership_dues.status='pending'`;
   if(Number(settings.monthly_fee)>0) await sql`UPDATE membership_dues SET status='overdue' WHERE status='pending' AND due_date < CURRENT_DATE AND CURRENT_DATE > due_date + (COALESCE(${Number(settings.grace_days)},0)||' days')::interval`;
 }
@@ -166,7 +168,7 @@ export default async function handler(req,res){
     if(action==='loadout'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);await sql`INSERT INTO game_participants(game_id,operator_id,response,loadout,responded_at) VALUES(${b.game_id},${u.id},COALESCE(${b.response||'pending'},'pending'),${JSON.stringify(b.loadout||{})}::jsonb,now()) ON CONFLICT(game_id,operator_id) DO UPDATE SET loadout=EXCLUDED.loadout,response=CASE WHEN EXCLUDED.response='pending' THEN game_participants.response ELSE EXCLUDED.response END,responded_at=now()`;return json(res,200,{ok:true})}
 
     if(action==='commander'){
-      await reconcileAbsences();const u=await requireUser(req,res,'commander');if(!u)return
+      const u=await requireUser(req,res,'commander');if(!u)return;await reconcileAbsences()
       const operators=await sql`SELECT id,name,nickname,role,rank,function,games_count,absences,elo,suspension_until,active,email,invite_expires_at,invite_used_at FROM operators ORDER BY role DESC,active DESC,nickname`
       const games=await sql`SELECT g.*,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id)::int participant_count FROM games g LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date>=CURRENT_DATE GROUP BY g.id ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
       const history=await sql`SELECT g.*,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id) FILTER (WHERE gp.present=true)::int present_count,count(gp.operator_id) FILTER (WHERE gp.response='going' AND gp.present=false AND gp.absence_processed=true)::int absence_count FROM games g LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date<CURRENT_DATE GROUP BY g.id ORDER BY g.game_date DESC,g.game_time DESC NULLS LAST LIMIT 100`
