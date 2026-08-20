@@ -153,7 +153,7 @@ export default async function handler(req,res){
 
     if(action==='logout'){const token=parseCookies(req)[COOKIE];if(token)await sql`DELETE FROM sessions WHERE token_hash=${hashToken(token)}`;setCookie(res,'',0);return json(res,200,{ok:true})}
 
-    if(action==='me'){const u=await userFromSession(req);return json(res,200,{user:u?{id:u.id,name:u.name,nickname:u.nickname,email:u.email||null,role:u.role,rank:u.rank,function:u.function||null,bio:u.bio||null,absences:u.absences||0,suspension_until:u.suspension_until||null,age:u.age||null,blood_type:u.blood_type||null,airsoft_years:u.airsoft_years||null,play_style:u.play_style||'',primary_replica:u.primary_replica||'',secondary_replica:u.secondary_replica||'',equipment_summary:u.equipment_summary||'',photo_url:u.photo_url||null,public_profile:u.public_profile}:null})}
+    if(action==='me'){const u=await userFromSession(req);return json(res,200,{user:u?{id:u.id,name:u.name,nickname:u.nickname,email:u.email||null,role:u.role,is_primary_commander:!!u.is_primary_commander,rank:u.rank,function:u.function||null,bio:u.bio||null,absences:u.absences||0,suspension_until:u.suspension_until||null,age:u.age||null,blood_type:u.blood_type||null,airsoft_years:u.airsoft_years||null,play_style:u.play_style||'',primary_replica:u.primary_replica||'',secondary_replica:u.secondary_replica||'',equipment_summary:u.equipment_summary||'',photo_url:u.photo_url||null,public_profile:u.public_profile}:null})}
 
     if(action==='push-config'){const enabled=!!(process.env.VAPID_PUBLIC_KEY&&process.env.VAPID_PRIVATE_KEY&&process.env.VAPID_SUBJECT);return json(res,200,{enabled,publicKey:enabled?process.env.VAPID_PUBLIC_KEY:null})}
     if(action==='push-subscribe'&&req.method==='POST'){const u=await requireUser(req,res);if(!u)return;const b=await body(req);const sub=b.subscription||{};if(!sub.endpoint||!sub.keys?.p256dh||!sub.keys?.auth)return json(res,400,{error:'Assinatura de notificação inválida.'});await sql`INSERT INTO push_subscriptions(operator_id,endpoint,p256dh,auth) VALUES(${u.id},${sub.endpoint},${sub.keys.p256dh},${sub.keys.auth}) ON CONFLICT(endpoint) DO UPDATE SET operator_id=EXCLUDED.operator_id,p256dh=EXCLUDED.p256dh,auth=EXCLUDED.auth`;return json(res,200,{ok:true})}
@@ -176,11 +176,11 @@ export default async function handler(req,res){
     }
 
     if(action==='upload-photo'&&req.method==='POST'){
-      const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);const data=String(b.image_data||'');if(!data.startsWith('data:image/'))return json(res,400,{error:'Envie uma imagem válida.'});if(data.length>2_000_000)return json(res,400,{error:'Imagem muito grande. Use uma foto de até ~1,5 MB.'});await sql`UPDATE operators SET photo_url=${data} WHERE id=${u.id}`;return json(res,200,{ok:true,photo_url:data})
+      const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);const data=String(b.image_data||'');if(!data.startsWith('data:image/'))return json(res,400,{error:'Envie uma imagem válida.'});if(data.length>4_200_000)return json(res,400,{error:'Imagem muito grande. Use uma foto de até 3 MB.'});await sql`UPDATE operators SET photo_url=${data} WHERE id=${u.id}`;return json(res,200,{ok:true,photo_url:data})
     }
 
     if(action==='add-gallery'&&req.method==='POST'){
-      const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);const data=String(b.image_data||'');if(!data.startsWith('data:image/'))return json(res,400,{error:'Envie uma imagem válida.'});if(data.length>2_000_000)return json(res,400,{error:'Imagem muito grande.'});await sql`INSERT INTO operator_gallery(operator_id,image_data,caption) VALUES(${u.id},${data},${b.caption||null})`;return json(res,201,{ok:true})
+      const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);const data=String(b.image_data||'');if(!data.startsWith('data:image/'))return json(res,400,{error:'Envie uma imagem válida.'});if(data.length>4_200_000)return json(res,400,{error:'Imagem muito grande. Use uma foto de até 3 MB.'});await sql`INSERT INTO operator_gallery(operator_id,image_data,caption) VALUES(${u.id},${data},${b.caption||null})`;return json(res,201,{ok:true})
     }
 
     if(action==='delete-gallery'&&req.method==='POST'){const u=await requireUser(req,res,'operator');if(!u)return;const b=await body(req);await sql`DELETE FROM operator_gallery WHERE id=${b.id} AND operator_id=${u.id}`;return json(res,200,{ok:true})}
@@ -206,6 +206,23 @@ export default async function handler(req,res){
       const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const monthly=Number(b.monthly_fee);const dueDay=Math.min(28,Math.max(1,Number(b.due_day||10)));const grace=Math.min(30,Math.max(0,Number(b.grace_days||0)));if(!Number.isFinite(monthly)||monthly<0)return json(res,400,{error:'Mensalidade inválida.'});await sql`UPDATE finance_settings SET monthly_fee=${monthly},due_day=${dueDay},grace_days=${grace},currency=${b.currency||'BRL'},active=${b.active!==false},instagram_url=${String(b.instagram_url||'').trim()||null},updated_at=now(),updated_by=${u.id} WHERE id=1`;await ensureCurrentDues();return json(res,200,{ok:true})
     }
     if(action==='site-settings'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const instagram=String(b.instagram_url||'').trim();if(instagram&&!/^https?:\/\/(www\.)?instagram\.com\//i.test(instagram))return json(res,400,{error:'Informe uma URL válida do Instagram.'});await sql`UPDATE finance_settings SET instagram_url=${instagram||null},updated_at=now(),updated_by=${u.id} WHERE id=1`;return json(res,200,{ok:true,instagram_url:instagram||null})}
+    if(action==='update-login-settings'&&req.method==='POST'){
+      const u=await requireUser(req,res);if(!u)return;
+      const b=await body(req);const current=String(b.current_password||'');
+      if(!current)return json(res,400,{error:'Informe sua senha atual.'});
+      if(!(await bcrypt.compare(current,u.password_hash)))return json(res,401,{error:'Senha atual incorreta.'});
+      const nickname=String(b.nickname||'').trim().toUpperCase();
+      const email=String(b.email||'').trim().toLowerCase();
+      const newPassword=String(b.new_password||'');
+      if(!nickname)return json(res,400,{error:'Informe o apelido.'});
+      if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return json(res,400,{error:'Informe um e-mail válido.'});
+      const nickConflict=await sql`SELECT id FROM operators WHERE lower(nickname)=lower(${nickname}) AND id<>${u.id} LIMIT 1`;if(nickConflict.length)return json(res,409,{error:'Esse apelido já está em uso.'});
+      if(email){const emailConflict=await sql`SELECT id FROM operators WHERE lower(coalesce(email,''))=${email} AND id<>${u.id} LIMIT 1`;if(emailConflict.length)return json(res,409,{error:'Esse e-mail já está em uso.'})}
+      if(newPassword && newPassword.length<8)return json(res,400,{error:'A nova senha precisa ter pelo menos 8 caracteres.'});
+      if(newPassword){const hash=await bcrypt.hash(newPassword,12);await sql`UPDATE operators SET nickname=${nickname},email=${email||null},password_hash=${hash} WHERE id=${u.id}`}
+      else await sql`UPDATE operators SET nickname=${nickname},email=${email||null} WHERE id=${u.id}`;
+      return json(res,200,{ok:true,nickname,email:email||null});
+    }
     if(action==='finance-generate'&&req.method==='POST'){
       const u=await requireUser(req,res,'commander');if(!u)return;await ensureCurrentDues();return json(res,200,{ok:true})
     }

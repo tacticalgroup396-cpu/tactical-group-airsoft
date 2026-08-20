@@ -11,3 +11,5 @@
 .accessChoiceGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.accessChoiceGrid a{text-align:center}@media(max-width:640px){.accessChoiceGrid{grid-template-columns:1fr}}
 
 .backLogin{display:inline-block;margin:0 0 14px;text-decoration:none;opacity:.85}
+
+.instagramHeader{display:inline-flex;align-items:center}.instagramLink{width:40px;height:40px;display:grid;place-items:center;border:1px solid #3a4046;border-radius:9px;background:#111417}.instagramLink:hover{border-color:#d39d24;background:#191b1e}.instagramLink svg{width:21px;height:21px;fill:none;stroke:#f0f1f2;stroke-width:1.8}.instagramLink svg .fill{fill:#f0f1f2;stroke:none}
