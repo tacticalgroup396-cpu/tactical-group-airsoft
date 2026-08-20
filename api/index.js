@@ -36,8 +36,14 @@ async function ensureSchema(){
       await sql`CREATE INDEX IF NOT EXISTS game_fields_active_idx ON game_fields(active,name)`
       await sql`CREATE TABLE IF NOT EXISTS operator_gallery (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, image_data TEXT NOT NULL, caption TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
       await sql`CREATE INDEX IF NOT EXISTS operator_gallery_operator_idx ON operator_gallery(operator_id,created_at DESC)`
-      await sql`CREATE TABLE IF NOT EXISTS finance_settings (id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), monthly_fee NUMERIC(12,2) NOT NULL DEFAULT 0, due_day INTEGER NOT NULL DEFAULT 10 CHECK (due_day BETWEEN 1 AND 28), grace_days INTEGER NOT NULL DEFAULT 0 CHECK (grace_days BETWEEN 0 AND 30), currency TEXT NOT NULL DEFAULT 'BRL', active BOOLEAN NOT NULL DEFAULT TRUE, instagram_url TEXT, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_by UUID REFERENCES operators(id) ON DELETE SET NULL)`
+      await sql`CREATE TABLE IF NOT EXISTS finance_settings (id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), monthly_fee NUMERIC(12,2) NOT NULL DEFAULT 0, due_day INTEGER NOT NULL DEFAULT 10 CHECK (due_day BETWEEN 1 AND 28), grace_days INTEGER NOT NULL DEFAULT 0 CHECK (grace_days BETWEEN 0 AND 30), currency TEXT NOT NULL DEFAULT 'BRL', active BOOLEAN NOT NULL DEFAULT TRUE, instagram_url TEXT, pix_key TEXT, pix_holder TEXT, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_by UUID REFERENCES operators(id) ON DELETE SET NULL)`
       await sql`ALTER TABLE finance_settings ADD COLUMN IF NOT EXISTS instagram_url TEXT`
+      await sql`ALTER TABLE finance_settings ADD COLUMN IF NOT EXISTS pix_key TEXT`
+      await sql`ALTER TABLE finance_settings ADD COLUMN IF NOT EXISTS pix_holder TEXT`
+      await sql`CREATE TABLE IF NOT EXISTS finance_transactions (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), type TEXT NOT NULL CHECK (type IN ('income','expense')), description TEXT NOT NULL, amount NUMERIC(12,2) NOT NULL DEFAULT 0, transaction_date DATE NOT NULL DEFAULT CURRENT_DATE, category TEXT, note TEXT, created_by UUID REFERENCES operators(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
+      await sql`ALTER TABLE finance_transactions ADD COLUMN IF NOT EXISTS reference_id UUID`
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS finance_transactions_reference_idx ON finance_transactions(reference_id) WHERE reference_id IS NOT NULL`
+      await sql`CREATE INDEX IF NOT EXISTS finance_transactions_date_idx ON finance_transactions(transaction_date DESC)`
       await sql`INSERT INTO finance_settings(id) VALUES(1) ON CONFLICT(id) DO NOTHING`
       await sql`CREATE TABLE IF NOT EXISTS membership_dues (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, period DATE NOT NULL, amount NUMERIC(12,2) NOT NULL DEFAULT 0, due_date DATE NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','waived','overdue')), paid_at TIMESTAMPTZ, payment_note TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(operator_id, period))`
       await sql`CREATE INDEX IF NOT EXISTS membership_dues_operator_idx ON membership_dues(operator_id, period DESC)`
@@ -217,7 +223,7 @@ export default async function handler(req,res){
       await reconcileAbsences();const u=await requireUser(req,res);if(!u)return;
       const games=await sql`SELECT g.*,gf.name field_name,gf.address field_address,gf.maps_url field_maps_url,COALESCE(gp.response,'pending') response,gp.loadout FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id AND gp.operator_id=${u.id} WHERE g.game_date>=CURRENT_DATE-interval '1 day' ORDER BY g.game_date,g.game_time NULLS LAST`;
       const finance=u.role==='operator'?await financeForOperator(u.id):null;
-      const siteSettings=await currentFinanceSettings();return json(res,200,{games,finance,instagram_url:siteSettings.instagram_url||null})
+      const siteSettings=await currentFinanceSettings();return json(res,200,{games,finance,financeSettings:siteSettings,instagram_url:siteSettings.instagram_url||null})
     }
     if(action==='finance'&&req.method==='GET'){
       const u=await requireUser(req,res);if(!u)return;await ensureCurrentDues();
@@ -226,7 +232,7 @@ export default async function handler(req,res){
       return json(res,200,{settings,dues})
     }
     if(action==='finance-settings'&&req.method==='POST'){
-      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const monthly=Number(b.monthly_fee);const dueDay=Math.min(28,Math.max(1,Number(b.due_day||10)));const grace=Math.min(30,Math.max(0,Number(b.grace_days||0)));if(!Number.isFinite(monthly)||monthly<0)return json(res,400,{error:'Mensalidade inválida.'});await sql`UPDATE finance_settings SET monthly_fee=${monthly},due_day=${dueDay},grace_days=${grace},currency=${b.currency||'BRL'},active=${b.active!==false},instagram_url=${String(b.instagram_url||'').trim()||null},updated_at=now(),updated_by=${u.id} WHERE id=1`;await ensureCurrentDues();return json(res,200,{ok:true})
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const monthly=Number(b.monthly_fee);const dueDay=Math.min(28,Math.max(1,Number(b.due_day||10)));const grace=Math.min(30,Math.max(0,Number(b.grace_days||0)));if(!Number.isFinite(monthly)||monthly<0)return json(res,400,{error:'Mensalidade inválida.'});await sql`UPDATE finance_settings SET monthly_fee=${monthly},due_day=${dueDay},grace_days=${grace},currency=${b.currency||'BRL'},active=${b.active!==false},instagram_url=${String(b.instagram_url||'').trim()||null},pix_key=${String(b.pix_key||'').trim()||null},pix_holder=${String(b.pix_holder||'').trim()||null},updated_at=now(),updated_by=${u.id} WHERE id=1`;await ensureCurrentDues();return json(res,200,{ok:true})
     }
     if(action==='site-settings'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const instagram=String(b.instagram_url||'').trim();if(instagram&&!/^https?:\/\/(www\.)?instagram\.com\//i.test(instagram))return json(res,400,{error:'Informe uma URL válida do Instagram.'});await sql`UPDATE finance_settings SET instagram_url=${instagram||null},updated_at=now(),updated_by=${u.id} WHERE id=1`;return json(res,200,{ok:true,instagram_url:instagram||null})}
     if(action==='update-login-settings'&&req.method==='POST'){
@@ -246,11 +252,30 @@ export default async function handler(req,res){
       else await sql`UPDATE operators SET nickname=${nickname},email=${email||null} WHERE id=${u.id}`;
       return json(res,200,{ok:true,nickname,email:email||null});
     }
+    if(action==='finance-ledger'&&req.method==='GET'){
+      const u=await requireUser(req,res,'commander');if(!u)return;
+      const period=new URL(req.url,'http://localhost').searchParams.get('period')||'monthly';
+      const now=new Date();
+      const rows=period==='weekly'?await sql`SELECT COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END),0)::numeric total_income,COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END),0)::numeric total_expense,COUNT(*)::int total_count FROM finance_transactions WHERE transaction_date>=((CURRENT_DATE - INTERVAL '6 days')::date)`:await sql`SELECT COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END),0)::numeric total_income,COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END),0)::numeric total_expense,COUNT(*)::int total_count FROM finance_transactions WHERE transaction_date>=date_trunc('month',CURRENT_DATE)::date AND transaction_date<(date_trunc('month',CURRENT_DATE)+INTERVAL '1 month')::date`;
+      const tx=period==='weekly'?await sql`SELECT * FROM finance_transactions WHERE transaction_date>=((CURRENT_DATE - INTERVAL '6 days')::date) ORDER BY transaction_date DESC,created_at DESC LIMIT 200`:await sql`SELECT * FROM finance_transactions WHERE transaction_date>=date_trunc('month',CURRENT_DATE)::date AND transaction_date<(date_trunc('month',CURRENT_DATE)+INTERVAL '1 month')::date ORDER BY transaction_date DESC,created_at DESC LIMIT 200`;
+      return json(res,200,{period,summary:rows[0],transactions:tx});
+    }
+    if(action==='finance-transaction'&&req.method==='POST'){
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const type=['income','expense'].includes(b.type)?b.type:null;const amount=Number(b.amount);const description=String(b.description||'').trim();if(!type||!description||!Number.isFinite(amount)||amount<=0)return json(res,400,{error:'Informe tipo, descrição e um valor válido.'});const date=String(b.transaction_date||'').trim()||new Date().toISOString().slice(0,10);const rows=await sql`INSERT INTO finance_transactions(type,description,amount,transaction_date,category,note,created_by) VALUES(${type},${description},${amount},${date},${String(b.category||'').trim()||null},${String(b.note||'').trim()||null},${u.id}) RETURNING *`;return json(res,201,{transaction:rows[0]});
+    }
+    if(action==='finance-delete-transaction'&&req.method==='POST'){
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);await sql`DELETE FROM finance_transactions WHERE id=${b.id}`;return json(res,200,{ok:true});
+    }
     if(action==='finance-generate'&&req.method==='POST'){
       const u=await requireUser(req,res,'commander');if(!u)return;await ensureCurrentDues();return json(res,200,{ok:true})
     }
     if(action==='finance-payment'&&req.method==='POST'){
-      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const period=b.period||new Date().toISOString().slice(0,7)+'-01';const status=['paid','waived','pending'].includes(b.status)?b.status:'paid';await sql`INSERT INTO membership_dues(operator_id,period,amount,due_date,status,paid_at,payment_note) VALUES(${b.operator_id},${period},COALESCE(${Number(b.amount)||0},0),COALESCE(${b.due_date||period},${period}),${status},${status==='paid'?'now()':null},${b.note||null}) ON CONFLICT(operator_id,period) DO UPDATE SET status=EXCLUDED.status,amount=EXCLUDED.amount,due_date=EXCLUDED.due_date,paid_at=EXCLUDED.paid_at,payment_note=EXCLUDED.payment_note`;return json(res,200,{ok:true})
+      const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const period=b.period||new Date().toISOString().slice(0,7)+'-01';const status=['paid','waived','pending'].includes(b.status)?b.status:'paid';
+      const due=await sql`INSERT INTO membership_dues(operator_id,period,amount,due_date,status,paid_at,payment_note) VALUES(${b.operator_id},${period},COALESCE(${Number(b.amount)||0},0),COALESCE(${b.due_date||period},${period}),${status},${status==='paid'?'now()':null},${b.note||null}) ON CONFLICT(operator_id,period) DO UPDATE SET status=EXCLUDED.status,amount=EXCLUDED.amount,due_date=EXCLUDED.due_date,paid_at=EXCLUDED.paid_at,payment_note=EXCLUDED.payment_note RETURNING id,operator_id,period,amount,status`;
+      const op=(await sql`SELECT nickname FROM operators WHERE id=${b.operator_id} LIMIT 1`)[0];
+      if(status==='paid'&&due[0]){await sql`INSERT INTO finance_transactions(type,description,amount,transaction_date,category,reference_id,created_by) VALUES('income',${`Mensalidade @${op?.nickname||'Operador'} — ${String(period).slice(0,7)}`},${Number(due[0].amount||0)},CURRENT_DATE,'Mensalidades',${due[0].id},${u.id}) ON CONFLICT(reference_id) DO UPDATE SET amount=EXCLUDED.amount,description=EXCLUDED.description,transaction_date=EXCLUDED.transaction_date`}
+      if(status==='waived'&&due[0]) await sql`DELETE FROM finance_transactions WHERE reference_id=${due[0].id}`;
+      return json(res,200,{ok:true})
     }
 
     if(action==='rsvp'&&req.method==='POST'){
