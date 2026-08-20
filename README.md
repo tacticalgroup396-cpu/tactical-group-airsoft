@@ -32,3 +32,11 @@ Depois do deploy, o operador entra em sua conta e clica em **Ativar notificaçõ
 3. Push para `main`.
 4. Aguarde o Production Deployment ficar Ready.
 5. Acesse o domínio de produção: `https://tactical-group-airsoft.vercel.app`.
+
+## V17 — Vercel Hobby sem Cron periódico
+
+- Removido o Cron de 5 minutos, incompatível com o plano Hobby.
+- O cancelamento por prazo e mínimo de operadores é reconciliado no início de cada requisição da API.
+- O endpoint de cron foi removido para evitar falha de build/deploy.
+
+**Importante:** sem um agendador externo, o cancelamento acontece na primeira interação com o aplicativo após o prazo; não há execução em segundo plano a cada poucos minutos.
