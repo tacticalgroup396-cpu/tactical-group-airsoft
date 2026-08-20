@@ -138,7 +138,7 @@ export default async function handler(req,res){
 
     if(action==='public'){
       const operators=await sql`SELECT * FROM operators WHERE active=true AND public_profile=true ORDER BY CASE WHEN role='commander' THEN 0 ELSE 1 END,nickname`
-      const games=await sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.notes,g.briefing,g.max_players,g.min_players,g.rsvp_deadline_date,g.rsvp_deadline_time,gf.name field_name,gf.maps_url field_maps_url FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id WHERE g.game_date>=CURRENT_DATE AND COALESCE(g.status,'')<>'cancelado' ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 20`
+      const games=await sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.notes,g.briefing,g.max_players,g.min_players,g.rsvp_deadline_date,g.rsvp_deadline_time,gf.name field_name,gf.maps_url field_maps_url,COALESCE((SELECT json_agg(json_build_object('id',o.id,'nickname',o.nickname,'rank',o.rank,'function',o.function,'photo_url',o.photo_url,'loadout',gp.loadout) ORDER BY o.nickname) FROM game_participants gp JOIN operators o ON o.id=gp.operator_id WHERE gp.game_id=g.id AND gp.response='going' AND o.active=true),'[]'::json) participants FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id WHERE g.game_date>=CURRENT_DATE AND COALESCE(g.status,'')<>'cancelado' ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 20`
       const siteSettings=await currentFinanceSettings();
       return json(res,200,{operators:operators.map(publicOperatorRow),games,ranks,instagram_url:siteSettings.instagram_url||null})
     }
