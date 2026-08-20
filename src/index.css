@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Orbitron', ui-sans-serif, system-ui, sans-serif;
+  --color-olive: #4a5927;
+  --color-ink: #0f1113;
+  --color-cream: #f4f1ea;
+  --color-amber: #c8962e;
+  --color-stone: #e8e4d8;
+  --color-slate-gray: #6c7466;
+}
+
+html { scroll-behavior: smooth; }
+body { -webkit-font-smoothing: antialiased; background:#0f1113; color:#f4f1ea; font-family:'Inter',ui-sans-serif,system-ui,sans-serif; }
+::selection { background:#c8962e; color:#0f1113; }
+
+@keyframes slide-up {
+  from { opacity:0; transform:translateY(20px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.animate-slide-up { animation:slide-up 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+
+.field{width:100%;background:#1a1a1a;border:1px solid rgba(232,228,216,.2);border-radius:.5rem;padding:.75rem 1rem;font-size:.875rem;color:#f4f1ea;outline:none}.field:focus{border-color:#c8962e}.card{border:1px solid rgba(232,228,216,.15);background:#141414;border-radius:1rem;padding:1.5rem}.button{border-radius:.5rem;background:#c8962e;color:#0f1113;font-weight:700;padding:.65rem 1.25rem;width:100%}

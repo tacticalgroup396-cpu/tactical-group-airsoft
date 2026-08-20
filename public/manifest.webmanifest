@@ -1,0 +1,10 @@
+{
+  "name": "Tactical Group Airsoft",
+  "short_name": "Tactical Airsoft",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1113",
+  "theme_color": "#c8962e",
+  "lang": "pt-BR",
+  "icons": []
+}
