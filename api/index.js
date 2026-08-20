@@ -20,7 +20,7 @@ async function ensureSchema(){
       const cols=[
         ['operators','email','TEXT'],['operators','is_primary_commander','BOOLEAN NOT NULL DEFAULT FALSE'],['operators','last_promotion_period','DATE'],['operators','invite_code_hash','TEXT'],['operators','invite_expires_at','TIMESTAMPTZ'],['operators','invite_used_at','TIMESTAMPTZ'],
         ['operators','age','INTEGER'],['operators','birth_date','DATE'],['operators','blood_type','TEXT'],['operators','airsoft_years','NUMERIC'],['operators','play_style','TEXT'],['operators','primary_replica','TEXT'],['operators','secondary_replica','TEXT'],
-        ['operators','absences','INTEGER NOT NULL DEFAULT 0'],['operators','suspension_until','DATE'],['operators','public_profile','BOOLEAN NOT NULL DEFAULT TRUE'],['operators','photo_url','TEXT'],['operators','bio','TEXT'],['operators','equipment_summary','TEXT'],['operators','elo','INTEGER NOT NULL DEFAULT 0'],
+        ['operators','absences','INTEGER NOT NULL DEFAULT 0'],['operators','suspension_until','DATE'],['operators','public_profile','BOOLEAN NOT NULL DEFAULT TRUE'],['operators','photo_url','TEXT'],['operators','bio','TEXT'],['operators','equipment_summary','TEXT'],['operators','elo','INTEGER NOT NULL DEFAULT 0'],['operators','elo_level','INTEGER NOT NULL DEFAULT 3'],
         ['games','game_time','TIME'],['games','elo_reward','INTEGER NOT NULL DEFAULT 1'],['games','commander_id','UUID'],['games','min_players','INTEGER NOT NULL DEFAULT 4'],['games','max_players','INTEGER'],['games','rsvp_deadline_date','DATE'],['games','rsvp_deadline_time','TIME'],['games','description','TEXT'],['games','briefing','TEXT'],['games','maps_url','TEXT'],['games','field_id','UUID'],
         ["game_participants","response","TEXT NOT NULL DEFAULT 'pending'"], ["game_participants","elo_awarded","BOOLEAN NOT NULL DEFAULT FALSE"],['game_participants','loadout','JSONB'],['game_participants','responded_at','TIMESTAMPTZ'],['game_participants','absence_processed','BOOLEAN NOT NULL DEFAULT FALSE']
       ]
@@ -45,6 +45,11 @@ async function ensureSchema(){
       await sql`CREATE UNIQUE INDEX IF NOT EXISTS finance_transactions_reference_idx ON finance_transactions(reference_id) WHERE reference_id IS NOT NULL`
       await sql`CREATE INDEX IF NOT EXISTS finance_transactions_date_idx ON finance_transactions(transaction_date DESC)`
       await sql`INSERT INTO finance_settings(id) VALUES(1) ON CONFLICT(id) DO NOTHING`
+      await sql`UPDATE operators SET elo_level=3 WHERE elo_level IS NULL OR elo_level<1 OR elo_level>3`
+      await sql`CREATE TABLE IF NOT EXISTS elo_settings (id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id=1), attendance_step INTEGER NOT NULL DEFAULT 1, promote_at_level INTEGER NOT NULL DEFAULT 1, default_level INTEGER NOT NULL DEFAULT 3, absence_penalty_level INTEGER NOT NULL DEFAULT 1, highlander_penalty_level INTEGER NOT NULL DEFAULT 1, misconduct_penalty_level INTEGER NOT NULL DEFAULT 1, highlander_suspension_days INTEGER NOT NULL DEFAULT 1, misconduct_suspension_days INTEGER NOT NULL DEFAULT 0, updated_by UUID REFERENCES operators(id) ON DELETE SET NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`
+      await sql`INSERT INTO elo_settings(id) VALUES(1) ON CONFLICT(id) DO NOTHING`
+      await sql`CREATE TABLE IF NOT EXISTS elo_history (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, game_id UUID REFERENCES games(id) ON DELETE SET NULL, old_level INTEGER, new_level INTEGER, action TEXT NOT NULL, reason TEXT, changed_by UUID REFERENCES operators(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`
+      await sql`CREATE INDEX IF NOT EXISTS elo_history_operator_idx ON elo_history(operator_id, created_at DESC)`
       await sql`CREATE TABLE IF NOT EXISTS membership_dues (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE, period DATE NOT NULL, amount NUMERIC(12,2) NOT NULL DEFAULT 0, due_date DATE NOT NULL, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','waived','overdue')), paid_at TIMESTAMPTZ, payment_note TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(operator_id, period))`
       await sql`CREATE INDEX IF NOT EXISTS membership_dues_operator_idx ON membership_dues(operator_id, period DESC)`
       await sql`CREATE INDEX IF NOT EXISTS membership_dues_status_idx ON membership_dues(status, due_date)`
@@ -61,7 +66,37 @@ async function userFromSession(req){
 }
 function setCookie(res,token,maxAge=60*60*24*14){res.setHeader('Set-Cookie',`${COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${maxAge}`)}
 async function requireUser(req,res,role){const u=await userFromSession(req);if(!u){json(res,401,{error:'Faça login.'});return null}if(role==='operator' && !['operator','commander'].includes(u.role)){json(res,403,{error:'Acesso restrito.'});return null}if(role==='commander' && !['commander'].includes(u.role)){json(res,403,{error:'Acesso restrito.'});return null}return u}
-async function autoPromoteByElo(operatorId){const op=(await sql`SELECT id,rank,elo FROM operators WHERE id=${operatorId} LIMIT 1`)[0];if(!op)return;let idx=ranks.indexOf(op.rank);let elo=Number(op.elo||0);while(elo>=3&&idx>=0&&idx<ranks.length-1){const next=ranks[idx+1];elo-=3;await sql`UPDATE operators SET rank=${next},elo=${elo},last_promotion_period=CURRENT_DATE WHERE id=${operatorId}`;await sql`INSERT INTO rank_history(operator_id,old_rank,new_rank,reason) VALUES(${operatorId},${op.rank},${next},'Promoção por 3 elos de participação')`;await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${operatorId},'rank-up','Promoção de patente',${`Você alcançou 3 elos e subiu para ${next}.`},'/operador')`;idx+=1;op.rank=next}}
+const eloNames={1:'Ouro',2:'Prata',3:'Bronze'}
+const clampEloLevel=v=>Math.min(3,Math.max(1,Number(v)||3))
+async function currentEloSettings(){return (await sql`SELECT * FROM elo_settings WHERE id=1 LIMIT 1`)[0]||{attendance_step:1,promote_at_level:1,default_level:3,absence_penalty_level:1,highlander_penalty_level:1,miscconduct_penalty_level:1,highlander_suspension_days:1,miscconduct_suspension_days:0}}
+async function changeEloLevel(operatorId,action,reason,changedBy,gameId=null,step=1){
+  const op=(await sql`SELECT id,nickname,rank,elo_level FROM operators WHERE id=${operatorId} LIMIT 1`)[0];
+  if(!op)return null;
+  const settings=await currentEloSettings();
+  let oldLevel=clampEloLevel(op.elo_level), level=oldLevel, promoted=false, currentRank=op.rank;
+  if(action==='attendance'){
+    let steps=Math.max(1,Number(step||1));
+    while(steps-- > 0){
+      if(level>Number(settings.promote_at_level||1)) level=Math.max(1,level-1);
+      else{
+        const idx=ranks.indexOf(currentRank);
+        if(idx<0||idx>=ranks.length-1)break;
+        const next=ranks[idx+1];
+        await sql`INSERT INTO rank_history(operator_id,old_rank,new_rank,reason) VALUES(${operatorId},${currentRank},${next},${reason||'Promoção por participação'})`;
+        await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${operatorId},'rank-up','Promoção de patente',${`Você subiu para ${next} por participação.`},'/operador')`;
+        currentRank=next; promoted=true; level=clampEloLevel(settings.default_level||3);
+      }
+    }
+    await sql`UPDATE operators SET rank=${currentRank},elo_level=${level} WHERE id=${operatorId}`;
+    await sql`INSERT INTO elo_history(operator_id,game_id,old_level,new_level,action,reason,changed_by) VALUES(${operatorId},${gameId},${oldLevel},${level},'attendance',${reason||'Presença no jogo'},${changedBy||null})`;
+  }else{
+    const penalty=Math.max(1,Number(step||1));
+    level=Math.min(3,oldLevel+penalty);
+    await sql`UPDATE operators SET elo_level=${level} WHERE id=${operatorId}`;
+    await sql`INSERT INTO elo_history(operator_id,game_id,old_level,new_level,action,reason,changed_by) VALUES(${operatorId},${gameId},${oldLevel},${level},${action},${reason||action},${changedBy||null})`;
+  }
+  return {operatorId,oldLevel,newLevel:level,promoted,rank:currentRank};
+}
 
 async function ensureBirthdayNotifications(){
   const birthdays=await sql`SELECT id,nickname FROM operators WHERE active=true AND birth_date IS NOT NULL AND EXTRACT(MONTH FROM birth_date)=EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(DAY FROM birth_date)=EXTRACT(DAY FROM CURRENT_DATE)`
@@ -83,7 +118,7 @@ async function reconcileAbsences(){
   const rows=await sql`SELECT gp.game_id,gp.operator_id FROM game_participants gp JOIN games g ON g.id=gp.game_id WHERE g.game_date<CURRENT_DATE AND gp.response='going' AND gp.present=false AND gp.absence_processed=false`
   for(const r of rows){await sql`UPDATE game_participants SET absence_processed=true WHERE game_id=${r.game_id} AND operator_id=${r.operator_id} AND absence_processed=false`;await sql`UPDATE operators SET absences=COALESCE(absences,0)+1 WHERE id=${r.operator_id}`}
 }
-function publicOperatorRow(o){return {id:o.id,name:o.name,nickname:o.nickname,rank:o.rank,function:o.function||'Operador',games_count:o.games_count||0,absences:o.absences||0,photo_url:o.photo_url||null,bio:o.bio||'',equipment_summary:o.equipment_summary||'',elo:o.elo||0,age:o.age||null,birth_date:o.birth_date||null,blood_type:o.blood_type||null,airsoft_years:o.airsoft_years||null,play_style:o.play_style||'',primary_replica:o.primary_replica||'',secondary_replica:o.secondary_replica||''}}
+function publicOperatorRow(o){return {id:o.id,name:o.name,nickname:o.nickname,rank:o.rank,function:o.function||'Operador',games_count:o.games_count||0,absences:o.absences||0,photo_url:o.photo_url||null,bio:o.bio||'',equipment_summary:o.equipment_summary||'',elo:o.elo||0,elo_level:clampEloLevel(o.elo_level),elo_label:eloNames[clampEloLevel(o.elo_level)],age:o.age||null,birth_date:o.birth_date||null,blood_type:o.blood_type||null,airsoft_years:o.airsoft_years||null,play_style:o.play_style||'',primary_replica:o.primary_replica||'',secondary_replica:o.secondary_replica||''}}
 
 async function currentFinanceSettings(){return (await sql`SELECT * FROM finance_settings WHERE id=1 LIMIT 1`)[0]||{monthly_fee:0,due_day:10,grace_days:0,currency:'BRL',active:true,instagram_url:null}}
 async function ensureCurrentDues(){
@@ -93,12 +128,6 @@ async function ensureCurrentDues(){
   const dueDate=await sql`SELECT make_date(EXTRACT(YEAR FROM ${period}::date)::int, EXTRACT(MONTH FROM ${period}::date)::int, ${Number(settings.due_day)})::date AS due_date`;
   await sql`INSERT INTO membership_dues(operator_id,period,amount,due_date) SELECT id,${period},${Number(settings.monthly_fee)},${dueDate[0].due_date} FROM operators WHERE active=true AND role='operator' ON CONFLICT(operator_id,period) DO UPDATE SET amount=EXCLUDED.amount,due_date=EXCLUDED.due_date WHERE membership_dues.status='pending'`;
   if(Number(settings.monthly_fee)>0) await sql`UPDATE membership_dues SET status='overdue' WHERE status='pending' AND due_date < CURRENT_DATE AND CURRENT_DATE > due_date + (COALESCE(${Number(settings.grace_days)},0)||' days')::interval`;
-}
-const promotionThresholds=[2,4,6,8,10,12,14,16,18,20,22,24,26]
-async function autoPromoteEligible(){
-  const period=(await sql`SELECT date_trunc('month',CURRENT_DATE)::date period`)[0].period
-  const rows=await sql`SELECT o.id,o.rank,o.last_promotion_period,COUNT(gp.game_id) FILTER (WHERE gp.present=true AND gp.game_id IN (SELECT id FROM games WHERE game_date>=date_trunc('month',CURRENT_DATE)::date AND game_date<date_trunc('month',CURRENT_DATE)::date+interval '1 month'))::int attended FROM operators o LEFT JOIN game_participants gp ON gp.operator_id=o.id WHERE o.active=true AND o.role='operator' GROUP BY o.id,o.rank,o.last_promotion_period`
-  for(const r of rows){if(r.last_promotion_period&&String(r.last_promotion_period).slice(0,10)===String(period).slice(0,10))continue;const idx=ranks.indexOf(r.rank);if(idx<0||idx>=ranks.length-1)continue;const threshold=promotionThresholds[Math.min(idx,promotionThresholds.length-1)];if(Number(r.attended)>=threshold){const next=ranks[idx+1];await sql`UPDATE operators SET rank=${next},last_promotion_period=${period},elo=COALESCE(elo,0)+${Number(r.attended)*10} WHERE id=${r.id}`;await sql`INSERT INTO rank_history(operator_id,old_rank,new_rank,reason) VALUES(${r.id},${r.rank},${next},${`Promoção automática por ${Number(r.attended)} participações no mês`})`;await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${r.id},'rank-up','Promoção de patente',${`Você foi promovido para ${next} por participação nos jogos deste mês.`},'/operador')`}}
 }
 async function reconcileGameDeadlines(){
   const games=await sql`SELECT id,title,game_date,game_time,min_players,status FROM games WHERE status<>'cancelado' AND rsvp_deadline_date IS NOT NULL AND (rsvp_deadline_date < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date OR (rsvp_deadline_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date AND COALESCE(rsvp_deadline_time,'23:59:59')::time <= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::time))`;
@@ -132,7 +161,6 @@ export default async function handler(req,res){
       if(process.env.CRON_SECRET&&secret!==process.env.CRON_SECRET)return json(res,401,{error:'Não autorizado.'});
       await reconcileGameDeadlines();
       await reconcileAbsences();
-      await autoPromoteEligible();
       return json(res,200,{ok:true});
     }
 
@@ -189,7 +217,7 @@ export default async function handler(req,res){
     if(action==='notification-read'&&req.method==='POST'){const u=await requireUser(req,res);if(!u)return;const b=await body(req);await sql`UPDATE notifications SET read_at=now() WHERE id=${b.id} AND operator_id=${u.id}`;return json(res,200,{ok:true})}
 
     if(action==='profile-data'){
-      const u=await requireUser(req,res,'operator');if(!u)return;await autoPromoteEligible()
+      const u=await requireUser(req,res,'operator');if(!u)return;
       const equipment=await sql`SELECT id,category,name,details,public_visible,photo_url FROM operator_equipment WHERE operator_id=${u.id} ORDER BY category,name`
       const gallery=await sql`SELECT id,image_data,caption,created_at FROM operator_gallery WHERE operator_id=${u.id} ORDER BY created_at DESC LIMIT 30`
       return json(res,200,{user:u,equipment,gallery})
@@ -300,14 +328,14 @@ export default async function handler(req,res){
 
     if(action==='commander'){
       const u=await requireUser(req,res,'commander');if(!u)return;await reconcileAbsences()
-      const operators=await sql`SELECT id,name,nickname,role,rank,function,games_count,absences,elo,suspension_until,active,email,photo_url,invite_expires_at,invite_used_at,is_primary_commander,last_promotion_period FROM operators ORDER BY role DESC,active DESC,nickname`
-      const fields=await sql`SELECT * FROM game_fields WHERE active=true ORDER BY name`;const games=await sql`SELECT g.*,gf.name field_name,gf.maps_url field_maps_url,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id)::int participant_count,COALESCE((SELECT json_agg(json_build_object('id',o2.id,'nickname',o2.nickname,'rank',o2.rank,'function',o2.function,'photo_url',o2.photo_url,'loadout',gp2.loadout) ORDER BY o2.nickname) FROM game_participants gp2 JOIN operators o2 ON o2.id=gp2.operator_id WHERE gp2.game_id=g.id AND gp2.response='going' AND o2.active=true),'[]'::json) participants FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date>=CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
+      const operators=await sql`SELECT id,name,nickname,role,rank,function,games_count,absences,elo,elo_level,suspension_until,active,email,photo_url,invite_expires_at,invite_used_at,is_primary_commander,last_promotion_period FROM operators ORDER BY role DESC,active DESC,nickname`
+      const fields=await sql`SELECT * FROM game_fields WHERE active=true ORDER BY name`;const eloSettings=await currentEloSettings();const games=await sql`SELECT g.*,gf.name field_name,gf.maps_url field_maps_url,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id)::int participant_count,COALESCE((SELECT json_agg(json_build_object('id',o2.id,'nickname',o2.nickname,'rank',o2.rank,'function',o2.function,'photo_url',o2.photo_url,'loadout',gp2.loadout) ORDER BY o2.nickname) FROM game_participants gp2 JOIN operators o2 ON o2.id=gp2.operator_id WHERE gp2.game_id=g.id AND gp2.response='going' AND o2.active=true),'[]'::json) participants FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date>=CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
       const history=await sql`SELECT g.*,count(gp.operator_id) FILTER (WHERE gp.response='going')::int going_count,count(gp.operator_id) FILTER (WHERE gp.present=true)::int present_count,count(gp.operator_id) FILTER (WHERE gp.response='going' AND gp.present=false AND gp.absence_processed=true)::int absence_count FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants gp ON gp.game_id=g.id WHERE g.game_date<CURRENT_DATE GROUP BY g.id,gf.name,gf.maps_url ORDER BY g.game_date DESC,g.game_time DESC NULLS LAST LIMIT 100`
       const requests=await sql`SELECT vr.*,greq.title AS requested_game_title,greq.game_date AS requested_game_date,COALESCE(json_agg(json_build_object('game_id',vga.game_id,'title',g.title,'game_date',g.game_date,'location',g.location)) FILTER (WHERE vga.id IS NOT NULL),'[]') assignments FROM visitor_requests vr LEFT JOIN games greq ON greq.id=vr.requested_game_id LEFT JOIN visitor_game_assignments vga ON vga.visitor_request_id=vr.id LEFT JOIN games g ON g.id=vga.game_id GROUP BY vr.id,greq.title,greq.game_date ORDER BY vr.created_at DESC LIMIT 50`
       await ensureCurrentDues();const financeSettings=await currentFinanceSettings();const dues=await sql`SELECT d.*,o.nickname,o.rank,o.active,o.email FROM membership_dues d JOIN operators o ON o.id=d.operator_id WHERE d.period=date_trunc('month',CURRENT_DATE)::date ORDER BY CASE d.status WHEN 'overdue' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END,o.nickname`;
       const financeRows=await sql`SELECT COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END),0)::numeric total_income,COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END),0)::numeric total_expense,COUNT(*)::int total_count FROM finance_transactions WHERE transaction_date>=date_trunc('month',CURRENT_DATE)::date AND transaction_date<(date_trunc('month',CURRENT_DATE)+INTERVAL '1 month')::date`;
       const financeTransactions=await sql`SELECT * FROM finance_transactions WHERE transaction_date>=date_trunc('month',CURRENT_DATE)::date AND transaction_date<(date_trunc('month',CURRENT_DATE)+INTERVAL '1 month')::date ORDER BY transaction_date DESC,created_at DESC LIMIT 200`;
-      return json(res,200,{me:u,operators,games,history,requests,ranks,financeSettings,dues,fields,financeLedger:{period:'monthly',summary:financeRows[0],transactions:financeTransactions}})
+      return json(res,200,{me:u,operators,games,history,requests,ranks,eloSettings,financeSettings,dues,fields,financeLedger:{period:'monthly',summary:financeRows[0],transactions:financeTransactions}})
     }
 
     if(action==='create-field'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const name=String(b.name||'').trim();const maps=String(b.maps_url||'').trim();if(!name||!maps)return json(res,400,{error:'Informe nome e link do Google Maps.'});const rows=await sql`INSERT INTO game_fields(name,address,maps_url,notes) VALUES(${name},${String(b.address||'').trim()||null},${maps},${String(b.notes||'').trim()||null}) RETURNING *`;return json(res,201,{field:rows[0]})}
@@ -337,16 +365,22 @@ export default async function handler(req,res){
       const u=await requireUser(req,res,'commander');if(!u)return;
       const b=await body(req);
       const before=(await sql`SELECT gp.present,gp.elo_awarded,g.elo_reward FROM game_participants gp JOIN games g ON g.id=gp.game_id WHERE gp.game_id=${b.game_id} AND gp.operator_id=${b.operator_id} LIMIT 1`)[0];
-      await sql`UPDATE game_participants SET present=${!!b.present},response=CASE WHEN ${!!b.present} THEN 'attended' ELSE response END,absence_processed=false WHERE game_id=${b.game_id} AND operator_id=${b.operator_id}`;
-      await sql`UPDATE operators SET games_count=(SELECT count(*) FROM game_participants WHERE operator_id=${b.operator_id} AND present=true) WHERE id=${b.operator_id}`;
-      if(b.present && (!before || !before.present) && !before?.elo_awarded){
-        const reward=Math.max(1,Number(before?.elo_reward||1));
-        await sql`UPDATE operators SET elo=COALESCE(elo,0)+${reward} WHERE id=${b.operator_id}`;
-        await sql`UPDATE game_participants SET elo_awarded=true WHERE game_id=${b.game_id} AND operator_id=${b.operator_id}`;
-        await autoPromoteByElo(b.operator_id);
+      const present=!!b.present;
+      await sql`UPDATE game_participants SET present=${present},response=CASE WHEN ${present} THEN 'attended' ELSE response END,absence_processed=false WHERE game_id=${b.game_id} AND operator_id=${b.operator_id}`;
+      await sql`UPDATE operators SET games_count=(SELECT count(*) FROM game_participants WHERE operator_id=${b.operator_id} AND present=true),absences=(SELECT count(*) FROM game_participants WHERE operator_id=${b.operator_id} AND response='going' AND present=false AND absence_processed=true) WHERE id=${b.operator_id}`;
+      if(present && (!before || !before.present) && !before?.elo_awarded){
+        await changeEloLevel(b.operator_id,'attendance',b.reason||'Presença confirmada pelo comando',u.id,b.game_id,Math.max(1,Number(before?.elo_reward||1)));
+        await sql`UPDATE game_participants SET elo_awarded=true,absence_processed=false WHERE game_id=${b.game_id} AND operator_id=${b.operator_id}`;
+      } else if(!present && before?.present){
+        await changeEloLevel(b.operator_id,'absence',b.reason||'Falta registrada pelo comando',u.id,b.game_id,1);
+        await sql`UPDATE game_participants SET elo_awarded=false,absence_processed=true WHERE game_id=${b.game_id} AND operator_id=${b.operator_id}`;
       }
       return json(res,200,{ok:true});
     }
+
+    if(action==='elo-adjust'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const level=clampEloLevel(b.level);const op=(await sql`SELECT id,elo_level FROM operators WHERE id=${b.operator_id} LIMIT 1`)[0];if(!op)return json(res,404,{error:'Operador não encontrado.'});const oldLevel=clampEloLevel(op.elo_level);await sql`UPDATE operators SET elo_level=${level} WHERE id=${op.id}`;await sql`INSERT INTO elo_history(operator_id,old_level,new_level,action,reason,changed_by) VALUES(${op.id},${oldLevel},${level},'manual',${b.reason||'Ajuste manual do comando'},${u.id})`;return json(res,200,{ok:true,level})}
+    if(action==='discipline-elo'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const type=['absence','highlander','misconduct'].includes(b.type)?b.type:'misconduct';const reason=String(b.reason||'Decisão disciplinar do comando');const settings=await currentEloSettings();const step=type==='absence'?settings.absence_penalty_level:type==='highlander'?settings.highlander_penalty_level:settings.misconduct_penalty_level;const r=await changeEloLevel(b.operator_id,type,reason,u.id,b.game_id,step);const days=type==='highlander'?Number(settings.highlander_suspension_days||0):type==='misconduct'?Number(settings.misconduct_suspension_days||0):0;if(days)await sql`UPDATE operators SET suspension_until=CURRENT_DATE + ${days}::int WHERE id=${b.operator_id}`;return json(res,200,{ok:true,result:r,days})}
+    if(action==='elo-settings'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const values={attendance_step:1,promote_at_level:1,default_level:clampEloLevel(b.default_level),absence_penalty_level:Math.max(1,Math.min(2,Number(b.absence_penalty_level||1))),highlander_penalty_level:Math.max(1,Math.min(2,Number(b.highlander_penalty_level||1))),misconduct_penalty_level:Math.max(1,Math.min(2,Number(b.misconduct_penalty_level||1))),highlander_suspension_days:Math.max(0,Number(b.highlander_suspension_days||0)),misconduct_suspension_days:Math.max(0,Number(b.misconduct_suspension_days||0))};await sql`UPDATE elo_settings SET attendance_step=${values.attendance_step},promote_at_level=${values.promote_at_level},default_level=${values.default_level},absence_penalty_level=${values.absence_penalty_level},highlander_penalty_level=${values.highlander_penalty_level},misconduct_penalty_level=${values.misconduct_penalty_level},highlander_suspension_days=${values.highlander_suspension_days},misconduct_suspension_days=${values.misconduct_suspension_days},updated_by=${u.id},updated_at=now() WHERE id=1`;return json(res,200,{ok:true})}
 
     if(action==='visitor-decision'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);const status=b.status==='approved'?'approved':'rejected';await sql`UPDATE visitor_requests SET status=${status},approved_by=${status==='approved'?u.id:null},decided_at=now() WHERE id=${b.id}`;return json(res,200,{ok:true})}
     if(action==='assign-visitor'&&req.method==='POST'){const u=await requireUser(req,res,'commander');if(!u)return;const b=await body(req);await sql`INSERT INTO visitor_game_assignments(visitor_request_id,game_id,notes) VALUES(${b.visitor_request_id},${b.game_id},${b.notes||null}) ON CONFLICT(visitor_request_id,game_id) DO UPDATE SET notes=EXCLUDED.notes`;return json(res,200,{ok:true})}
