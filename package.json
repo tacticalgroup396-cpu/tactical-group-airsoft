@@ -13,6 +13,7 @@
     "bcryptjs": "latest"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "latest",
     "vite": "latest"
   }
 }
