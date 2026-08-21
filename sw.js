@@ -1,4 +1,4 @@
-const CACHE='tga-v58';
+const CACHE='tga-v59';
 const ASSETS=['/','/logo.webp','/manifest.webmanifest'];
 
 self.addEventListener('install', event => {
@@ -29,7 +29,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (url.pathname === '/app.js' || url.pathname === '/style.css' || url.pathname === '/sw.js' || url.pathname === '/mobile-fixes.css' || url.pathname === '/mobile-public-profile.js' || url.pathname === '/visitor-profile-mobile-fix.js' || url.pathname === '/operator-hotfix.js' || url.pathname === '/operator-rescue.js') {
+  if (url.pathname === '/app.js' || url.pathname === '/style.css' || url.pathname === '/sw.js' || url.pathname === '/mobile-fixes.css' || url.pathname === '/mobile-public-profile.js' || url.pathname === '/visitor-profile-mobile-fix.js' || url.pathname === '/operator-hotfix.js' || url.pathname === '/operator-rescue.js' || url.pathname === '/operator-games-fix.js' || url.pathname === '/operator-guardian-fix.js') {
     event.respondWith(fetch(event.request, {cache:'no-store'}));
     return;
   }
