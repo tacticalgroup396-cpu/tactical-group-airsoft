@@ -19,6 +19,6 @@
     const c=document.getElementById('operatorRescueContent');const show=k=>{c.innerHTML=k==='overview'?overview:k==='team'?team:gamesPanel;r.querySelectorAll('[data-r]').forEach(b=>b.classList.toggle('active',b.dataset.r===k))};
     r.querySelector('[data-r="overview"]').onclick=()=>show('overview');r.querySelector('[data-r="team"]').onclick=()=>show('team');r.querySelector('[data-r="games"]').onclick=()=>show('games');show('overview');
   }
-  const rescue=()=>{const r=root();if(!r)return;const t=(r.textContent||'').trim();if(t==='Carregando...'||t.includes('Sua sessão está ativa. O painel principal está sendo atualizado.'))render()};
+  const rescue=()=>{const r=root();if(!r)return;const t=(r.textContent||'').trim();if(t==='Carregando...'||t.includes('Sua sessão está ativa. O painel principal está sendo atualizado.')||r.querySelector('.error'))render()};
   setTimeout(rescue,1300);setTimeout(rescue,2500);setTimeout(rescue,4500);
 })();
