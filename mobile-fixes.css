@@ -1,0 +1,27 @@
+@media (max-width: 700px){
+  main{padding:18px 12px 70px}
+  header{height:68px;position:sticky;top:0;padding:0 12px}
+  .brand{font-size:18px;gap:7px}.brand img{width:36px;height:36px}
+  .menuToggle{display:flex}
+  nav{position:absolute;top:68px;left:10px;right:10px;display:none;flex-direction:column;align-items:stretch;padding:10px;border:1px solid #30353a;border-radius:12px;background:#101316;box-shadow:0 18px 45px rgba(0,0,0,.45)}
+  nav.open{display:flex}.navGroup,.navAccess{display:flex;flex-direction:column;gap:7px}.navGroup+ .navGroup{margin-top:7px}
+  nav a,.ghost{width:100%;text-align:center;padding:11px 10px}
+  .visitorGrid,.operatorGrid{grid-template-columns:1fr;gap:10px}
+  .visitorCard{min-height:92px;padding:14px}.operator h3{font-size:20px}
+  .pageTitle{margin:22px 0 16px}.pageTitle h1{font-size:38px}.pageBrand img{width:64px;height:64px}
+  .sectionHead{margin:26px 0 14px;align-items:flex-start;flex-direction:column;gap:10px}.sectionHead h2{font-size:28px}
+  .profilePanel{margin-top:12px;padding:16px;border-radius:14px;gap:16px}
+  .profileHero{display:flex;flex-direction:column;align-items:flex-start;gap:12px}.profileHero img,.profilePhoto.big{width:92px;height:92px}
+  .profileHero h2{font-size:31px}.profileName{font-size:17px}
+  .profileStats{grid-template-columns:1fr 1fr;gap:8px}.profileStats>div{padding:11px}.profileStats b{font-size:18px}
+  .profileCols{grid-template-columns:1fr;gap:18px}.gallery{grid-template-columns:1fr 1fr;gap:7px}.profileActions{display:grid;grid-template-columns:1fr;gap:8px}.profileActions a{width:100%;text-align:center}
+  .profileMinorInfo{display:grid;gap:8px}.minorStatus,.guardianStatus{border:1px solid #393f44;border-radius:10px;background:#0f1215;padding:12px;display:flex;gap:10px;align-items:flex-start}.minorStatus strong,.guardianStatus strong{display:block;color:#f1c15c}.minorStatus small,.guardianStatus small{display:block;color:#969da2}.minorStatusIcon{font-size:20px}
+  .equipmentPublicGrid{grid-template-columns:1fr!important}.equipmentPublicCard{min-width:0!important}.equipmentPublicCard img{max-height:180px;object-fit:cover}
+  #operatorRescueTabs,#operatorTabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.operatorRescueTab,#operatorTabs .tabButton{padding:10px 5px;font-size:13px;text-align:center}
+  .operatorRescueGrid{grid-template-columns:1fr}.operatorRescueCard{padding:13px}
+  .operatorRescueLists,.operatorGameSections{grid-template-columns:1fr!important}.operatorPresentGrid{grid-template-columns:1fr!important}
+  .operatorGameTabs{display:grid;grid-template-columns:1fr 1fr}.operatorGameTabs button{width:100%}
+  .operatorGameHead{display:block}.operatorGameMeta{margin-top:10px}.operatorGameParticipant{min-width:0}.operatorGameParticipant img{width:40px;height:40px}
+  .operatorDashboard,.adminGrid,.game{grid-template-columns:1fr}.formGrid{grid-template-columns:1fr}.commandStats{grid-template-columns:1fr 1fr}
+}
+@media (max-width:420px){.profileStats{grid-template-columns:1fr}.commandStats{grid-template-columns:1fr}.gallery{grid-template-columns:1fr 1fr}.pageTitle h1{font-size:34px}.profilePanel{padding:13px}}
