@@ -1,4 +1,5 @@
 (()=>{
+  const SAFE_CLIENT_VERSION='2026-08-21-1432';
   const DEFAULT_RANKS=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];
   if(!window.ranks)window.ranks=DEFAULT_RANKS;
   const safeActions=new Set(['login','me','logout','profile-data','team-members','public','operator']);
