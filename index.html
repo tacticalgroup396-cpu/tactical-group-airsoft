@@ -24,7 +24,29 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=54"))}</script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=55"))}</script>
   <script src="/app.js?v=54"></script>
+  <script>
+    (()=>{
+      const enhance=()=>{
+        if(location.pathname!=='/visitantes')return;
+        const q=new URLSearchParams(location.search);
+        const operator=q.get('operator');
+        if(!operator)return;
+        const profile=document.querySelector('.profilePanel');
+        if(!profile)return;
+        document.querySelector('.pageTitle')?.remove();
+        document.querySelector('.sectionHead')?.remove();
+        document.querySelector('.visitorGrid')?.remove();
+        document.querySelector('.completedGamesPublic')?.remove();
+        document.getElementById('visit')?.remove();
+        profile.classList.add('publicProfileFocused');
+        requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'auto'}));
+      };
+      const observer=new MutationObserver(enhance);
+      observer.observe(document.getElementById('app')||document.body,{childList:true,subtree:true});
+      enhance();
+    })();
+  </script>
 </body>
 </html>
