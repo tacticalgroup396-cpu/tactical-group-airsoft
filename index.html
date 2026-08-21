@@ -28,6 +28,7 @@
   <script src="/app.js?v=57"></script>
   <script>
     (()=>{
+      const escGuardian=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       const enhance=()=>{
         if(location.pathname!=='/visitantes')return;
         const q=new URLSearchParams(location.search);
@@ -42,6 +43,22 @@
         document.getElementById('visit')?.remove();
         profile.classList.add('publicProfileFocused');
         requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'auto'}));
+        if(profile.dataset.guardianLoaded==='1')return;
+        profile.dataset.guardianLoaded='1';
+        fetch('/api/public-operator?id='+encodeURIComponent(operator)+'&_t='+Date.now(),{cache:'no-store'})
+          .then(r=>r.json()).then(info=>{
+            const stats=profile.querySelector('.profileStats');
+            if(!stats)return;
+            const box=document.createElement('div');
+            box.className='profileMinorInfo';
+            if(info.minor){
+              const guardian=info.guardian;
+              box.innerHTML=`<div class="minorStatus"><span class="minorStatusIcon">⚠️</span><div><strong>Menor de idade</strong><small>Este operador possui menos de 18 anos.</small></div></div>${guardian?`<div class="guardianStatus"><div><strong>Responsável</strong><span>${guardian.nickname?'@'+escGuardian(guardian.nickname):escGuardian(guardian.name)}</span>${guardian.name?`<small>${escGuardian(guardian.name)}</small>`:''}${guardian.rank?`<small>${escGuardian(guardian.rank)}</small>`:''}</div></div>`:`<div class="guardianStatus"><div><strong>Responsável</strong><span>Não informado</span></div></div>`}`;
+            }else{
+              box.innerHTML='<div class="minorStatus"><span class="minorStatusIcon">✓</span><div><strong>Maior de idade</strong><small>Operador com 18 anos ou mais.</small></div></div>';
+            }
+            stats.insertAdjacentElement('afterend',box);
+          }).catch(()=>{profile.dataset.guardianLoaded='0'});
       };
       const observer=new MutationObserver(enhance);
       observer.observe(document.getElementById('app')||document.body,{childList:true,subtree:true});
