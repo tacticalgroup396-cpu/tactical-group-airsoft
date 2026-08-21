@@ -201,6 +201,13 @@ export default async function handler(req,res){
       return json(res,200,{operators:operators.map(publicOperatorRow),games,completedGames,ranks,instagram_url:siteSettings.instagram_url||null})
     }
 
+    if(action==='team-members'){
+      const u=await requireUser(req,res,'operator');if(!u)return;
+      const operators=await sql`SELECT id,name,nickname,role,rank,function,photo_url,bio,public_profile,elo_level FROM operators WHERE active=true ORDER BY CASE WHEN role='commander' THEN 0 ELSE 1 END, nickname`;
+      const siteSettings=await currentFinanceSettings();
+      return json(res,200,{operators:operators.map(publicOperatorRow),instagram_url:siteSettings.instagram_url||null});
+    }
+
     if(action==='operator'){
       const id=url.searchParams.get('id');if(!id)return json(res,400,{error:'Operador não informado.'})
       const rows=await sql`SELECT * FROM operators WHERE id=${id} AND active=true AND public_profile=true LIMIT 1`;const op=rows[0]

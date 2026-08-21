@@ -24,6 +24,7 @@ const rankSymbols={
   'Recruta':'🪖','Soldado':'🎖️','Cabo':'⭐','3º Sargento':'🏅','2º Sargento':'🏅','1º Sargento':'🏅','Subtenente':'🛡️','Aspirante':'🎯','Tenente':'⚔️','Capitão':'🛡️','Major':'🏆','Tenente-Coronel':'🎖️','Coronel':'👑'
 };
 const rankIcon=rank=>rankSymbols[rank]||'🎖️';
+const DEFAULT_RANKS=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];
 
 const eloBadge=level=>{const e=eloMeta(level);return `<span class="eloBadge ${e.tone}"><span class="eloSymbol">${e.symbol}</span> Elo ${e.level} · ${e.label}</span>`};
 function showRouteLoading(){let x=document.getElementById('routeLoading');if(!x){x=document.createElement('div');x.id='routeLoading';x.className='routeLoading';x.innerHTML='<div class="routeSpinner"></div><span>Carregando...</span>';document.body.appendChild(x)}requestAnimationFrame(()=>x.classList.add('show'));}
@@ -113,9 +114,16 @@ function firstAccess(){app.innerHTML=`<div class="auth"><form class="modalBox ac
 
 
 function operatorSubnav(active){
-  const items=[['visao','Visão geral'],['configuracoes','Configurações']];
-  return `<div class="operatorNav">${items.map(([id,label])=>`<a class="${active===id?'active':''}" href="/operador${id==='visao'?'':'/configuracoes'}">${label}</a>`).join('')}</div>`;
+  const items=[['visao','Visão geral'],['equipe','Equipe'],['configuracoes','Configurações']];
+  return `<div class="operatorNav">${items.map(([id,label])=>{const href=id==='visao'?'/operador':id==='equipe'?'/operador/equipe':'/operador/configuracoes';return `<a class="${active===id?'active':''}" href="${href}">${label}</a>`}).join('')}</div>`;
 }
+async function operatorTeam(){
+  const d=await api('team-members');
+  syncInstagramHeader(d.instagram_url);
+  const cards=(d.operators||[]).map(o=>`<article class="card operatorTeamCard">${photoOrInitial(o,true)}<div class="operatorTeamInfo"><div class="teamTop"><div><h3>@${esc(o.nickname)}</h3>${o.name?`<div class="operatorRealName">${esc(o.name)}</div>`:''}</div><span class="rank">${esc(o.rank||'Recruta')}</span></div><div class="teamBadges"><span class="eloBadge">${eloMeta(o.elo_level).symbol} Elo ${Number(o.elo_level)||7} · ${eloMeta(o.elo_level).label}</span><span class="tag">${esc(o.function||'Operador')}</span></div><p>${esc(o.bio||'Perfil público do operador.')}</p><a class="goldbtn small" href="/visitantes?operator=${o.id}&from=operator">Ver perfil</a></div></article>`).join('');
+  app.innerHTML=`<section><div class="pageTitle"><div class="pageBrand"><img src="/logo.webp" alt="Tactical Group Airsoft"><div><div class="eyebrow">EQUIPE</div><h1>Membros do grupo</h1><p>Veja os operadores, suas patentes, Elos e perfis públicos.</p></div></div></div>${operatorSubnav('equipe')}<div class="card"><div class="sectionHead compact"><div><div class="eyebrow">MEMBROS</div><h2>Equipe Tactical Group</h2><p class="muted">Patente e Elo atualizados pelo comando.</p></div><span class="tag">${(d.operators||[]).length} membro(s)</span></div><div class="operatorTeamGrid">${cards||'<div class="muted">Nenhum membro ativo encontrado.</div>'}</div></div></section>`;
+}
+
 async function operatorSettings(){
   const d=await api('profile-data'); const u=d.user;
   syncInstagramHeader(d.instagram_url);
@@ -148,7 +156,7 @@ async function operatorSettings(){
 }
 function showProgressCelebration(previous,current){
   if(!previous||!current)return;
-  const rankList=current.ranks||ranks;
+  const rankList=current.ranks||DEFAULT_RANKS;
   const oldRankIndex=rankList.indexOf(previous.rank||'');
   const newRankIndex=rankList.indexOf(current.rank||'');
   const rankUp=newRankIndex>oldRankIndex && oldRankIndex>=0;
@@ -179,14 +187,14 @@ function trackOperatorProgress(u,ranksList){
   try{
     const key=`tga-progress-${u.id}`;
     const previous=JSON.parse(localStorage.getItem(key)||'null');
-    const current={rank:u.rank||'Recruta',elo_level:Number(u.elo_level)||7,ranks:ranksList||ranks};
+    const current={rank:u.rank||'Recruta',elo_level:Number(u.elo_level)||7,ranks:ranksList||DEFAULT_RANKS};
     localStorage.setItem(key,JSON.stringify(current));
     if(previous) setTimeout(()=>showProgressCelebration(previous,current),300);
   }catch{}
 }
 
 async function operator(){
-  const [profile,d]=await Promise.all([api('profile-data'),api('games')]); syncInstagramHeader(d.instagram_url); const u=profile.user; const finance=d.finance; trackOperatorProgress(u,d.ranks||ranks);
+  const [profile,d]=await Promise.all([api('profile-data'),api('games')]); syncInstagramHeader(d.instagram_url); const u=profile.user; const finance=d.finance; trackOperatorProgress(u,d.ranks||DEFAULT_RANKS);
   app.innerHTML=`<section><div class="pageTitle"><div class="pageBrand">${photoOrInitial(u,true)}<div><div class="eyebrow">ÁREA DO OPERADOR</div><h1>${esc(u.nickname)}</h1>${u.name?`<div class="operatorRealName pageRealName">${esc(u.name)}</div>`:''}<p>Patente <b>${esc(u.rank)}</b> · ${u.absences||0} faltas${u.suspension_until?' · suspensão até '+fmt(u.suspension_until):''}${d.instagram_url?` · <a href="${esc(d.instagram_url)}" target="_blank" rel="noopener">Instagram</a>`:''}</p></div></div></div>
   ${operatorSubnav('visao')}
   <details class="card operatorEloHero operatorEloTop collapsibleCard" open>
@@ -313,6 +321,7 @@ async function start(){
   try{
     if(location.pathname==='/visitantes')return await visitors();
     if(location.pathname==='/operador'){if(me?.role==='operator'||me?.role==='commander')return operator();return loginBox('operator')}
+    if(location.pathname==='/operador/equipe'){if(me?.role==='operator'||me?.role==='commander')return operatorTeam();return loginBox('operator')}
     if(location.pathname==='/operador/configuracoes'){if(me?.role==='operator'||me?.role==='commander')return operatorSettings();return loginBox('operator')}
     if(location.pathname==='/comandante'){if(me?.role==='commander')return commanderPage('equipe');return loginBox('commander')}
     if(location.pathname.startsWith('/comandante/')){if(me?.role!=='commander')return loginBox('commander');const page=location.pathname.split('/').filter(Boolean)[1];return commanderPage(page||'equipe')}

@@ -136,3 +136,6 @@
 @media (max-width:640px){.progressCelebrationCard{padding:28px 18px 22px;border-radius:20px}.progressCelebrationCard h2{font-size:28px}.celebrationStat{font-size:16px}.celebrationStat b{font-size:18px}}
 
 .operatorPage .gameParticipantAdmin{display:none!important}
+
+.operatorTeamGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.operatorTeamCard{display:flex;gap:16px;align-items:flex-start}.operatorTeamCard .avatar{flex:0 0 auto}.operatorTeamInfo{min-width:0;flex:1}.operatorTeamInfo h3{margin:0;font-size:24px}.teamTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.teamBadges{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.operatorTeamInfo p{color:#9da4a9;margin:8px 0 12px}.operatorTeamInfo .eloBadge{display:inline-flex;align-items:center;gap:5px}
+@media(max-width:720px){.operatorTeamGrid{grid-template-columns:1fr}.operatorTeamCard{align-items:flex-start}.teamTop{flex-direction:column}}
