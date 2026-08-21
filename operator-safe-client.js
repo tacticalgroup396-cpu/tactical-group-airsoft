@@ -11,4 +11,13 @@
     }catch{}
     return previousFetch(input,init);
   };
+  window.addEventListener('unhandledrejection',event=>{
+    if(location.pathname!=='/operador'&& !location.pathname.startsWith('/operador/'))return;
+    const message=event.reason?.message||String(event.reason||'Erro ao carregar o painel.');
+    const app=document.getElementById('app');
+    if(app&&!app.dataset.safeError){
+      app.dataset.safeError='1';
+      app.innerHTML=`<div class="error"><b>Não foi possível carregar o painel do operador.</b><br>${String(message).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</div>`;
+    }
+  });
 })();
