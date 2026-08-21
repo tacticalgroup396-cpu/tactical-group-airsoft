@@ -16,50 +16,24 @@
 </head>
 <body>
   <header>
-    <a class="brand" href="/" aria-label="Tactical Group Airsoft">
-      <img src="/logo.webp" alt="Tactical Group Airsoft">
-      <span>Tactical <b>Airsoft</b></span><span id="instagramHeader" class="instagramHeader" aria-live="polite"></span>
-    </a>
+    <a class="brand" href="/" aria-label="Tactical Group Airsoft"><img src="/logo.webp" alt="Tactical Group Airsoft"><span>Tactical <b>Airsoft</b></span><span id="instagramHeader" class="instagramHeader" aria-live="polite"></span></a>
     <button id="menuToggle" class="menuToggle" aria-label="Abrir menu" aria-expanded="false" type="button"><span></span><span></span><span></span></button>
     <nav id="nav"></nav>
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=63"))}</script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=64"))}</script>
   <script>
-    (()=>{
-      const fastActions=new Set(['login','me','logout','push-config','notifications','profile-data','team-members','public','operator','games']);
-      const originalFetch=window.fetch.bind(window);
-      window.fetch=(input,init)=>{
-        try{
-          const u=new URL(typeof input==='string'?input:input.url,location.href);
-          if(u.pathname==='/api/index.js'&&fastActions.has(u.searchParams.get('action'))){u.pathname='/api/fast.js';return originalFetch(u.toString(),init)}
-        }catch{}
-        return originalFetch(input,init);
-      };
-    })();
+    (()=>{const fastActions=new Set(['login','me','logout','push-config','notifications','profile-data','team-members','public','operator','games']);const originalFetch=window.fetch.bind(window);window.fetch=(input,init)=>{try{const u=new URL(typeof input==='string'?input:input.url,location.href);if(u.pathname==='/api/index.js'&&fastActions.has(u.searchParams.get('action'))){u.pathname='/api/fast.js';return originalFetch(u.toString(),init)}}catch{}return originalFetch(input,init)}})();
+  </script>
+  <script>var ranks=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];</script>
+  <script src="/app.js?v=69"></script>
+  <script src="/ui-route-fix.js?v=1"></script>
+  <script>
+    (()=>{const p=location.pathname;if(p==='/operador'||p.startsWith('/operador/equipe')||p==='/comandante/jogos'||p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=3';s.defer=true;document.body.appendChild(s)}})();
   </script>
   <script>
-    var ranks=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];
-  </script>
-  <script src="/app.js?v=68"></script>
-  <script src="/visitor-profile-mobile-fix.js?v=5"></script>
-  <script src="/mobile-public-profile.js?v=4"></script>
-  <script src="/operator-guardian-fix.js?v=3"></script>
-  <script src="/operations-features.js?v=2"></script>
-  <script>
-    (()=>{
-      const escGuardian=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-      const enhance=()=>{
-        if(location.pathname!=='/visitantes')return;
-        const q=new URLSearchParams(location.search); const operator=q.get('operator'); if(!operator)return;
-        const profile=document.querySelector('.profilePanel'); if(!profile)return;
-        document.querySelector('.pageTitle')?.remove();document.querySelector('.sectionHead')?.remove();document.querySelector('.visitorGrid')?.remove();document.querySelector('.completedGamesPublic')?.remove();document.getElementById('visit')?.remove();profile.classList.add('publicProfileFocused');
-        requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'auto'}));
-        if(profile.dataset.guardianLoaded==='1')return; profile.dataset.guardianLoaded='1';
-        fetch('/api/public-operator?id='+encodeURIComponent(operator)+'&_t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(info=>{const stats=profile.querySelector('.profileStats');if(!stats)return;const box=document.createElement('div');box.className='profileMinorInfo';if(info.minor){const guardian=info.guardian;box.innerHTML=`<div class="minorStatus"><span class="minorStatusIcon">⚠️</span><div><strong>Menor de idade</strong><small>Este operador possui menos de 18 anos.</small></div></div>${guardian?`<div class="guardianStatus"><div><strong>Responsável</strong><span>${guardian.nickname?'@'+escGuardian(guardian.nickname):escGuardian(guardian.name)}</span>${guardian.name?`<small>${escGuardian(guardian.name)}</small>`:''}${guardian.rank?`<small>${escGuardian(guardian.rank)}</small>`:''}</div></div>`:`<div class="guardianStatus"><div><strong>Responsável</strong><span>Não informado</span></div></div>`}`}else{box.innerHTML='<div class="minorStatus"><span class="minorStatusIcon">✓</span><div><strong>Maior de idade</strong><small>Operador com 18 anos ou mais.</small></div></div>'}stats.insertAdjacentElement('afterend',box)}).catch(()=>{profile.dataset.guardianLoaded='0'});
-      }; const observer=new MutationObserver(enhance); observer.observe(document.getElementById('app')||document.body,{childList:true,subtree:true}); enhance();
-    })();
+    (()=>{if(location.pathname!=='/visitantes')return;const load=()=>{for(const src of ['/visitor-profile-mobile-fix.js?v=5','/mobile-public-profile.js?v=4','/operator-guardian-fix.js?v=3']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load()})();
   </script>
 </body>
 </html>
