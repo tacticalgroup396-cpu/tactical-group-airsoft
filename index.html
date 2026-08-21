@@ -8,10 +8,10 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="description" content="Tactical Group Airsoft — operação, treino e comunidade.">
   <title>Tactical Group Airsoft</title>
-  <link rel="stylesheet" href="/style.css?v=64">
+  <link rel="stylesheet" href="/style.css?v=65">
   <link rel="stylesheet" href="/mobile-fixes.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -25,10 +25,11 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=59"))}</script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=60"))}</script>
   <script src="/app.js?v=64"></script>
   <script src="/operator-hotfix.js?v=7"></script>
   <script src="/operator-rescue.js?v=3"></script>
+  <script src="/operator-panel-force.js?v=1"></script>
   <script src="/visitor-profile-mobile-fix.js?v=4"></script>
   <script src="/mobile-public-profile.js?v=2"></script>
   <script src="/operator-games-fix.js?v=1"></script>
@@ -38,38 +39,13 @@
       const escGuardian=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       const enhance=()=>{
         if(location.pathname!=='/visitantes')return;
-        const q=new URLSearchParams(location.search);
-        const operator=q.get('operator');
-        if(!operator)return;
-        const profile=document.querySelector('.profilePanel');
-        if(!profile)return;
-        document.querySelector('.pageTitle')?.remove();
-        document.querySelector('.sectionHead')?.remove();
-        document.querySelector('.visitorGrid')?.remove();
-        document.querySelector('.completedGamesPublic')?.remove();
-        document.getElementById('visit')?.remove();
-        profile.classList.add('publicProfileFocused');
+        const q=new URLSearchParams(location.search); const operator=q.get('operator'); if(!operator)return;
+        const profile=document.querySelector('.profilePanel'); if(!profile)return;
+        document.querySelector('.pageTitle')?.remove();document.querySelector('.sectionHead')?.remove();document.querySelector('.visitorGrid')?.remove();document.querySelector('.completedGamesPublic')?.remove();document.getElementById('visit')?.remove();profile.classList.add('publicProfileFocused');
         requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'auto'}));
-        if(profile.dataset.guardianLoaded==='1')return;
-        profile.dataset.guardianLoaded='1';
-        fetch('/api/public-operator?id='+encodeURIComponent(operator)+'&_t='+Date.now(),{cache:'no-store'})
-          .then(r=>r.json()).then(info=>{
-            const stats=profile.querySelector('.profileStats');
-            if(!stats)return;
-            const box=document.createElement('div');
-            box.className='profileMinorInfo';
-            if(info.minor){
-              const guardian=info.guardian;
-              box.innerHTML=`<div class="minorStatus"><span class="minorStatusIcon">⚠️</span><div><strong>Menor de idade</strong><small>Este operador possui menos de 18 anos.</small></div></div>${guardian?`<div class="guardianStatus"><div><strong>Responsável</strong><span>${guardian.nickname?'@'+escGuardian(guardian.nickname):escGuardian(guardian.name)}</span>${guardian.name?`<small>${escGuardian(guardian.name)}</small>`:''}${guardian.rank?`<small>${escGuardian(guardian.rank)}</small>`:''}</div></div>`:`<div class="guardianStatus"><div><strong>Responsável</strong><span>Não informado</span></div></div>`}`;
-            }else{
-              box.innerHTML='<div class="minorStatus"><span class="minorStatusIcon">✓</span><div><strong>Maior de idade</strong><small>Operador com 18 anos ou mais.</small></div></div>';
-            }
-            stats.insertAdjacentElement('afterend',box);
-          }).catch(()=>{profile.dataset.guardianLoaded='0'});
-      };
-      const observer=new MutationObserver(enhance);
-      observer.observe(document.getElementById('app')||document.body,{childList:true,subtree:true});
-      enhance();
+        if(profile.dataset.guardianLoaded==='1')return; profile.dataset.guardianLoaded='1';
+        fetch('/api/public-operator?id='+encodeURIComponent(operator)+'&_t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(info=>{const stats=profile.querySelector('.profileStats');if(!stats)return;const box=document.createElement('div');box.className='profileMinorInfo';if(info.minor){const guardian=info.guardian;box.innerHTML=`<div class="minorStatus"><span class="minorStatusIcon">⚠️</span><div><strong>Menor de idade</strong><small>Este operador possui menos de 18 anos.</small></div></div>${guardian?`<div class="guardianStatus"><div><strong>Responsável</strong><span>${guardian.nickname?'@'+escGuardian(guardian.nickname):escGuardian(guardian.name)}</span>${guardian.name?`<small>${escGuardian(guardian.name)}</small>`:''}${guardian.rank?`<small>${escGuardian(guardian.rank)}</small>`:''}</div></div>`:`<div class="guardianStatus"><div><strong>Responsável</strong><span>Não informado</span></div></div>`}`}else{box.innerHTML='<div class="minorStatus"><span class="minorStatusIcon">✓</span><div><strong>Maior de idade</strong><small>Operador com 18 anos ou mais.</small></div></div>'}stats.insertAdjacentElement('afterend',box)}).catch(()=>{profile.dataset.guardianLoaded='0'});
+      }; const observer=new MutationObserver(enhance); observer.observe(document.getElementById('app')||document.body,{childList:true,subtree:true}); enhance();
     })();
   </script>
 </body>
