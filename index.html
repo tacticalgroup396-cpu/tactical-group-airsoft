@@ -8,7 +8,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="description" content="Tactical Group Airsoft — operação, treino e comunidade.">
   <title>Tactical Group Airsoft</title>
-  <link rel="stylesheet" href="/style.css?v=60">
+  <link rel="stylesheet" href="/style.css?v=61">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,10 +24,22 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=60"))}</script>
-  <script src="/app.js?v=60"></script>
-  <script src="/operator-hotfix.js?v=3"></script>
-  <script src="/visitor-profile-mobile-fix.js?v=1"></script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=61"))}</script>
+  <script>
+    (()=>{
+      const nativeFetch=window.fetch.bind(window);
+      let bootstrapPromise=null;
+      const ensureBootstrap=()=>bootstrapPromise||(bootstrapPromise=nativeFetch('/api/bootstrap?_t='+Date.now(),{cache:'no-store'}).catch(()=>null));
+      window.fetch=async(input,init)=>{
+        const url=typeof input==='string'?input:(input&&input.url)||'';
+        if(url.includes('/api/index.js')||url.includes('/api/operator-games')||url.includes('/api/public-operator')) await ensureBootstrap();
+        return nativeFetch(input,init);
+      };
+    })();
+  </script>
+  <script src="/app.js?v=61"></script>
+  <script src="/operator-hotfix.js?v=4"></script>
+  <script src="/visitor-profile-mobile-fix.js?v=2"></script>
   <script>
     (()=>{
       const escGuardian=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
