@@ -25,15 +25,13 @@ async function currentUser(req) {
   return rows[0] || null
 }
 
-const operatorFields = `
-  o.id, o.nickname, o.name, o.rank, o.function, o.photo_url, o.elo_level
-`
+const operatorFields = 'o.id, o.nickname, o.name, o.rank, o.function, o.photo_url, o.elo_level'
 
 async function participants(gameIds, onlyPresent = false) {
   if (!gameIds.length) return []
-  return onlyPresent
-    ? sql.query(`SELECT gp.game_id, gp.operator_id, gp.response, gp.present, gp.loadout, ${operatorFields} FROM game_participants gp JOIN operators o ON o.id=gp.operator_id WHERE gp.game_id = ANY($1::uuid[]) AND o.active=true AND COALESCE(gp.present,false)=true ORDER BY o.nickname`, [gameIds])
-    : sql.query(`SELECT gp.game_id, gp.operator_id, gp.response, gp.present, gp.loadout, ${operatorFields} FROM game_participants gp JOIN operators o ON o.id=gp.operator_id WHERE gp.game_id = ANY($1::uuid[]) AND o.active=true ORDER BY CASE gp.response WHEN 'going' THEN 1 WHEN 'pending' THEN 2 ELSE 3 END, o.nickname`, [gameIds])
+  const placeholders = gameIds.map((_, i) => `$${i + 1}`).join(',')
+  const present = onlyPresent ? ' AND COALESCE(gp.present,false)=true' : ''
+  return sql.query(`SELECT gp.game_id, gp.operator_id, gp.response, gp.present, gp.loadout, ${operatorFields} FROM game_participants gp JOIN operators o ON o.id=gp.operator_id WHERE gp.game_id IN (${placeholders}) AND o.active=true${present} ORDER BY o.nickname`, gameIds)
 }
 
 export default async function handler(req, res) {
@@ -66,12 +64,11 @@ export default async function handler(req, res) {
     const activeParts = await participants(activeIds, false)
     const presentParts = await participants(finishedIds, true)
 
-    const photos = finishedIds.length ? await sql`
-      SELECT mp.game_id, mp.image_data, mp.caption, mp.created_at
-      FROM match_photos mp
-      WHERE mp.game_id = ANY(${finishedIds}::uuid[])
-      ORDER BY mp.created_at DESC
-    ` : []
+    let photos = []
+    if (finishedIds.length) {
+      const placeholders = finishedIds.map((_, i) => `$${i + 1}`).join(',')
+      photos = await sql.query(`SELECT mp.game_id, mp.image_data, mp.caption, mp.created_at FROM match_photos mp WHERE mp.game_id IN (${placeholders}) ORDER BY mp.created_at DESC`, finishedIds)
+    }
 
     const mapParticipant = p => ({
       id: p.id,
