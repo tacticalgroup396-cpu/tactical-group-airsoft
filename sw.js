@@ -1,4 +1,4 @@
-const CACHE='tga-v57';
+const CACHE='tga-v58';
 const ASSETS=['/','/logo.webp','/manifest.webmanifest'];
 
 self.addEventListener('install', event => {
@@ -24,20 +24,16 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
 
-  // API/auth must always use the server and must never be cached.
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // Never cache application code. This prevents partial HTTP 206 responses
-  // from poisoning the PWA cache and ensures every deployment loads the full JS/CSS.
-  if (url.pathname === '/app.js' || url.pathname === '/style.css' || url.pathname === '/sw.js') {
+  if (url.pathname === '/app.js' || url.pathname === '/style.css' || url.pathname === '/sw.js' || url.pathname === '/mobile-fixes.css' || url.pathname === '/mobile-public-profile.js' || url.pathname === '/visitor-profile-mobile-fix.js' || url.pathname === '/operator-hotfix.js' || url.pathname === '/operator-rescue.js') {
     event.respondWith(fetch(event.request, {cache:'no-store'}));
     return;
   }
 
-  // Navigations are network-first so the latest Vercel deployment is used.
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request, {cache:'no-store'})
@@ -46,7 +42,6 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache only complete successful responses.
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
