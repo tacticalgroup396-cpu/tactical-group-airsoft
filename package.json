@@ -1,7 +1,7 @@
 {
   "name": "tactical-group-airsoft",
   "private": true,
-  "version": "2.1.3",
+  "version": "2.1.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,10 +17,10 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "latest",
-    "@types/node": "latest",
+    "@types/node": "22.18.0",
     "@vercel/node": "latest",
     "@vitejs/plugin-react": "latest",
-    "typescript": "latest",
+    "typescript": "5.9.3",
     "vite": "latest",
     "vite-plugin-singlefile": "latest"
   }
