@@ -9,6 +9,7 @@
     "api/operator-profile.js": {"maxDuration": 30},
     "api/operator-replicas.js": {"maxDuration": 30},
     "api/commander-live.js": {"maxDuration": 30},
+    "api/visitor-admin.js": {"maxDuration": 15},
     "api/light.js": {"maxDuration": 15}
   },
   "rewrites": [
@@ -20,6 +21,7 @@
     {"source": "/api/operator-profile", "destination": "/api/operator-profile.js"},
     {"source": "/api/operator-replicas", "destination": "/api/operator-replicas.js"},
     {"source": "/api/commander-live", "destination": "/api/commander-live.js"},
+    {"source": "/api/visitor-admin", "destination": "/api/visitor-admin.js"},
     {"source": "/api/:path*", "destination": "/api/index.js"},
     {"source": "/:path*/app.js", "destination": "/app.js"},
     {"source": "/:path*/style.css", "destination": "/style.css"},
