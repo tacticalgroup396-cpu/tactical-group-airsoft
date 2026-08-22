@@ -4,7 +4,7 @@
     const nav=document.querySelector('.operatorNav');
     if(!nav)return false;
     const matches=nav.querySelector('a[href="/operador/jogos"]');
-    if(matches)matches.textContent='Partidas';
+    if(matches&&matches.textContent!=='Partidas')matches.textContent='Partidas';
     if(!nav.querySelector('a[href="/operador/arena"]')){
       const a=document.createElement('a');
       a.href='/operador/arena';
