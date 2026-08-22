@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/style.css?v=66">
   <link rel="stylesheet" href="/mobile-fixes.css?v=2">
   <link rel="stylesheet" href="/operator-fast.css?v=1">
+  <link rel="stylesheet" href="/tga-suite-v3.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,35 +24,18 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=72"))}</script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=73"))}</script>
   <script>var ranks=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];</script>
   <script src="/blob-upload-router.js?v=1"></script>
   <script src="/api-lite-router.js?v=3"></script>
   <script>
-    (()=>{
-      const p=location.pathname;
-      const s=document.createElement('script');
-      s.src=p==='/operador/arena'?'/operator-airsoft-arena.js?v=1':p.startsWith('/operador')?'/operator-dashboard-fast.js?v=4':'/app.js?v=72';
-      s.async=false;
-      document.body.appendChild(s);
-    })();
+    (()=>{const p=location.pathname,s=document.createElement('script');s.src=p==='/operador/arena'?'/operator-minigames-v3.js?v=2':(p==='/operador/equipe'||p==='/operador/configuracoes')?'/operator-profile-v3.js?v=1':p.startsWith('/operador')?'/operator-dashboard-fast.js?v=4':'/app.js?v=72';s.async=false;document.body.appendChild(s)})();
   </script>
   <script>
-    (()=>{
-      const p=location.pathname;
-      if(p.startsWith('/operador')&&p!=='/operador/arena'){
-        const s=document.createElement('script');s.src='/operator-game-tabs.js?v=1';s.defer=true;document.body.appendChild(s);
-      }
-      if(!p.startsWith('/operador')){
-        const s=document.createElement('script');s.src='/ui-route-fix.js?v=2';s.defer=true;document.body.appendChild(s);
-      }
-      if(p.startsWith('/comandante')){
-        const s=document.createElement('script');s.src='/captain-rank-guard.js?v=1';s.defer=true;document.body.appendChild(s);
-      }
-    })();
+    (()=>{const p=location.pathname;if(p.startsWith('/operador')&&p!=='/operador/arena'){const s=document.createElement('script');s.src='/operator-game-tabs.js?v=2';s.defer=true;document.body.appendChild(s)}if(p==='/operador/configuracoes'){const s=document.createElement('script');s.src='/operator-equipment-v3.js?v=1';s.defer=true;document.body.appendChild(s)}if(!p.startsWith('/operador')){const s=document.createElement('script');s.src='/ui-route-fix.js?v=2';s.defer=true;document.body.appendChild(s)}if(p.startsWith('/comandante')){const s=document.createElement('script');s.src='/captain-rank-guard.js?v=1';s.defer=true;document.body.appendChild(s)}})();
   </script>
   <script>
-    (()=>{const p=location.pathname;if(p==='/comandante/jogos'||p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=5';s.defer=true;document.body.appendChild(s)}})();
+    (()=>{const p=location.pathname;if(p==='/comandante/jogos'||p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=6';s.defer=true;document.body.appendChild(s)}if(p==='/comandante/jogos'){const s=document.createElement('script');s.src='/commander-live-v3.js?v=1';s.defer=true;document.body.appendChild(s)}})();
   </script>
   <script>
     (()=>{if(location.pathname!=='/visitantes')return;const load=()=>{for(const src of ['/visitor-profile-mobile-fix.js?v=5','/mobile-public-profile.js?v=4','/operator-guardian-fix.js?v=3']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load()})();

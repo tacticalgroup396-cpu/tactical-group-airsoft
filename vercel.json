@@ -5,6 +5,8 @@
     "api/media.js": {"maxDuration": 30},
     "api/operator-dashboard.js": {"maxDuration": 15},
     "api/operator-game.js": {"maxDuration": 15},
+    "api/operator-profile.js": {"maxDuration": 30},
+    "api/commander-live.js": {"maxDuration": 30},
     "api/light.js": {"maxDuration": 15}
   },
   "rewrites": [
@@ -13,6 +15,8 @@
     {"source": "/api/media", "destination": "/api/media.js"},
     {"source": "/api/operator-dashboard", "destination": "/api/operator-dashboard.js"},
     {"source": "/api/operator-game", "destination": "/api/operator-game.js"},
+    {"source": "/api/operator-profile", "destination": "/api/operator-profile.js"},
+    {"source": "/api/commander-live", "destination": "/api/commander-live.js"},
     {"source": "/api/:path*", "destination": "/api/index.js"},
     {"source": "/:path*/app.js", "destination": "/app.js"},
     {"source": "/:path*/style.css", "destination": "/style.css"},
