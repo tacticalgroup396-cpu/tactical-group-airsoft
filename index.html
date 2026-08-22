@@ -24,37 +24,38 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw-v57.js?v=3"))}</script>
+
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw-v57.js?v=4"))}</script>
   <script>var ranks=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];</script>
   <script>window.renderFinancePage=window.renderFinancePage||async function(d){if(typeof window.financePanel!=='function')throw new Error('Financeiro ainda não carregou.');return window.financePanel(d)}</script>
+  <script src="/blob-upload-router.js?v=1"></script>
+  <script src="/api-lite-router-v4.js?v=3"></script>
+  <script src="/operator-home-v3.js?v=1"></script>
+
   <script>
     (()=>{
       const p=(location.pathname.replace(/\/+$/,'')||'/');
-      if(p!=='/operador')return;
-      const app=document.getElementById('app'),nav=document.getElementById('nav');
-      if(!app||!nav)return;
-      window.__operatorBootRendered=true;
-      nav.innerHTML='<div class="navGroup"><a href="/visitantes">Equipe</a></div><div class="navGroup navAccess"><a class="active" href="/operador">Operador</a><button class="ghost" id="bootLogout" type="button">Sair</button></div>';
-      app.innerHTML='<section class="ofdPage"><div class="ofdHero"><div class="ofdAvatar">OP</div><div><div class="eyebrow">ÁREA DO OPERADOR</div><h1>Visão geral</h1><p class="muted" id="bootStatus">Abrindo sua área...</p></div></div><div class="ofdNavWrap"><div class="operatorNav"><a class="active" href="/operador">Visão geral</a><a href="/operador/equipe">Ver operadores</a><a href="/operador/jogos">Jogos</a><a href="/operador/arena">Mini jogos</a><a href="/operador/configuracoes">Configurações</a></div></div><section class="ofdCard"><div class="eyebrow">PAINEL</div><h2>Área do operador</h2><p class="muted">Seu perfil, jogos, mini jogos e configurações estão disponíveis pelas abas acima.</p><div class="heroActions"><a class="goldbtn" href="/operador/jogos">Abrir Jogos</a><a class="outlinebtn" href="/operador/arena">Abrir Mini jogos</a></div></section></section>';
-      document.getElementById('bootLogout')?.addEventListener('click',async()=>{try{await fetch('/api/operator-dashboard?action=logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}catch{}location.href='/'});
-      const c=new AbortController(),timer=setTimeout(()=>c.abort(),5000);
-      fetch('/api/light?action=op-me',{credentials:'same-origin',cache:'no-store',signal:c.signal}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Falha ao validar sessão');return d}).then(d=>{clearTimeout(timer);const u=d.user||{};const h=app.querySelector('.ofdHero');if(h)h.innerHTML=(u.photo_url?'<img class="ofdPhoto" src="'+String(u.photo_url).replace(/\"/g,'&quot;')+'" alt="Foto do operador">':'<div class="ofdAvatar">'+String(u.nickname||'OP').slice(0,2)+'</div>')+'<div><div class="eyebrow">ÁREA DO OPERADOR</div><h1>'+String(u.nickname||'Operador')+'</h1><p>Patente <b>'+String(u.rank||'Recruta')+'</b> · '+(Number(u.absences)||0)+' faltas · Elo '+(Number(u.elo_level)||7)+'</p></div>';if(u.role==='commander'&&!nav.querySelector('a[href="/comandante"]')){const a=document.createElement('a');a.href='/comandante';a.textContent='Comandante';nav.querySelector('.navAccess')?.insertBefore(a,document.getElementById('bootLogout'))}}).catch(e=>{clearTimeout(timer);const s=document.getElementById('bootStatus');if(s)s.textContent=e.name==='AbortError'?'Servidor lento, mas você já pode usar as abas.':e.message});
+      if(p==='/operador')return;
+      if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=1';pre.async=false;document.body.appendChild(pre)}
+      const s=document.createElement('script');
+      s.src=p==='/operador/arena'?'/operator-minigames-v5.js?v=1':(p==='/operador/equipe'||p==='/operador/configuracoes')?'/operator-profile-v3.js?v=1':p.startsWith('/operador')?'/operator-dashboard-fast.js?v=4':'/app.js?v=72';
+      s.async=false;
+      document.body.appendChild(s);
     })();
   </script>
-  <script src="/blob-upload-router.js?v=1"></script>
-  <script src="/api-lite-router-v4.js?v=3"></script>
-  <script>
-    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=1';pre.async=false;document.body.appendChild(pre)}const s=document.createElement('script');s.src=p==='/operador'?'/operator-home-v2.js?v=2':p==='/operador/arena'?'/operator-minigames-v5.js?v=1':(p==='/operador/equipe'||p==='/operador/configuracoes')?'/operator-profile-v3.js?v=1':p.startsWith('/operador')?'/operator-dashboard-fast.js?v=4':'/app.js?v=72';s.async=false;s.onerror=()=>{if(p==='/operador'){const st=document.getElementById('bootStatus');if(st)st.textContent='Área básica carregada. Use as abas normalmente.'}};document.body.appendChild(s)})();
-  </script>
+
   <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(!p.startsWith('/operador'))return;const ensure=()=>{const n=document.querySelector('.operatorNav');if(!n)return false;const g=n.querySelector('a[href="/operador/jogos"]');let m=n.querySelector('a[href="/operador/arena"]');if(!m){m=document.createElement('a');m.href='/operador/arena';m.textContent='Mini jogos';if(g)g.insertAdjacentElement('afterend',m);else n.appendChild(m)}else m.textContent='Mini jogos';m.classList.toggle('active',p==='/operador/arena');return true};ensure();const r=document.getElementById('app')||document.body;new MutationObserver(ensure).observe(r,{childList:true,subtree:true});let i=0,t=setInterval(()=>{i++;if(ensure()||i>80)clearInterval(t)},125)})();
   </script>
+
   <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/operador/configuracoes'){for(const src of ['/operator-equipment-v3.js?v=1','/operator-arsenal-plus-v1.js?v=1']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}}if(p==='/operador/configuracoes'||p==='/operador/equipe'){const s=document.createElement('script');s.src='/operator-replicas-v4.js?v=1';s.defer=true;document.body.appendChild(s)}if(!p.startsWith('/operador')){const s=document.createElement('script');s.src='/ui-route-fix.js?v=2';s.defer=true;document.body.appendChild(s)}if(p.startsWith('/comandante')){for(const src of ['/finance-v4-fix.js?v=1','/captain-rank-guard.js?v=1']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}})();
   </script>
+
   <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/comandante/jogos'||p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=6';s.defer=true;document.body.appendChild(s)}if(p==='/comandante/jogos'){const s=document.createElement('script');s.src='/commander-live-v3.js?v=1';s.defer=true;document.body.appendChild(s)}})();
   </script>
+
   <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p!=='/visitantes')return;const load=()=>{for(const src of ['/visitor-profile-mobile-fix.js?v=5','/mobile-public-profile.js?v=4','/operator-guardian-fix.js?v=3']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load()})();
   </script>
