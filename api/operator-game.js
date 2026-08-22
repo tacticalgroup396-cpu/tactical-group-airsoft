@@ -62,6 +62,19 @@ async function ensureScoresSchema() {
   return scoresSchemaReady
 }
 
+async function activeOperators() {
+  const rows = await sql`SELECT id,nickname,rank,photo_url
+    FROM operators
+    WHERE active=true AND role IN ('operator','commander')
+    ORDER BY nickname ASC`
+  return rows.map(row => ({
+    id: row.id,
+    nickname: row.nickname,
+    rank: row.rank || 'Recruta',
+    photo_url: row.photo_url || null
+  }))
+}
+
 async function leaderboard(userId) {
   const rows = await sql`WITH best AS (
       SELECT DISTINCT ON (s.operator_id)
@@ -90,6 +103,7 @@ async function leaderboard(userId) {
     ORDER BY score DESC,level DESC,kills DESC,created_at ASC LIMIT 1`
   return {
     leaderboard: leaders,
+    operators: await activeOperators(),
     myBest: mine[0] ? Number(mine[0].score) || 0 : 0,
     myBestLevel: mine[0] ? Number(mine[0].level) || 1 : 1,
     myBestKills: mine[0] ? Number(mine[0].kills) || 0 : 0
