@@ -23,13 +23,13 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=68"))}</script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=69"))}</script>
   <script>var ranks=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];</script>
   <script>
     (()=>{
       const p=location.pathname;
       const s=document.createElement('script');
-      s.src=p.startsWith('/operador')?'/operator-dashboard-fast.js?v=2':'/app.js?v=71';
+      s.src=p==='/operador/arena'?'/operator-airsoft-arena.js?v=1':p.startsWith('/operador')?'/operator-dashboard-fast.js?v=2':'/app.js?v=71';
       s.async=false;
       document.body.appendChild(s);
     })();
@@ -37,6 +37,9 @@
   <script>
     (()=>{
       const p=location.pathname;
+      if(p.startsWith('/operador')&&p!=='/operador/arena'){
+        const s=document.createElement('script');s.src='/operator-game-tabs.js?v=1';s.defer=true;document.body.appendChild(s);
+      }
       if(!p.startsWith('/operador')){
         const s=document.createElement('script');s.src='/ui-route-fix.js?v=2';s.defer=true;document.body.appendChild(s);
       }
