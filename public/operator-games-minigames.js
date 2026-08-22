@@ -1,0 +1,15 @@
+(()=>{
+  if(location.pathname!=='/operador/jogos')return;
+  const root=document.getElementById('app');if(!root)return;
+  const css=()=>{if(document.getElementById('opMiniGamesCss'))return;const s=document.createElement('style');s.id='opMiniGamesCss';s.textContent=`
+    .opMiniGames{overflow:hidden;position:relative}
+    .opMiniGamesHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;margin-bottom:14px}
+    .opMiniGamesGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .opMiniGameCard{display:flex;min-width:0;flex-direction:column;gap:8px;padding:16px;border:1px solid #30363d;border-radius:16px;background:linear-gradient(145deg,#12171a,#0b0e10);text-decoration:none;color:inherit;transition:transform .16s ease,border-color .16s ease}
+    .opMiniGameCard:hover{transform:translateY(-2px);border-color:#8f7327}.opMiniGameIcon{font-size:30px}.opMiniGameCard h3{margin:0}.opMiniGameCard p{margin:0;color:#98a2a9;font-size:13px;line-height:1.45}.opMiniGameAction{margin-top:auto;font-weight:700;color:#dfa91f}.opMiniGamesBadge{font-size:11px;border:1px solid #57491d;border-radius:999px;padding:5px 9px;color:#e8c75c;background:#171407;white-space:nowrap}
+    @media(max-width:760px){.opMiniGamesGrid{grid-template-columns:1fr}.opMiniGamesHead{align-items:flex-start;flex-direction:column}.opMiniGameCard{padding:14px}}
+  `;document.head.appendChild(s)};
+  const section=()=>{const el=document.createElement('section');el.className='ofdCard opMiniGames';el.id='operatorMiniGames';el.innerHTML=`<div class="opMiniGamesHead"><div><div class="eyebrow">MINI JOGOS</div><h2>Treino rápido do operador</h2><p class="muted">Mira, reflexo e sobrevivência direto na aba Jogos.</p></div><span class="opMiniGamesBadge">PC + CELULAR</span></div><div class="opMiniGamesGrid"><a class="opMiniGameCard" href="/operador/arena?mode=arena"><span class="opMiniGameIcon">🔫</span><h3>Arena Survival</h3><p>Sobreviva a ondas de adversários representando operadores ativos do time.</p><span class="opMiniGameAction">Jogar Arena →</span></a><a class="opMiniGameCard" href="/operador/arena?mode=target"><span class="opMiniGameIcon">🎯</span><h3>Alvos Rápidos</h3><p>30 segundos para testar precisão e velocidade de aquisição de alvo.</p><span class="opMiniGameAction">Treinar mira →</span></a><a class="opMiniGameCard" href="/operador/arena?mode=reflex"><span class="opMiniGameIcon">⚡</span><h3>Reflexo CQB</h3><p>Cinco rodadas para medir seu tempo de reação.</p><span class="opMiniGameAction">Testar reflexo →</span></a></div>`;return el};
+  const patch=()=>{if(document.getElementById('operatorMiniGames'))return true;const page=root.querySelector('.ofdPage');if(!page)return false;const nav=page.querySelector('.ofdNavWrap');const firstCard=nav?.nextElementSibling||page.querySelector('.ofdCard');css();const el=section();if(firstCard)firstCard.insertAdjacentElement('beforebegin',el);else page.appendChild(el);return true};
+  patch();const obs=new MutationObserver(()=>patch());obs.observe(root,{childList:true,subtree:true});
+})();
