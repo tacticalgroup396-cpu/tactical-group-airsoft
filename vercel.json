@@ -11,9 +11,16 @@
     },
     "api/operator-game.js": {
       "maxDuration": 15
+    },
+    "api/light.js": {
+      "maxDuration": 15
     }
   },
   "rewrites": [
+    {
+      "source": "/api/light",
+      "destination": "/api/light.js"
+    },
     {
       "source": "/api/mission",
       "destination": "/api/mission.js"
