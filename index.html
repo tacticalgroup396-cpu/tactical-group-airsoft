@@ -24,11 +24,11 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw-v56.js?v=1"))}</script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw-v56.js?v=2"))}</script>
   <script>var ranks=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];</script>
   <script>window.renderFinancePage=window.renderFinancePage||async function(d){if(typeof window.financePanel!=='function')throw new Error('Financeiro ainda não carregou.');return window.financePanel(d)}</script>
   <script src="/blob-upload-router.js?v=1"></script>
-  <script src="/api-lite-router.js?v=3"></script>
+  <script src="/api-lite-router-v4.js?v=1"></script>
   <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=1';pre.async=false;document.body.appendChild(pre)}const s=document.createElement('script');s.src=p==='/operador/arena'?'/operator-minigames-v5.js?v=1':(p==='/operador/equipe'||p==='/operador/configuracoes')?'/operator-profile-v3.js?v=1':p.startsWith('/operador')?'/operator-dashboard-fast.js?v=4':'/app.js?v=72';s.async=false;document.body.appendChild(s)})();
   </script>
@@ -36,7 +36,7 @@
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(!p.startsWith('/operador'))return;const ensure=()=>{const n=document.querySelector('.operatorNav');if(!n)return false;const g=n.querySelector('a[href="/operador/jogos"]');let m=n.querySelector('a[href="/operador/arena"]');if(!m){m=document.createElement('a');m.href='/operador/arena';m.textContent='Mini jogos';if(g)g.insertAdjacentElement('afterend',m);else n.appendChild(m)}else m.textContent='Mini jogos';m.classList.toggle('active',p==='/operador/arena');return true};ensure();const r=document.getElementById('app')||document.body;new MutationObserver(ensure).observe(r,{childList:true,subtree:true});let i=0,t=setInterval(()=>{i++;if(ensure()||i>80)clearInterval(t)},125)})();
   </script>
   <script>
-    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/operador/configuracoes'){const s=document.createElement('script');s.src='/operator-equipment-v3.js?v=1';s.defer=true;document.body.appendChild(s)}if(p==='/operador/configuracoes'||p==='/operador/equipe'){const s=document.createElement('script');s.src='/operator-replicas-v4.js?v=1';s.defer=true;document.body.appendChild(s)}if(!p.startsWith('/operador')){const s=document.createElement('script');s.src='/ui-route-fix.js?v=2';s.defer=true;document.body.appendChild(s)}if(p.startsWith('/comandante')){for(const src of ['/finance-v4-fix.js?v=1','/captain-rank-guard.js?v=1']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}})();
+    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/operador/configuracoes'){for(const src of ['/operator-equipment-v3.js?v=1','/operator-arsenal-plus-v1.js?v=1']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}}if(p==='/operador/configuracoes'||p==='/operador/equipe'){const s=document.createElement('script');s.src='/operator-replicas-v4.js?v=1';s.defer=true;document.body.appendChild(s)}if(!p.startsWith('/operador')){const s=document.createElement('script');s.src='/ui-route-fix.js?v=2';s.defer=true;document.body.appendChild(s)}if(p.startsWith('/comandante')){for(const src of ['/finance-v4-fix.js?v=1','/captain-rank-guard.js?v=1']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}})();
   </script>
   <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/comandante/jogos'||p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=6';s.defer=true;document.body.appendChild(s)}if(p==='/comandante/jogos'){const s=document.createElement('script');s.src='/commander-live-v3.js?v=1';s.defer=true;document.body.appendChild(s)}})();
