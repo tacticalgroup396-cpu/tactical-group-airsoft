@@ -1,6 +1,7 @@
 Deploy trigger for Vercel.
 
 This file exists only to force publication of the current `main` branch.
-Current source commit: 189f3cf451e4eacbcb14fda143d9f7468be3e197.
+Target source commit: 93d553f888bebdd440fdc5c9fc18b7e72c27ec7e.
+Triggered at: 2026-08-22 02:19 America/Sao_Paulo.
 
-This commit contains the operator panel compatibility fix and the independent loading rescue. Production must publish this commit.
+This publication contains the Vercel Blob integration for new media uploads. Do not change DATABASE_URL during this deployment.
