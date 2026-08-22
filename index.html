@@ -23,15 +23,15 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=71"))}</script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=72"))}</script>
   <script>var ranks=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];</script>
   <script src="/blob-upload-router.js?v=1"></script>
-  <script src="/api-lite-router.js?v=2"></script>
+  <script src="/api-lite-router.js?v=3"></script>
   <script>
     (()=>{
       const p=location.pathname;
       const s=document.createElement('script');
-      s.src=p==='/operador/arena'?'/operator-airsoft-arena.js?v=1':p.startsWith('/operador')?'/operator-dashboard-fast.js?v=3':'/app.js?v=72';
+      s.src=p==='/operador/arena'?'/operator-airsoft-arena.js?v=1':p.startsWith('/operador')?'/operator-dashboard-fast.js?v=4':'/app.js?v=72';
       s.async=false;
       document.body.appendChild(s);
     })();
