@@ -5,12 +5,19 @@
     },
     "api/mission.js": {
       "maxDuration": 30
+    },
+    "api/operator-dashboard.js": {
+      "maxDuration": 15
     }
   },
   "rewrites": [
     {
       "source": "/api/mission",
       "destination": "/api/mission.js"
+    },
+    {
+      "source": "/api/operator-dashboard",
+      "destination": "/api/operator-dashboard.js"
     },
     {
       "source": "/api/:path*",
