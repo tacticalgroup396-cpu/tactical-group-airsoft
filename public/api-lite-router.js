@@ -13,7 +13,7 @@
         else if(a==='commander')mapped='commander';
       }else if((u.pathname==='/api/operator-dashboard'||u.pathname==='/api/operator-dashboard.js')&&method==='GET'){
         const a=u.searchParams.get('action')||'dashboard';
-        if(a==='dashboard')mapped='op-dashboard';
+        if(a==='dashboard')return nativeFetch('/api/operator-home-v3',{...init,cache:'no-store'});
         else if(a==='team')mapped='op-team';
         else if(a==='me')mapped='op-me';
       }else if((u.pathname==='/api/operator-game'||u.pathname==='/api/operator-game.js')){
