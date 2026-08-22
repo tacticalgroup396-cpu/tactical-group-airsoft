@@ -1,5 +1,18 @@
 (()=>{
   const nativeFetch=window.fetch.bind(window);
+  const dashboardFetch=(init={})=>{
+    const fastCtrl=new AbortController();
+    const fastTimer=setTimeout(()=>fastCtrl.abort(),4500);
+    const fastInit={...init,signal:fastCtrl.signal,cache:'no-store'};
+    return nativeFetch('/api/operator-home-fast',fastInit).then(async r=>{
+      clearTimeout(fastTimer);
+      if(r.ok)return r;
+      return nativeFetch('/api/light?action=op-dashboard',{...init,cache:'no-store'});
+    }).catch(()=>{
+      clearTimeout(fastTimer);
+      return nativeFetch('/api/light?action=op-dashboard',{...init,cache:'no-store'});
+    });
+  };
   window.fetch=(input,init={})=>{
     try{
       const raw=typeof input==='string'?input:input?.url;if(!raw)return nativeFetch(input,init);
@@ -12,8 +25,8 @@
         const a=u.searchParams.get('action')||'leaderboard';if(method==='GET'&&a==='leaderboard')mapped='arena-leaderboard';else if(method==='POST'&&a==='score')mapped='arena-score';
       }
       if(!mapped)return nativeFetch(input,init);
-      const target=new URL(mapped==='op-dashboard'?'/api/operator-home-fast':'/api/light',location.origin);
-      if(mapped!=='op-dashboard')target.searchParams.set('action',mapped);
+      if(mapped==='op-dashboard')return dashboardFetch(init);
+      const target=new URL('/api/light',location.origin);target.searchParams.set('action',mapped);
       const next={...init};if(mapped==='public')delete next.cache;
       return nativeFetch(target.pathname+target.search,next);
     }catch(e){return nativeFetch(input,init)}
