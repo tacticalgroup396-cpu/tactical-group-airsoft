@@ -3,14 +3,10 @@
   const patch=()=>{
     const nav=document.querySelector('.operatorNav');
     if(!nav)return false;
-    const matches=nav.querySelector('a[href="/operador/jogos"]');
-    if(matches&&matches.textContent!=='Partidas')matches.textContent='Partidas';
-    if(!nav.querySelector('a[href="/operador/arena"]')){
-      const a=document.createElement('a');
-      a.href='/operador/arena';
-      a.textContent='Jogos';
-      if(matches)matches.insertAdjacentElement('afterend',a);else nav.appendChild(a);
-    }
+    const games=nav.querySelector('a[href="/operador/jogos"]');
+    if(games)games.textContent='Jogos';
+    const old=nav.querySelector('a[href="/operador/arena"]');
+    if(old)old.remove();
     return true;
   };
   patch();
