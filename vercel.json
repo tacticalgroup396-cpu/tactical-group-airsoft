@@ -2,9 +2,16 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 30
+    },
+    "api/mission.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
+    {
+      "source": "/api/mission",
+      "destination": "/api/mission.js"
+    },
     {
       "source": "/api/:path*",
       "destination": "/api/index.js"
