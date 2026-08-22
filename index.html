@@ -10,6 +10,7 @@
   <title>Tactical Group Airsoft</title>
   <link rel="stylesheet" href="/style.css?v=66">
   <link rel="stylesheet" href="/mobile-fixes.css?v=2">
+  <link rel="stylesheet" href="/operator-fast.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,16 +23,24 @@
   </header>
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=66"))}</script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js?v=67"))}</script>
   <script>var ranks=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];</script>
-  <script src="/app.js?v=70"></script>
   <script>
     (()=>{
       const p=location.pathname;
-      if(p.startsWith('/operador')){
-        const s=document.createElement('script');s.src='/operator-team-page.js?v=1';s.defer=true;document.body.appendChild(s);
+      const s=document.createElement('script');
+      s.src=p==='/operador'?'/operator-dashboard-fast.js?v=1':'/app.js?v=71';
+      s.async=false;
+      document.body.appendChild(s);
+    })();
+  </script>
+  <script>
+    (()=>{
+      const p=location.pathname;
+      if(p==='/operador/equipe'){
+        const s=document.createElement('script');s.src='/operator-team-page.js?v=2';s.defer=true;document.body.appendChild(s);
       }
-      if(p!=='/operador/equipe'){
+      if(!p.startsWith('/operador')){
         const s=document.createElement('script');s.src='/ui-route-fix.js?v=2';s.defer=true;document.body.appendChild(s);
       }
       if(p.startsWith('/comandante')){
@@ -40,7 +49,7 @@
     })();
   </script>
   <script>
-    (()=>{const p=location.pathname;if(p==='/operador'||p==='/comandante/jogos'||p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=3';s.defer=true;document.body.appendChild(s)}})();
+    (()=>{const p=location.pathname;if(p==='/comandante/jogos'||p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=4';s.defer=true;document.body.appendChild(s)}})();
   </script>
   <script>
     (()=>{if(location.pathname!=='/visitantes')return;const load=()=>{for(const src of ['/visitor-profile-mobile-fix.js?v=5','/mobile-public-profile.js?v=4','/operator-guardian-fix.js?v=3']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load()})();
