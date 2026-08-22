@@ -1,65 +1,24 @@
 {
   "functions": {
-    "api/index.js": {
-      "maxDuration": 30
-    },
-    "api/mission.js": {
-      "maxDuration": 30
-    },
-    "api/operator-dashboard.js": {
-      "maxDuration": 15
-    },
-    "api/operator-game.js": {
-      "maxDuration": 15
-    },
-    "api/light.js": {
-      "maxDuration": 15
-    }
+    "api/index.js": {"maxDuration": 30},
+    "api/mission.js": {"maxDuration": 30},
+    "api/media.js": {"maxDuration": 30},
+    "api/operator-dashboard.js": {"maxDuration": 15},
+    "api/operator-game.js": {"maxDuration": 15},
+    "api/light.js": {"maxDuration": 15}
   },
   "rewrites": [
-    {
-      "source": "/api/light",
-      "destination": "/api/light.js"
-    },
-    {
-      "source": "/api/mission",
-      "destination": "/api/mission.js"
-    },
-    {
-      "source": "/api/operator-dashboard",
-      "destination": "/api/operator-dashboard.js"
-    },
-    {
-      "source": "/api/operator-game",
-      "destination": "/api/operator-game.js"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "/api/index.js"
-    },
-    {
-      "source": "/:path*/app.js",
-      "destination": "/app.js"
-    },
-    {
-      "source": "/:path*/style.css",
-      "destination": "/style.css"
-    },
-    {
-      "source": "/:path*/logo.webp",
-      "destination": "/logo.webp"
-    },
-    {
-      "source": "/:path*/manifest.webmanifest",
-      "destination": "/manifest.webmanifest"
-    },
-    {
-      "source": "/:path*/sw.js",
-      "destination": "/sw.js"
-    },
-    {
-      "source": "/((?!api/)(?!.*\\.).*)",
-      "destination": "/index.html"
-    }
+    {"source": "/api/light", "destination": "/api/light.js"},
+    {"source": "/api/mission", "destination": "/api/mission.js"},
+    {"source": "/api/media", "destination": "/api/media.js"},
+    {"source": "/api/operator-dashboard", "destination": "/api/operator-dashboard.js"},
+    {"source": "/api/operator-game", "destination": "/api/operator-game.js"},
+    {"source": "/api/:path*", "destination": "/api/index.js"},
+    {"source": "/:path*/app.js", "destination": "/app.js"},
+    {"source": "/:path*/style.css", "destination": "/style.css"},
+    {"source": "/:path*/logo.webp", "destination": "/logo.webp"},
+    {"source": "/:path*/manifest.webmanifest", "destination": "/manifest.webmanifest"},
+    {"source": "/:path*/sw.js", "destination": "/sw.js"},
+    {"source": "/((?!api/)(?!.*\\.).*)", "destination": "/index.html"}
   ]
 }
