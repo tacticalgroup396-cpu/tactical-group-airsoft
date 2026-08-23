@@ -54,6 +54,9 @@
   <script>
     (()=>{
       const p=(location.pathname.replace(/\/+$/,'')||'/');
+      if(p==='/operador/arena'){
+        const fs=document.createElement('script');fs.src='/operator-minigame-fullscreen-v1.js?v=1';fs.defer=true;document.body.appendChild(fs)
+      }
       if(p==='/operador/configuracoes'){
         for(const src of ['/operator-equipment-v3.js?v=1','/operator-arsenal-plus-v1.js?v=1']){
           const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)
