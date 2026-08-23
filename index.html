@@ -31,7 +31,6 @@
   <script>window.renderFinancePage=window.renderFinancePage||async function(d){if(typeof window.financePanel!=='function')throw new Error('Financeiro ainda não carregou.');return window.financePanel(d)}</script>
   <script src="/blob-upload-router.js?v=1"></script>
   <script src="/api-lite-router.js?v=7"></script>
-  <script src="/operator-compat-v2.js?v=1"></script>
 
   <script>
     (()=>{
@@ -39,7 +38,7 @@
       if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=1';pre.async=false;document.body.appendChild(pre)}
       const s=document.createElement('script');
       if(p==='/operador/primeiro-acesso')s.src='/app.js?v=74';
-      else if(p.startsWith('/operador'))s.src='/operator-entry-router-v3.js?v=1';
+      else if(p.startsWith('/operador'))s.src='/operator-entry-router-v4.js?v=1';
       else s.src='/app.js?v=74';
       s.async=false;
       document.body.appendChild(s);
