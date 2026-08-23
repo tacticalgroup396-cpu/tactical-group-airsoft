@@ -37,7 +37,9 @@
       const p=(location.pathname.replace(/\/+$/,'')||'/');
       if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=1';pre.async=false;document.body.appendChild(pre)}
       const s=document.createElement('script');
-      s.src=p==='/operador/arena'?'/operator-minigames-v5.js?v=1':(p==='/operador/equipe'||p==='/operador/configuracoes')?'/operator-profile-v3.js?v=1':p.startsWith('/operador')?'/operator-dashboard-fast.js?v=7':'/app.js?v=73';
+      if(p==='/operador/primeiro-acesso')s.src='/app.js?v=74';
+      else if(p.startsWith('/operador'))s.src='/operator-entry-router-v1.js?v=1';
+      else s.src='/app.js?v=74';
       s.async=false;
       document.body.appendChild(s);
     })();
@@ -46,7 +48,7 @@
   <script>
     (()=>{
       const p=(location.pathname.replace(/\/+$/,'')||'/');
-      if(!p.startsWith('/operador'))return;
+      if(!p.startsWith('/operador')||p==='/operador/primeiro-acesso')return;
       const wanted=[['/operador','Visão geral'],['/operador/equipe','Ver operadores'],['/operador/jogos','Jogos'],['/operador/arena','Mini jogos'],['/operador/configuracoes','Configurações']];
       const ensure=()=>{
         const n=document.querySelector('.operatorNav');if(!n)return false;
