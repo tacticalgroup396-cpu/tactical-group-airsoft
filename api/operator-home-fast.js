@@ -18,8 +18,13 @@ async function currentUser(req){
 export default async function handler(req,res){
   try{
     if(req.method!=='GET')return json(res,405,{error:'Método não permitido.'})
+    const action=new URL(req.url,'http://localhost').searchParams.get('action')||'dashboard'
     const u=await currentUser(req);if(!u)return json(res,401,{error:'Faça login novamente.'})
     if(!['operator','commander'].includes(u.role))return json(res,403,{error:'Acesso restrito.'})
+
+    if(action==='me'){
+      return json(res,200,{user:{...u,photo_url:safePhoto(u.photo_url)},instagram_url:null})
+    }
 
     const [games,roster,responsible,financeRows]=await Promise.all([
       sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.briefing,g.rsvp_closed,gf.name field_name,gf.maps_url field_maps_url,COALESCE(me.response,'pending') response,me.loadout FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants me ON me.game_id=g.id AND me.operator_id=${u.id} WHERE g.game_date>=CURRENT_DATE-interval '1 day' AND COALESCE(g.status,'')<>'cancelado' ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 5`,
