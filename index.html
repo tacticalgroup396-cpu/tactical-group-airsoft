@@ -31,6 +31,21 @@
   <script>window.renderFinancePage=window.renderFinancePage||async function(d){if(typeof window.financePanel!=='function')throw new Error('Financeiro ainda não carregou.');return window.financePanel(d)}</script>
   <script src="/blob-upload-router.js?v=1"></script>
   <script>
+    (()=>{
+      const p=(location.pathname.replace(/\/+$/,'')||'/');
+      if(p!=='/entrar')return;
+      document.addEventListener('click',e=>{
+        const a=e.target?.closest?.('a');
+        if(!a)return;
+        if(/^visitante$/i.test((a.textContent||'').trim())){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          location.assign('/visitante');
+        }
+      },true);
+    })();
+  </script>
+  <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/operador')||p==='/visitante')return;const s=document.createElement('script');s.src='/api-lite-router.js?v=8';s.async=false;document.body.appendChild(s)})();
   </script>
   <script>
