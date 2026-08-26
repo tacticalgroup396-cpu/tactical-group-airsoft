@@ -1,15 +1,80 @@
 (()=>{
-  if(location.pathname!=='/comandante/visitas')return;
-  const app=document.getElementById('app');if(!app)return;
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
-  const api=async(action,body)=>{const r=await fetch('/api/visitor-admin?action='+encodeURIComponent(action),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{}),credentials:'same-origin',cache:'no-store'}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Não foi possível atualizar o visitante.');return d};
-  function css(){if(document.getElementById('visitorAdminV2Css'))return;const s=document.createElement('style');s.id='visitorAdminV2Css';s.textContent=`.visitorAccessInfo{margin-bottom:16px;border-color:#6d5721}.visitorAccessInfo .visitorGenerateMain{margin-top:12px}.visitorExtraActions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.visitorCodeBox{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.88);display:grid;place-items:center;padding:18px}.visitorCodeCard{width:min(520px,94vw);background:#111518;border:1px solid #70581e;border-radius:18px;padding:20px}.visitorCodeValue{display:block;padding:14px;margin:12px 0;background:#07090a;border:1px dashed #d9a326;border-radius:12px;font-size:clamp(21px,5vw,30px);letter-spacing:.08em;text-align:center;color:#f0bd42;word-break:break-all}.visitorCodeActions{display:flex;gap:8px;flex-wrap:wrap}.visitorCodeActions>*{flex:1}.visitorRecruitBadge{color:#e0aa27;font-weight:700}@media(max-width:620px){.visitorGenerateMain{width:100%}.visitorExtraActions button{flex:1;min-width:135px}.visitorCodeActions>*{flex-basis:100%}}`;document.head.appendChild(s)}
-  function modal(title,code,kind,name){document.getElementById('visitorCodeModal')?.remove();const m=document.createElement('div');m.id='visitorCodeModal';m.className='visitorCodeBox';const isRecruit=kind==='recruit',path=isRecruit?'/operador/primeiro-acesso':'/visitante',intro=isRecruit?'Código para criar a conta fixa de Operador':'Código de acesso do Visitante';m.innerHTML=`<div class="visitorCodeCard"><div class="eyebrow">${isRecruit?'RECRUTAMENTO':'ACESSO DO VISITANTE'}</div><h2>${esc(title)}</h2><p>${intro}.${name?` Envie para <b>${esc(name)}</b>.`:''}</p><strong class="visitorCodeValue">${esc(code)}</strong><p class="muted">Acesso: <b>${esc(path)}</b></p>${!isRecruit?'<p class="muted">O visitante informa o próprio nome depois que entrar.</p>':''}<div class="visitorCodeActions"><button class="goldbtn" type="button" id="visCopyCode">Copiar código</button><button class="outlinebtn" type="button" id="visShareCode">📲 WhatsApp</button><button class="outlinebtn" type="button" id="visCloseCode">Fechar</button></div></div>`;document.body.appendChild(m);const text=isRecruit?`Tactical Group Airsoft — você foi recrutado para o time.\n\nAcesse: ${location.origin}/operador/primeiro-acesso\nCódigo: ${code}\n\nUse o código para criar seu e-mail/senha de acesso como Operador.`:`Tactical Group Airsoft — acesso de visitante.\n\nAcesse: ${location.origin}/visitante\nCódigo: ${code}\n\nEntre com o código, coloque seu nome e veja os jogos disponíveis.`;m.querySelector('#visCopyCode').onclick=async()=>{await navigator.clipboard?.writeText(code);m.querySelector('#visCopyCode').textContent='Copiado ✓'};m.querySelector('#visShareCode').onclick=()=>window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');m.querySelector('#visCloseCode').onclick=()=>m.remove();m.onclick=e=>{if(e.target===m)m.remove()}}
-  async function createCode(btn){if(btn?.dataset.busy==='1')return;if(btn)btn.dataset.busy='1';try{const d=await api('create-code',{});modal('Código do visitante',d.code,'visitor','')}catch(e){alert(e.message)}finally{if(btn)btn.dataset.busy='0'}}
-  async function generate(id,name){try{const d=await api('generate-code',{id});modal('Código do visitante',d.code,'visitor',name)}catch(e){alert(e.message)}}
-  async function recruit(id,name){if(!confirm(`Recrutar ${name||'este visitante'} para o time?`))return;try{const d=await api('recruit',{id});modal('Convite para Operador',d.code,'recruit',name)}catch(e){alert(e.message)}}
-  async function remove(id,name){if(!confirm(`Excluir definitivamente ${name||'este visitante'} e suas listas de jogos?`))return;try{await api('delete',{id});location.reload()}catch(e){alert(e.message)}}
-  function enhance(){css();const section=[...app.querySelectorAll('.card')].find(x=>/Solicitações/i.test(x.textContent||''));if(section&&!document.getElementById('visitorAccessInfo')){const info=document.createElement('div');info.id='visitorAccessInfo';info.className='card visitorAccessInfo';info.innerHTML=`<div class="eyebrow">ACESSO POR CÓDIGO</div><h2>Gerar código de visitante</h2><p>Gere o código sem cadastrar nome ou apelido. O visitante entra em <b>/visitante</b> e informa o próprio nome na área dele.</p><div class="heroActions"><button type="button" class="goldbtn visitorGenerateMain" id="visitorGenerateMain">🔑 Gerar código de visitante</button><a class="outlinebtn small" href="/visitante" target="_blank">Abrir login do visitante</a></div>`;section.parentNode.insertBefore(info,section);info.querySelector('#visitorGenerateMain').onclick=e=>createCode(e.currentTarget)}
-    app.querySelectorAll('.visitorAdminRow').forEach(row=>{if(row.dataset.visAccessReady==='1')return;const id=row.querySelector('[data-id]')?.dataset.id;if(!id)return;row.dataset.visAccessReady='1';const name=row.querySelector('b')?.textContent?.trim()||'Visitante',actions=row.querySelector('.heroActions')||row;const box=document.createElement('div');box.className='visitorExtraActions';box.innerHTML=`<button type="button" class="mini" data-vis-code="${esc(id)}">🔑 Novo código</button><button type="button" class="mini" data-vis-recruit="${esc(id)}">🎖 Recrutar para o time</button><button type="button" class="mini danger" data-vis-delete="${esc(id)}">Excluir visitante</button>`;actions.appendChild(box);row.querySelector('[data-vis-code]').onclick=()=>generate(id,name);row.querySelector('[data-vis-recruit]').onclick=()=>recruit(id,name);row.querySelector('[data-vis-delete]').onclick=()=>remove(id,name)})}
-  const obs=new MutationObserver(enhance);obs.observe(app,{childList:true,subtree:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance,{once:true});else enhance();
+  const path=location.pathname.replace(/\/+$/,'')||'/';
+  if(path!=='/comandante/visitas')return;
+  const app=document.getElementById('app');
+  if(!app)return;
+
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const api=async(action,data={})=>{
+    const r=await fetch('/api/visitor-admin?action='+encodeURIComponent(action),{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),credentials:'same-origin',cache:'no-store'
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(d.error||'Não foi possível atualizar o visitante.');
+    return d;
+  };
+
+  function css(){
+    if(document.getElementById('visitorAdminDirectCss'))return;
+    const s=document.createElement('style');s.id='visitorAdminDirectCss';
+    s.textContent=`.visitorCodeTools{margin:16px 0;border-color:#755b20}.visitorCodeTools .heroActions{display:flex;gap:10px;flex-wrap:wrap}.visitorRowActions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.visitorCodeOverlay{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.88);display:grid;place-items:center;padding:16px}.visitorCodeCard{width:min(520px,94vw);background:#111518;border:1px solid #72581d;border-radius:18px;padding:20px}.visitorCodeValue{display:block;margin:14px 0;padding:14px;border:1px dashed #d9a326;border-radius:12px;background:#080a0b;color:#f0bd42;font-size:clamp(22px,5vw,30px);letter-spacing:.08em;text-align:center;word-break:break-all}.visitorCodeActions{display:flex;gap:8px;flex-wrap:wrap}.visitorCodeActions>*{flex:1}@media(max-width:680px){.visitorCodeTools .heroActions,.visitorRowActions,.visitorCodeActions{display:grid;grid-template-columns:1fr}.visitorCodeTools button,.visitorCodeTools a,.visitorRowActions button{width:100%;box-sizing:border-box}}`;
+    document.head.appendChild(s);
+  }
+
+  function modal(code,kind='visitor',name=''){
+    document.getElementById('visitorAdminCodeModal')?.remove();
+    const recruit=kind==='recruit';
+    const m=document.createElement('div');m.id='visitorAdminCodeModal';m.className='visitorCodeOverlay';
+    const path=recruit?'/operador/primeiro-acesso':'/visitante';
+    m.innerHTML=`<div class="visitorCodeCard"><div class="eyebrow">${recruit?'RECRUTAMENTO':'ACESSO DO VISITANTE'}</div><h2>${recruit?'Código para virar Operador':'Código do visitante'}</h2>${name?`<p>Visitante: <b>${esc(name)}</b></p>`:''}<strong class="visitorCodeValue">${esc(code)}</strong><p class="muted">Acesso: <b>${esc(path)}</b></p><div class="visitorCodeActions"><button type="button" class="goldbtn" data-copy-code>Copiar código</button><button type="button" class="outlinebtn" data-share-code>📲 WhatsApp</button><button type="button" class="outlinebtn" data-close-code>Fechar</button></div></div>`;
+    document.body.appendChild(m);
+    const text=recruit?`Tactical Group Airsoft — recrutamento.\n\nAcesse: ${location.origin}/operador/primeiro-acesso\nCódigo: ${code}`:`Tactical Group Airsoft — acesso de visitante.\n\nAcesse: ${location.origin}/visitante\nCódigo: ${code}\n\nEntre com o código e informe seu nome.`;
+    m.querySelector('[data-copy-code]').onclick=async e=>{try{await navigator.clipboard.writeText(code);e.currentTarget.textContent='Copiado ✓'}catch{prompt('Copie o código:',code)}};
+    m.querySelector('[data-share-code]').onclick=()=>window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
+    m.querySelector('[data-close-code]').onclick=()=>{m.remove();location.reload()};
+    m.onclick=e=>{if(e.target===m){m.remove();location.reload()}};
+  }
+
+  async function createCode(btn){
+    if(btn?.disabled)return; if(btn)btn.disabled=true;
+    try{const d=await api('create-code');modal(d.code,'visitor')}catch(e){alert(e.message);if(btn)btn.disabled=false}
+  }
+  async function newCode(id,name){try{const d=await api('generate-code',{id});modal(d.code,'visitor',name)}catch(e){alert(e.message)}}
+  async function recruit(id,name){if(!confirm(`Recrutar ${name||'este visitante'} para o time?`))return;try{const d=await api('recruit',{id});modal(d.code,'recruit',name)}catch(e){alert(e.message)}}
+  async function removeVisitor(id,name){if(!confirm(`Excluir definitivamente ${name||'este visitante'}?\n\nIsso também remove as respostas dele nas listas dos jogos.`))return;try{await api('delete',{id});location.reload()}catch(e){alert(e.message)}}
+
+  function mount(){
+    css();
+    const nav=app.querySelector('.commandNav');
+    if(nav&&!document.getElementById('visitorCodeTools')){
+      const card=document.createElement('div');card.id='visitorCodeTools';card.className='card visitorCodeTools';
+      card.innerHTML=`<div class="eyebrow">ACESSO POR CÓDIGO</div><h2>Gerar novo código de visitante</h2><p class="muted">Crie quantos códigos precisar. O visitante informa o próprio nome depois de entrar.</p><div class="heroActions"><button type="button" class="goldbtn" data-create-visitor-code>🔑 Gerar novo código</button><a class="outlinebtn" href="/visitante" target="_blank" rel="noopener">Abrir login do visitante</a></div>`;
+      nav.insertAdjacentElement('afterend',card);
+    }
+
+    app.querySelectorAll('.visitorAdminRow').forEach(row=>{
+      const id=row.querySelector('[data-id]')?.dataset.id;
+      if(!id)return;
+      const actions=row.querySelector('.heroActions')||row;
+      if(actions.querySelector('[data-vis-delete]'))return;
+      const name=row.querySelector('b')?.textContent?.trim()||'Visitante';
+      const box=document.createElement('div');box.className='visitorRowActions';
+      box.innerHTML=`<button type="button" class="mini" data-vis-code="${esc(id)}" data-vis-name="${esc(name)}">🔑 Novo código</button><button type="button" class="mini" data-vis-recruit="${esc(id)}" data-vis-name="${esc(name)}">🎖 Recrutar</button><button type="button" class="mini danger" data-vis-delete="${esc(id)}" data-vis-name="${esc(name)}">Excluir visitante</button>`;
+      actions.appendChild(box);
+    });
+  }
+
+  app.addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    if(b.matches('[data-create-visitor-code]'))return createCode(b);
+    const id=b.dataset.visCode||b.dataset.visRecruit||b.dataset.visDelete;
+    if(!id)return;
+    const name=b.dataset.visName||'Visitante';
+    if(b.dataset.visCode)return newCode(id,name);
+    if(b.dataset.visRecruit)return recruit(id,name);
+    if(b.dataset.visDelete)return removeVisitor(id,name);
+  });
+
+  let tries=0;const timer=setInterval(()=>{mount();if(++tries>=40)clearInterval(timer)},250);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
