@@ -42,7 +42,6 @@ async function visitor(req){
 }
 function setVisitorCookie(res,token,maxAge=60*60*24*14){res.setHeader('Set-Cookie',`${VIS_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${maxAge}`)}
 function clearVisitorCookie(res){res.setHeader('Set-Cookie',`${VIS_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0`)}
-
 async function commanderOnly(req,res){const u=await commander(req);if(!u){json(res,403,{error:'Acesso restrito ao comandante.'});return null}return u}
 async function visitorOnly(req,res){const v=await visitor(req);if(!v){json(res,401,{error:'Código de visitante não autenticado.'});return null}return v}
 
@@ -65,6 +64,9 @@ export default async function handler(req,res){
     if(action==='logout'&&req.method==='POST'){
       const token=cookies(req)[VIS_COOKIE];if(token)await sql`DELETE FROM visitor_sessions WHERE token_hash=${hash(token)}`;clearVisitorCookie(res);return json(res,200,{ok:true})
     }
+    if(action==='update-name'&&req.method==='POST'){
+      const v=await visitorOnly(req,res);if(!v)return;const b=await body(req),name=String(b.name||'').trim().replace(/\s+/g,' ').slice(0,80);if(name.length<2)return json(res,400,{error:'Informe seu nome.'});const row=(await sql`UPDATE visitor_requests SET name=${name} WHERE id=${v.id} RETURNING id,name,nickname,contact,status,recruited_operator_id,recruited_at`)[0];return json(res,200,{ok:true,visitor:row})
+    }
     if(action==='games'&&req.method==='GET'){
       const v=await visitorOnly(req,res);if(!v)return
       const games=await sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.briefing,g.rsvp_deadline_date,g.rsvp_deadline_time,g.rsvp_closed,gf.name field_name,gf.maps_url field_maps_url,COALESCE(vr.response,'pending') visitor_response,vr.responded_at,vr.team_code,gm.mission_objective,gm.team_a_name,gm.team_b_name FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN visitor_game_rsvps vr ON vr.game_id=g.id AND vr.visitor_request_id=${v.id} LEFT JOIN game_missions gm ON gm.game_id=g.id WHERE g.game_date>=CURRENT_DATE AND COALESCE(g.status,'') NOT IN ('cancelado','finalizado') ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
@@ -78,6 +80,11 @@ export default async function handler(req,res){
       return json(res,200,{ok:true,response})
     }
 
+    if(action==='create-code'&&req.method==='POST'){
+      const u=await commanderOnly(req,res);if(!u)return;const code=visitorCode(),suffix=code.split('-').pop(),placeholder=`Visitante ${suffix}`
+      const vr=(await sql`INSERT INTO visitor_requests(name,nickname,contact,message,status,access_code_hash,access_code_created_at,access_code_expires_at) VALUES(${placeholder},NULL,'Código direto','Acesso criado pelo comandante','approved',${hash(code)},now(),now()+interval '30 days') RETURNING id,name,status`)[0]
+      return json(res,201,{ok:true,code,expires_in_days:30,visitor:vr,login_path:'/visitante'})
+    }
     if(action==='decision'&&req.method==='POST'){
       const u=await commanderOnly(req,res);if(!u)return;const b=await body(req),id=String(b.id||'').trim(),status=String(b.status||'').trim().toLowerCase();if(!id||!['pending','approved','rejected'].includes(status))return json(res,400,{error:'Solicitação ou status inválido.'})
       const rows=await sql`UPDATE visitor_requests SET status=${status} WHERE id=${id} RETURNING id,status`;if(!rows.length)return json(res,404,{error:'Solicitação de visitante não encontrada.'});return json(res,200,{ok:true,request:rows[0]})
