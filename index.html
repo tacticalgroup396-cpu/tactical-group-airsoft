@@ -55,6 +55,30 @@
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/operador/arena'){const fs=document.createElement('script');fs.src='/operator-minigame-fullscreen-v1.js?v=1';fs.defer=true;document.body.appendChild(fs)}if(p==='/operador/configuracoes'){for(const src of ['/operator-equipment-v3.js?v=2','/operator-arsenal-plus-v1.js?v=1','/operator-settings-mobile-fix-v1.js?v=1']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}}if(p==='/operador/configuracoes'||p==='/operador/equipe'){const s=document.createElement('script');s.src='/operator-replicas-v4.js?v=1';s.defer=true;document.body.appendChild(s)}if(p.startsWith('/comandante')){for(const src of ['/finance-v4-fix.js?v=1','/captain-rank-guard.js?v=1']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}}if(p==='/visitantes'||p==='/operador/jogos'){const s=document.createElement('script');s.src='/game-history-v1.js?v=2';s.defer=true;document.body.appendChild(s)}if(p==='/operador'||p==='/visitantes'||p==='/entrar'){const s=document.createElement('script');s.src='/visitor-entry-links-v1.js?v=3';s.defer=true;document.body.appendChild(s)}if(p==='/comandante/visitas'){const s=document.createElement('script');s.src='/visitor-admin-ui-v1.js?v=4';s.defer=true;document.body.appendChild(s)}if(p==='/comandante/jogos'){for(const src of ['/visitor-game-integration-v1.js?v=1','/commander-visitor-roster-v1.js?v=1']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}})();
   </script>
   <script>
+    (()=>{
+      const p=(location.pathname.replace(/\/+$/,'')||'/');
+      if(p!=='/comandante/visitas')return;
+      const call=async(action,body={})=>{const r=await fetch('/api/visitor-admin?action='+encodeURIComponent(action),{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',cache:'no-store',body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erro ao atualizar visitante.');return d};
+      const enhance=()=>{
+        const app=document.getElementById('app');if(!app)return false;
+        const commandNav=app.querySelector('.commandNav');
+        if(commandNav&&!document.getElementById('inlineVisitorAccess')){
+          const box=document.createElement('div');box.id='inlineVisitorAccess';box.className='card';box.style.margin='18px 0';box.innerHTML='<div class="eyebrow">ACESSO POR CÓDIGO</div><h2>Gerar código de visitante</h2><p class="muted">Crie um novo código sem informar nome. O visitante coloca o nome depois que entrar.</p><div class="heroActions"><button type="button" class="goldbtn" id="inlineCreateVisitor">🔑 Gerar novo código</button><a class="outlinebtn" href="/visitante" target="_blank" rel="noopener">Abrir login do visitante</a></div><div id="inlineVisitorResult"></div>';
+          commandNav.insertAdjacentElement('afterend',box);
+          box.querySelector('#inlineCreateVisitor').onclick=async()=>{const b=box.querySelector('#inlineCreateVisitor');b.disabled=true;try{const d=await call('create-code');const out=box.querySelector('#inlineVisitorResult');out.innerHTML='<div style="margin-top:14px;padding:14px;border:1px solid #d9a326;border-radius:10px"><div class="muted">Código criado</div><strong style="display:block;font-size:24px;margin:6px 0">'+d.code+'</strong><button type="button" class="mini" id="inlineCopyVisitor">Copiar código</button></div>';out.querySelector('#inlineCopyVisitor').onclick=async()=>{await navigator.clipboard?.writeText(d.code);out.querySelector('#inlineCopyVisitor').textContent='Copiado ✓'}}catch(e){alert(e.message)}finally{b.disabled=false}};
+        }
+        app.querySelectorAll('.visitorAdminRow').forEach(row=>{
+          if(row.querySelector('[data-inline-delete-visitor]'))return;
+          const id=row.querySelector('[data-id]')?.dataset.id;if(!id)return;
+          const actions=row.querySelector('.heroActions')||row;
+          const del=document.createElement('button');del.type='button';del.className='mini danger';del.dataset.inlineDeleteVisitor=id;del.textContent='Excluir visitante';del.onclick=async()=>{const name=row.querySelector('b')?.textContent?.trim()||'este visitante';if(!confirm('Excluir definitivamente '+name+'?'))return;del.disabled=true;try{await call('delete',{id});location.reload()}catch(e){alert(e.message);del.disabled=false}};actions.appendChild(del);
+        });
+        return !!commandNav;
+      };
+      let n=0;const t=setInterval(()=>{enhance();if(++n>=40)clearInterval(t)},250);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance,{once:true});else enhance();
+    })();
+  </script>
+  <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/comandante/jogos'||p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=8';s.defer=true;document.body.appendChild(s)}if(p==='/comandante/jogos'){const s=document.createElement('script');s.src='/commander-live-v3.js?v=1';s.defer=true;document.body.appendChild(s);const d=document.createElement('script');d.src='/game-create-fix-v2.js?v=2';d.defer=true;document.body.appendChild(d)}})();
   </script>
   <script>
