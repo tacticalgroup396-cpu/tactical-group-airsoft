@@ -67,9 +67,19 @@ export default async function handler(req,res){
     if(action==='update-name'&&req.method==='POST'){
       const v=await visitorOnly(req,res);if(!v)return;const b=await body(req),name=String(b.name||'').trim().replace(/\s+/g,' ').slice(0,80);if(name.length<2)return json(res,400,{error:'Informe seu nome.'});const row=(await sql`UPDATE visitor_requests SET name=${name} WHERE id=${v.id} RETURNING id,name,nickname,contact,status,recruited_operator_id,recruited_at`)[0];return json(res,200,{ok:true,visitor:row})
     }
+    if(action==='operators'&&req.method==='GET'){
+      const v=await visitorOnly(req,res);if(!v)return
+      const operators=await sql`SELECT id,name,nickname,rank,function,bio,equipment_summary,elo_level,age,birth_date,blood_type,airsoft_years,play_style,primary_replica,secondary_replica,CASE WHEN photo_url LIKE 'data:image/%' THEN NULL ELSE photo_url END photo_url FROM operators WHERE active=true AND public_profile=true ORDER BY CASE WHEN role='commander' THEN 0 ELSE 1 END,nickname`
+      return json(res,200,{operators})
+    }
+    if(action==='operator-profile'&&req.method==='GET'){
+      const v=await visitorOnly(req,res);if(!v)return;const id=String(url.searchParams.get('id')||'');if(!id)return json(res,400,{error:'Operador não informado.'})
+      const op=(await sql`SELECT id,name,nickname,rank,function,bio,equipment_summary,elo_level,age,birth_date,blood_type,airsoft_years,play_style,primary_replica,secondary_replica,CASE WHEN photo_url LIKE 'data:image/%' THEN NULL ELSE photo_url END photo_url FROM operators WHERE id=${id} AND active=true AND public_profile=true LIMIT 1`)[0]
+      if(!op)return json(res,404,{error:'Perfil do operador não encontrado.'});return json(res,200,{operator:op})
+    }
     if(action==='games'&&req.method==='GET'){
       const v=await visitorOnly(req,res);if(!v)return
-      const games=await sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.briefing,g.rsvp_deadline_date,g.rsvp_deadline_time,g.rsvp_closed,gf.name field_name,gf.maps_url field_maps_url,COALESCE(vr.response,'pending') visitor_response,vr.responded_at,vr.team_code,gm.mission_objective,gm.team_a_name,gm.team_b_name FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN visitor_game_rsvps vr ON vr.game_id=g.id AND vr.visitor_request_id=${v.id} LEFT JOIN game_missions gm ON gm.game_id=g.id WHERE g.game_date>=CURRENT_DATE AND COALESCE(g.status,'') NOT IN ('cancelado','finalizado') ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
+      const games=await sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.briefing,g.rsvp_deadline_date,g.rsvp_deadline_time,g.rsvp_closed,gf.name field_name,gf.maps_url field_maps_url,COALESCE(vr.response,'pending') visitor_response,vr.responded_at,vr.team_code,gm.mission_objective,gm.team_a_name,gm.team_b_name,COALESCE((SELECT json_agg(json_build_object('id',o.id,'name',o.name,'nickname',o.nickname,'rank',o.rank,'function',o.function,'elo_level',o.elo_level,'photo_url',CASE WHEN o.photo_url LIKE 'data:image/%' THEN NULL ELSE o.photo_url END) ORDER BY o.nickname) FROM game_participants gp JOIN operators o ON o.id=gp.operator_id WHERE gp.game_id=g.id AND gp.response='going' AND o.active=true),'[]'::json) going_operators FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN visitor_game_rsvps vr ON vr.game_id=g.id AND vr.visitor_request_id=${v.id} LEFT JOIN game_missions gm ON gm.game_id=g.id WHERE g.game_date>=CURRENT_DATE AND COALESCE(g.status,'') NOT IN ('cancelado','finalizado') ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 50`
       return json(res,200,{visitor:v,games})
     }
     if(action==='rsvp'&&req.method==='POST'){
