@@ -106,12 +106,12 @@ export default async function handler(req,res){
     }
     if(action==='game-visitors'&&req.method==='GET'){
       const u=await commanderOnly(req,res);if(!u)return;const gameId=String(url.searchParams.get('game_id')||'');if(!gameId)return json(res,400,{error:'Jogo não informado.'})
-      const visitors=await sql`SELECT vr.id,vr.name,vr.nickname,vr.contact,r.response,r.responded_at,r.team_code FROM visitor_game_rsvps r JOIN visitor_requests vr ON vr.id=r.visitor_request_id WHERE r.game_id=${gameId} AND COALESCE(vr.status,'pending') IN ('approved','accepted') ORDER BY CASE r.response WHEN 'going' THEN 0 WHEN 'not_going' THEN 1 ELSE 2 END,COALESCE(NULLIF(vr.nickname,''),vr.name)`
+      const visitors=await sql`SELECT vr.id,vr.name,vr.nickname,vr.contact,r.response,r.responded_at,r.team_code FROM visitor_game_rsvps r JOIN visitor_requests vr ON vr.id=r.visitor_request_id WHERE r.game_id=${gameId} AND COALESCE(vr.status,'pending')<>'rejected' ORDER BY CASE r.response WHEN 'going' THEN 0 WHEN 'not_going' THEN 1 ELSE 2 END,COALESCE(NULLIF(vr.nickname,''),vr.name)`
       return json(res,200,{visitors})
     }
     if(action==='draw-visitors'&&req.method==='POST'){
       const u=await commanderOnly(req,res);if(!u)return;const b=await body(req),gameId=String(b.game_id||'');if(!gameId)return json(res,400,{error:'Jogo não informado.'})
-      const people=await sql`SELECT vr.id,vr.name,vr.nickname FROM visitor_game_rsvps r JOIN visitor_requests vr ON vr.id=r.visitor_request_id WHERE r.game_id=${gameId} AND r.response='going' AND COALESCE(vr.status,'pending') IN ('approved','accepted') ORDER BY COALESCE(NULLIF(vr.nickname,''),vr.name)`;if(!people.length)return json(res,409,{error:'Nenhum visitante marcou Vou neste jogo.'})
+      const people=await sql`SELECT vr.id,vr.name,vr.nickname FROM visitor_game_rsvps r JOIN visitor_requests vr ON vr.id=r.visitor_request_id WHERE r.game_id=${gameId} AND r.response='going' AND COALESCE(vr.status,'pending')<>'rejected' ORDER BY COALESCE(NULLIF(vr.nickname,''),vr.name)`;if(!people.length)return json(res,409,{error:'Nenhum visitante marcou Vou neste jogo.'})
       const counts=await sql`SELECT team_code,count(*)::int n FROM game_mission_members WHERE game_id=${gameId} AND team_code IN ('A','B') GROUP BY team_code`;let a=Number(counts.find(x=>x.team_code==='A')?.n||0),bb=Number(counts.find(x=>x.team_code==='B')?.n||0);const shuffled=[...people];for(let i=shuffled.length-1;i>0;i--){const j=crypto.randomInt(i+1);[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]}
       const assigned=[];for(const p of shuffled){let team;if(a<bb)team='A';else if(bb<a)team='B';else team=crypto.randomInt(2)===0?'A':'B';if(team==='A')a++;else bb++;await sql`UPDATE visitor_game_rsvps SET team_code=${team} WHERE visitor_request_id=${p.id} AND game_id=${gameId}`;assigned.push({...p,team_code:team})}
       return json(res,200,{ok:true,count:assigned.length,assigned,team_counts:{A:a,B:bb}})
