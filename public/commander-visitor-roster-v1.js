@@ -1,16 +1,26 @@
 (()=>{
   if(location.pathname!=='/comandante/jogos')return;
   const app=document.getElementById('app');if(!app)return;
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
-  const api=async gameId=>{const cached=window.__tgaCommanderVisitors?.[String(gameId)];if(Array.isArray(cached))return{visitors:cached};const r=await fetch('/api/visitor-admin?action=game-visitors&game_id='+encodeURIComponent(gameId),{credentials:'same-origin',cache:'no-store'}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erro ao carregar visitantes.');return d};
-  function css(){if(document.getElementById('cmdVisRosterCss'))return;const s=document.createElement('style');s.id='cmdVisRosterCss';s.textContent=`.cmdVisitorCard{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid #8b6d24;border-radius:12px;background:#17150e;min-width:170px}.cmdVisitorAvatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#242017;border:1px solid #d9a326;color:#f2bd3d;font-weight:800}.cmdVisitorCard b{display:block;color:#fff}.cmdVisitorCard small{display:block;color:#e0aa27;font-weight:700}.cmdVisitorTeam{display:inline-block;margin-top:3px;font-size:.72rem;color:#f0bd42}.cmdVisitorCount{color:#e0aa27;font-weight:700}@media(max-width:700px){.cmdVisitorCard{width:100%;box-sizing:border-box}}`;document.head.appendChild(s)}
-  const initials=v=>String(v.nickname||v.name||'VI').trim().split(/\s+/).map(x=>x[0]||'').join('').slice(0,2).toUpperCase()||'VI';
-  const card=v=>`<div class="cmdVisitorCard" data-cmd-visitor="${esc(v.id)}"><div class="cmdVisitorAvatar">${esc(initials(v))}</div><div><b>${esc(v.nickname||v.name||'Visitante')}</b><small>VISITANTE</small>${v.team_code?`<span class="cmdVisitorTeam">${v.team_code==='A'?'Time A':'Time B'}</span>`:''}</div></div>`;
-  function gameIdOf(row){const el=row.querySelector('[data-editgame],[data-close-rsvp],[data-deletegame]');if(!el)return'';return el.dataset.editgame||el.dataset.closeRsvp||el.dataset.deletegame||''}
-  function reconcile(panel,list){if(!panel)return;panel.querySelectorAll('[data-cmd-visitor]').forEach(x=>x.remove());let grid=panel.querySelector('.gameParticipantsGrid');if(list.length&&!grid){panel.querySelector('p.muted')?.remove();grid=document.createElement('div');grid.className='gameParticipantsGrid';panel.appendChild(grid)}if(grid)list.forEach(v=>grid.insertAdjacentHTML('beforeend',card(v)));const head=panel.querySelector('.gameConfirmedHead span');if(head){const ops=panel.querySelectorAll('.gameParticipant').length,vis=panel.querySelectorAll('[data-cmd-visitor]').length;head.innerHTML=`${ops+vis} participante(s)${vis?` <span class="cmdVisitorCount">· ${vis} visitante(s)</span>`:''}`}}
-  async function mount(row){const gameId=gameIdOf(row);if(!gameId||row.dataset.cmdVisitorsLoading==='1')return;row.dataset.cmdVisitorsLoading='1';try{const d=await api(gameId),list=Array.isArray(d.visitors)?d.visitors:[];reconcile(row.querySelector('.gameConfirmedPanel:not(.noGoPanel):not(.pendingPanel)'),list.filter(v=>v.response==='going'));reconcile(row.querySelector('.noGoPanel'),list.filter(v=>v.response==='not_going'));reconcile(row.querySelector('.pendingPanel'),list.filter(v=>!['going','not_going'].includes(v.response)));row.dataset.cmdVisitorsLoaded=String(Date.now())}catch(e){console.warn('visitor roster',e.message)}finally{row.dataset.cmdVisitorsLoading='0'}}
-  function enhance(){css();app.querySelectorAll('.commandGame').forEach(row=>mount(row))}
+  function css(){if(document.getElementById('cmdVisRosterCss'))return;const s=document.createElement('style');s.id='cmdVisRosterCss';s.textContent=`.gameParticipant.cmdVisitorParticipant{border-color:#8b6d24;background:#17150e}.gameParticipant.cmdVisitorParticipant .gameParticipantIdentity{cursor:default}.gameParticipant.cmdVisitorParticipant .gameParticipantPhoto{border:1px solid #d9a326}.gameParticipant.cmdVisitorParticipant .participantName{color:#fff}.gameParticipant.cmdVisitorParticipant .gameParticipantGear{color:#e0aa27}.cmdVisitorCount{color:#e0aa27;font-weight:700}`;document.head.appendChild(s)}
+  function enhance(){
+    css();
+    app.querySelectorAll('.gameParticipant').forEach(card=>{
+      if(!/VISITANTE/i.test(card.textContent||''))return;
+      card.classList.add('cmdVisitorParticipant');
+      card.querySelector('.gameParticipantAdmin')?.remove();
+      const link=card.querySelector('.gameParticipantIdentity');
+      if(link){link.removeAttribute('href');link.addEventListener('click',e=>e.preventDefault(),{once:true})}
+      const b=card.querySelector('.gameParticipantIdentity b');if(b)b.textContent=b.textContent.replace(/^@/,'');
+      const gear=card.querySelector('.gameParticipantGear');if(gear)gear.innerHTML='<span>VISITANTE</span>';
+    });
+    app.querySelectorAll('.gameConfirmedPanel').forEach(panel=>{
+      const cards=[...panel.querySelectorAll('.gameParticipant')];
+      const vis=cards.filter(c=>/VISITANTE/i.test(c.textContent||'')).length;
+      const head=panel.querySelector('.gameConfirmedHead span');
+      if(head)head.innerHTML=`${cards.length} participante(s)${vis?` <span class="cmdVisitorCount">· ${vis} visitante(s)</span>`:''}`;
+    });
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance,{once:true});else enhance();
-  let tries=0;const timer=setInterval(()=>{enhance();if(++tries>=24)clearInterval(timer)},500);
-  app.addEventListener('click',e=>{if(e.target.closest('[data-close-rsvp],[data-editgame]'))setTimeout(enhance,500)},true);
+  let tries=0;const timer=setInterval(()=>{enhance();if(++tries>=24)clearInterval(timer)},400);
+  app.addEventListener('click',e=>{if(e.target.closest('[data-close-rsvp],[data-editgame]'))setTimeout(enhance,350)},true);
 })();
