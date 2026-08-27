@@ -7,23 +7,29 @@
     if(!r.ok)return r;
     const d=await r.json().catch(()=>({}));
     const games=Array.isArray(d.games)?d.games:[];
+    const approvedVisitors=(Array.isArray(d.requests)?d.requests:[]).filter(v=>['approved','accepted'].includes(String(v.status||'').toLowerCase()));
     const visitorMap={};
     await Promise.all(games.map(async g=>{
+      let rsvps=[];
       try{
         const vr=await direct('/api/visitor-admin?action=game-visitors&game_id='+encodeURIComponent(g.id));
-        if(!vr.ok)return;
-        const vd=await vr.json().catch(()=>({}));
-        const visitors=Array.isArray(vd.visitors)?vd.visitors:[];
-        visitorMap[String(g.id)]=visitors;
-        g.visitors=visitors;
-        const going=visitors.filter(v=>v.response==='going').length;
-        const notGoing=visitors.filter(v=>v.response==='not_going').length;
-        const pending=visitors.filter(v=>!['going','not_going'].includes(v.response)).length;
-        g.going_count=Number(g.going_count||0)+going;
-        g.not_going_count=Number(g.not_going_count||0)+notGoing;
-        g.pending_count=Number(g.pending_count||0)+pending;
-        g.participant_count=Number(g.participant_count||0)+visitors.length;
+        if(vr.ok){const vd=await vr.json().catch(()=>({}));rsvps=Array.isArray(vd.visitors)?vd.visitors:[]}
       }catch(e){console.warn('visitor merge',e?.message||e)}
+      const byId=new Map(rsvps.map(v=>[String(v.id),v]));
+      const visitors=approvedVisitors.map(v=>{
+        const saved=byId.get(String(v.id));
+        return saved?{...v,...saved}:{id:v.id,name:v.name,nickname:v.nickname,contact:v.contact,response:'pending',responded_at:null,team_code:null};
+      });
+      for(const saved of rsvps){if(!visitors.some(v=>String(v.id)===String(saved.id)))visitors.push(saved)}
+      visitorMap[String(g.id)]=visitors;
+      g.visitors=visitors;
+      const going=visitors.filter(v=>v.response==='going').length;
+      const notGoing=visitors.filter(v=>v.response==='not_going').length;
+      const pending=visitors.filter(v=>!['going','not_going'].includes(v.response)).length;
+      g.going_count=Number(g.going_count||0)+going;
+      g.not_going_count=Number(g.not_going_count||0)+notGoing;
+      g.pending_count=Number(g.pending_count||0)+pending;
+      g.participant_count=Number(g.participant_count||0)+visitors.length;
     }));
     window.__tgaCommanderVisitors=visitorMap;
     return new Response(JSON.stringify(d),{status:r.status,statusText:r.statusText,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
