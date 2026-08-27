@@ -30,6 +30,23 @@
       g.not_going_count=Number(g.not_going_count||0)+notGoing;
       g.pending_count=Number(g.pending_count||0)+pending;
       g.participant_count=Number(g.participant_count||0)+visitors.length;
+
+      const operatorParticipants=Array.isArray(g.participants)?g.participants:[];
+      const visualVisitors=visitors.map(v=>({
+        id:'visitor-'+String(v.id),
+        visitor_id:v.id,
+        name:v.name||v.nickname||'Visitante',
+        nickname:v.nickname||v.name||'Visitante',
+        rank:'VISITANTE',
+        function:'Convidado',
+        photo_url:'/logo.webp',
+        elo_level:null,
+        response:['going','not_going'].includes(v.response)?v.response:'pending',
+        loadout:null,
+        is_visitor:true,
+        team_code:v.team_code||null
+      }));
+      g.participants=[...operatorParticipants,...visualVisitors];
     }));
     window.__tgaCommanderVisitors=visitorMap;
     return new Response(JSON.stringify(d),{status:r.status,statusText:r.statusText,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
