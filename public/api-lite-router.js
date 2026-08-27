@@ -1,6 +1,34 @@
 (()=>{
   const nativeFetch=window.fetch.bind(window);
   const direct=(url,init={})=>nativeFetch(url,{...init,cache:'no-store',credentials:init?.credentials||'same-origin'});
+
+  const commanderWithVisitors=async(init={})=>{
+    const r=await direct('/api/light?action=commander',init);
+    if(!r.ok)return r;
+    const d=await r.json().catch(()=>({}));
+    const games=Array.isArray(d.games)?d.games:[];
+    const visitorMap={};
+    await Promise.all(games.map(async g=>{
+      try{
+        const vr=await direct('/api/visitor-admin?action=game-visitors&game_id='+encodeURIComponent(g.id));
+        if(!vr.ok)return;
+        const vd=await vr.json().catch(()=>({}));
+        const visitors=Array.isArray(vd.visitors)?vd.visitors:[];
+        visitorMap[String(g.id)]=visitors;
+        g.visitors=visitors;
+        const going=visitors.filter(v=>v.response==='going').length;
+        const notGoing=visitors.filter(v=>v.response==='not_going').length;
+        const pending=visitors.filter(v=>!['going','not_going'].includes(v.response)).length;
+        g.going_count=Number(g.going_count||0)+going;
+        g.not_going_count=Number(g.not_going_count||0)+notGoing;
+        g.pending_count=Number(g.pending_count||0)+pending;
+        g.participant_count=Number(g.participant_count||0)+visitors.length;
+      }catch(e){console.warn('visitor merge',e?.message||e)}
+    }));
+    window.__tgaCommanderVisitors=visitorMap;
+    return new Response(JSON.stringify(d),{status:r.status,statusText:r.statusText,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
+  };
+
   window.fetch=(input,init={})=>{
     try{
       const raw=typeof input==='string'?input:input?.url;
@@ -14,7 +42,7 @@
         if(a==='profile-data')return direct('/api/operator-profile?action=settings',init);
         if(a==='games')return direct('/api/operator-home-fast',init);
         if(a==='public')mapped='public';
-        else if(a==='commander')mapped='commander';
+        else if(a==='commander')return commanderWithVisitors(init);
       }else if((u.pathname==='/api/operator-dashboard'||u.pathname==='/api/operator-dashboard.js')&&method==='GET'){
         const a=u.searchParams.get('action')||'dashboard';
         if(a==='dashboard')return direct('/api/operator-home-fast',init);
