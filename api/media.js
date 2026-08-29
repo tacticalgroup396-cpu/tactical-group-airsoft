@@ -8,6 +8,7 @@ const json=(res,status,data)=>{res.statusCode=status;res.setHeader('Content-Type
 const cookies=req=>Object.fromEntries((req.headers?.cookie||'').split(';').filter(Boolean).map(v=>{const i=v.indexOf('=');return [v.slice(0,i).trim(),decodeURIComponent(v.slice(i+1))]}))
 const hash=t=>crypto.createHash('sha256').update(t).digest('hex')
 const body=req=>new Promise((resolve,reject)=>{let d='';req.on('data',c=>{d+=c;if(d.length>5_000_000)reject(new Error('Payload muito grande.'))});req.on('end',()=>{try{resolve(d?JSON.parse(d):{})}catch(e){reject(e)}});req.on('error',reject)})
+let gameMediaSchemaReady=false
 
 async function currentUser(req){
   const token=cookies(req)[COOKIE];if(!token)return null
@@ -20,6 +21,14 @@ async function requireUser(req,res,role='operator'){
   if(role==='commander'&&u.role!=='commander'){json(res,403,{error:'Acesso restrito ao comandante.'});return null}
   if(role==='operator'&&!['operator','commander'].includes(u.role)){json(res,403,{error:'Acesso restrito.'});return null}
   return u
+}
+async function ensureGameMediaSchema(){
+  if(gameMediaSchemaReady)return
+  await sql`ALTER TABLE game_missions ADD COLUMN IF NOT EXISTS team_a_photo_url TEXT`
+  await sql`ALTER TABLE game_missions ADD COLUMN IF NOT EXISTS team_b_photo_url TEXT`
+  await sql`ALTER TABLE game_missions ADD COLUMN IF NOT EXISTS team_a_photo_caption TEXT`
+  await sql`ALTER TABLE game_missions ADD COLUMN IF NOT EXISTS team_b_photo_caption TEXT`
+  gameMediaSchemaReady=true
 }
 function blobToken(){const token=process.env.BLOB_READ_WRITE_TOKEN;if(!token)throw new Error('Vercel Blob ainda não está conectado ao projeto.');return token}
 function decodeImage(data){
@@ -48,6 +57,13 @@ export default async function handler(req,res){
     const url=new URL(req.url,'http://localhost')
     const action=url.searchParams.get('action')||'health'
     if(action==='health'&&req.method==='GET')return json(res,200,{ok:true,blob_enabled:!!process.env.BLOB_READ_WRITE_TOKEN})
+
+    if(action==='history-extras'&&req.method==='GET'){
+      await ensureGameMediaSchema()
+      const games=await sql`SELECT g.id,gm.team_a_photo_url,gm.team_b_photo_url,gm.team_a_photo_caption,gm.team_b_photo_caption,gm.winning_team,gm.team_a_name,gm.team_b_name,gm.team_a_wins,gm.team_b_wins FROM games g LEFT JOIN game_missions gm ON gm.game_id=g.id WHERE g.status='finalizado' OR g.completed_at IS NOT NULL ORDER BY COALESCE(g.completed_at,g.game_date::timestamp) DESC LIMIT 80`
+      const visitors=await sql`SELECT r.game_id,r.team_code,vr.id,COALESCE(NULLIF(vr.nickname,''),vr.name) nickname,'VISITANTE'::text rank,'Visitante'::text function,'/logo.webp'::text photo_url,true visitor FROM visitor_game_rsvps r JOIN visitor_requests vr ON vr.id=r.visitor_request_id JOIN games g ON g.id=r.game_id WHERE (g.status='finalizado' OR g.completed_at IS NOT NULL) AND r.team_code IN ('A','B') AND COALESCE(vr.status,'pending') IN ('approved','accepted') ORDER BY r.game_id,COALESCE(NULLIF(vr.nickname,''),vr.name)`
+      return json(res,200,{games,visitors})
+    }
 
     if(action==='upload-photo'&&req.method==='POST'){
       const u=await requireUser(req,res);if(!u)return
@@ -89,13 +105,21 @@ export default async function handler(req,res){
 
     if(action==='finish-game'&&req.method==='POST'){
       const u=await requireUser(req,res,'commander');if(!u)return
+      await ensureGameMediaSchema()
       const b=await body(req),g=(await sql`SELECT id,title,match_photo_url FROM games WHERE id=${b.game_id} LIMIT 1`)[0]
       if(!g)return json(res,404,{error:'Jogo não encontrado.'})
-      const image=String(b.image_data||''),photoUrl=image?await uploadImage(image,`games/${g.id}/match`):null
-      await sql`UPDATE games SET status='finalizado',completed_at=now(),match_photo_url=${photoUrl} WHERE id=${g.id}`
+      const old=(await sql`SELECT team_a_photo_url,team_b_photo_url FROM game_missions WHERE game_id=${g.id} LIMIT 1`)[0]||{}
+      const image=String(b.image_data||''),aImage=String(b.team_a_image_data||''),bImage=String(b.team_b_image_data||'')
+      const photoUrl=image?await uploadImage(image,`games/${g.id}/match`):null
+      const teamAPhoto=aImage?await uploadImage(aImage,`games/${g.id}/team-a`):null
+      const teamBPhoto=bImage?await uploadImage(bImage,`games/${g.id}/team-b`):null
+      await sql`UPDATE games SET status='finalizado',completed_at=COALESCE(completed_at,now()),match_photo_url=COALESCE(${photoUrl},match_photo_url) WHERE id=${g.id}`
+      await sql`INSERT INTO game_missions(game_id,team_a_photo_url,team_b_photo_url,team_a_photo_caption,team_b_photo_caption,created_by,updated_by) VALUES(${g.id},${teamAPhoto},${teamBPhoto},${cleanText(b.team_a_caption,180)},${cleanText(b.team_b_caption,180)},${u.id},${u.id}) ON CONFLICT(game_id) DO UPDATE SET team_a_photo_url=COALESCE(EXCLUDED.team_a_photo_url,game_missions.team_a_photo_url),team_b_photo_url=COALESCE(EXCLUDED.team_b_photo_url,game_missions.team_b_photo_url),team_a_photo_caption=COALESCE(EXCLUDED.team_a_photo_caption,game_missions.team_a_photo_caption),team_b_photo_caption=COALESCE(EXCLUDED.team_b_photo_caption,game_missions.team_b_photo_caption),updated_by=EXCLUDED.updated_by,updated_at=now()`
       if(photoUrl)await sql`INSERT INTO match_photos(game_id,image_data,caption,created_by) VALUES(${g.id},${photoUrl},${cleanText(b.caption,180)||'Foto da partida'},${u.id}) ON CONFLICT(game_id) DO UPDATE SET image_data=EXCLUDED.image_data,caption=EXCLUDED.caption,created_by=EXCLUDED.created_by,created_at=now()`
       if(photoUrl)await cleanupBlob(g.match_photo_url)
-      return json(res,200,{ok:true,match_photo_url:photoUrl})
+      if(teamAPhoto)await cleanupBlob(old.team_a_photo_url)
+      if(teamBPhoto)await cleanupBlob(old.team_b_photo_url)
+      return json(res,200,{ok:true,match_photo_url:photoUrl||g.match_photo_url||null,team_a_photo_url:teamAPhoto||old.team_a_photo_url||null,team_b_photo_url:teamBPhoto||old.team_b_photo_url||null})
     }
 
     if(action==='mission-save'&&req.method==='POST'){
