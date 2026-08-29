@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless'
 import { put, del } from '@vercel/blob'
+import bcrypt from 'bcryptjs'
 import crypto from 'node:crypto'
 
 const sql=neon(process.env.DATABASE_URL)
@@ -8,6 +9,7 @@ let schemaReady=null
 const json=(res,status,data)=>{res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store, max-age=0');res.end(JSON.stringify(data))}
 const cookies=req=>Object.fromEntries((req.headers?.cookie||'').split(';').filter(Boolean).map(v=>{const i=v.indexOf('=');return [v.slice(0,i).trim(),decodeURIComponent(v.slice(i+1))]}))
 const hash=t=>crypto.createHash('sha256').update(t).digest('hex')
+const makeRecoveryCode=()=>`REC-${crypto.randomBytes(3).toString('hex').toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`
 const body=req=>new Promise((resolve,reject)=>{let d='';req.on('data',c=>{d+=c;if(d.length>5_000_000)reject(new Error('Payload muito grande.'))});req.on('end',()=>{try{resolve(d?JSON.parse(d):{})}catch(e){reject(e)}});req.on('error',reject)})
 const safe=o=>o?({id:o.id,name:o.name,nickname:o.nickname,email:o.email||null,role:o.role,rank:o.rank,function:o.function||'Operador,',photo_url:o.photo_url||null,bio:o.bio||'',equipment_summary:o.equipment_summary||'',birth_date:o.birth_date||null,age:o.age??null,blood_type:o.blood_type||null,airsoft_years:o.airsoft_years??null,play_style:o.play_style||'',primary_replica:o.primary_replica||'',secondary_replica:o.secondary_replica||'',primary_replica_qty:Number(o.primary_replica_qty)||0,secondary_replica_qty:Number(o.secondary_replica_qty)||0,primary_replica_photo_url:o.primary_replica_photo_url||null,secondary_replica_photo_url:o.secondary_replica_photo_url||null,guardian_operator_id:o.guardian_operator_id||null,public_profile:o.public_profile!==false,elo_level:Number(o.elo_level)||7,games_count:Number(o.games_count)||0,absences:Number(o.absences)||0}):null
 
@@ -16,10 +18,22 @@ async function ensureSchema(){if(!schemaReady)schemaReady=(async()=>{
   await sql`ALTER TABLE operators ADD COLUMN IF NOT EXISTS secondary_replica_qty INTEGER NOT NULL DEFAULT 0`
   await sql`ALTER TABLE operators ADD COLUMN IF NOT EXISTS primary_replica_photo_url TEXT`
   await sql`ALTER TABLE operators ADD COLUMN IF NOT EXISTS secondary_replica_photo_url TEXT`
+  await sql`CREATE TABLE IF NOT EXISTS password_recovery_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'requested',
+    code_hash TEXT,
+    expires_at TIMESTAMPTZ,
+    requested_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    generated_at TIMESTAMPTZ,
+    generated_by UUID REFERENCES operators(id) ON DELETE SET NULL,
+    used_at TIMESTAMPTZ
+  )`
+  await sql`CREATE INDEX IF NOT EXISTS password_recovery_operator_idx ON password_recovery_requests(operator_id,requested_at DESC)`
+  await sql`CREATE INDEX IF NOT EXISTS password_recovery_status_idx ON password_recovery_requests(status,requested_at DESC)`
 })().catch(e=>{schemaReady=null;throw e});return schemaReady}
 async function currentUser(req){const token=cookies(req)[COOKIE];if(!token)return null;const rows=await sql`SELECT o.* FROM sessions s JOIN operators o ON o.id=s.operator_id WHERE s.token_hash=${hash(token)} AND s.expires_at>now() AND o.active=true LIMIT 1`;return rows[0]||null}
 async function requireUser(req,res){const u=await currentUser(req);if(!u){json(res,401,{error:'Faça login novamente.'});return null}if(!['operator','commander'].includes(u.role)){json(res,403,{error:'Acesso restrito.'});return null}return u}
-const adultWhere=()=>`((birth_date IS NOT NULL AND birth_date<=CURRENT_DATE-interval '18 years') OR (birth_date IS NULL AND COALESCE(age,0)>=18))`
 function blobToken(){if(!process.env.BLOB_READ_WRITE_TOKEN)throw new Error('Vercel Blob não está conectado.');return process.env.BLOB_READ_WRITE_TOKEN}
 function decodeImage(data){const m=String(data||'').match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);if(!m)throw new Error('Envie uma imagem válida.');const buffer=Buffer.from(m[2],'base64');if(!buffer.length||buffer.length>3_500_000)throw new Error('Imagem muito grande. Use foto de até 3 MB.');const ext={'image/jpeg':'jpg','image/jpg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif'}[m[1].toLowerCase()]||'jpg';return {buffer,type:m[1],ext}}
 async function uploadImage(data,folder){const x=decodeImage(data);const pathname=`tactical-group/${folder}/${Date.now()}-${crypto.randomUUID()}.${x.ext}`;return (await put(pathname,x.buffer,{access:'public',contentType:x.type,addRandomSuffix:false,token:blobToken()})).url}
@@ -27,8 +41,62 @@ async function cleanup(url){if(!/^https:\/\/[^/]+\.blob\.vercel-storage\.com\//i
 
 export default async function handler(req,res){try{
   if(req.method==='OPTIONS'){res.statusCode=204;return res.end()}
-  await ensureSchema();const u=await requireUser(req,res);if(!u)return
+  await ensureSchema()
   const url=new URL(req.url,'http://localhost'),action=url.searchParams.get('action')||'settings'
+
+  if(action==='recovery-request'&&req.method==='POST'){
+    const b=await body(req),identifier=String(b.identifier||'').trim().toLowerCase()
+    if(!identifier)return json(res,400,{error:'Informe seu e-mail ou apelido.'})
+    const op=(await sql`SELECT id FROM operators WHERE active=true AND (lower(coalesce(email,''))=${identifier} OR lower(nickname)=${identifier}) LIMIT 1`)[0]
+    if(op){
+      const recent=await sql`SELECT id FROM password_recovery_requests WHERE operator_id=${op.id} AND status IN ('requested','code_ready') AND requested_at>now()-interval '10 minutes' ORDER BY requested_at DESC LIMIT 1`
+      if(!recent.length){
+        await sql`UPDATE password_recovery_requests SET status='expired' WHERE operator_id=${op.id} AND status IN ('requested','code_ready')`
+        await sql`INSERT INTO password_recovery_requests(operator_id,status) VALUES(${op.id},'requested')`
+      }
+    }
+    return json(res,200,{ok:true,message:'Se a conta existir, o pedido foi enviado ao comandante. Peça o código de recuperação ao comando.'})
+  }
+
+  if(action==='recovery-reset'&&req.method==='POST'){
+    const b=await body(req),code=String(b.code||'').trim().toUpperCase(),password=String(b.password||'')
+    if(!code||!password)return json(res,400,{error:'Informe o código e a nova senha.'})
+    if(password.length<8)return json(res,400,{error:'A nova senha precisa ter pelo menos 8 caracteres.'})
+    const row=(await sql`SELECT r.id,r.operator_id FROM password_recovery_requests r JOIN operators o ON o.id=r.operator_id WHERE r.code_hash=${hash(code)} AND r.status='code_ready' AND r.expires_at>now() AND o.active=true LIMIT 1`)[0]
+    if(!row)return json(res,400,{error:'Código inválido ou expirado.'})
+    const passwordHash=await bcrypt.hash(password,12)
+    await sql`UPDATE operators SET password_hash=${passwordHash} WHERE id=${row.operator_id}`
+    await sql`DELETE FROM sessions WHERE operator_id=${row.operator_id}`
+    await sql`UPDATE password_recovery_requests SET status='used',used_at=now() WHERE id=${row.id}`
+    await sql`UPDATE password_recovery_requests SET status='expired' WHERE operator_id=${row.operator_id} AND id<>${row.id} AND status IN ('requested','code_ready')`
+    return json(res,200,{ok:true,message:'Senha alterada. Faça login com a nova senha.'})
+  }
+
+  const u=await requireUser(req,res);if(!u)return
+
+  if(action==='recovery-list'&&req.method==='GET'){
+    if(u.role!=='commander')return json(res,403,{error:'Apenas o comandante pode acessar pedidos de recuperação.'})
+    const requests=await sql`SELECT r.id,r.status,r.requested_at,r.generated_at,r.expires_at,o.id operator_id,o.nickname,o.name,o.email FROM password_recovery_requests r JOIN operators o ON o.id=r.operator_id WHERE r.status IN ('requested','code_ready') ORDER BY CASE WHEN r.status='requested' THEN 0 ELSE 1 END,r.requested_at DESC LIMIT 100`
+    return json(res,200,{requests})
+  }
+
+  if(action==='recovery-generate'&&req.method==='POST'){
+    if(u.role!=='commander')return json(res,403,{error:'Apenas o comandante pode gerar códigos de recuperação.'})
+    const b=await body(req),id=String(b.id||'').trim()
+    const request=(await sql`SELECT r.id,r.operator_id,o.nickname FROM password_recovery_requests r JOIN operators o ON o.id=r.operator_id WHERE r.id=${id} AND r.status IN ('requested','code_ready') AND o.active=true LIMIT 1`)[0]
+    if(!request)return json(res,404,{error:'Pedido de recuperação não encontrado.'})
+    const code=makeRecoveryCode()
+    await sql`UPDATE password_recovery_requests SET status='code_ready',code_hash=${hash(code)},generated_at=now(),generated_by=${u.id},expires_at=now()+interval '1 hour' WHERE id=${request.id}`
+    return json(res,200,{ok:true,code,nickname:request.nickname,expires_in_minutes:60})
+  }
+
+  if(action==='recovery-dismiss'&&req.method==='POST'){
+    if(u.role!=='commander')return json(res,403,{error:'Apenas o comandante pode encerrar pedidos de recuperação.'})
+    const b=await body(req)
+    await sql`UPDATE password_recovery_requests SET status='expired' WHERE id=${String(b.id||'')} AND status IN ('requested','code_ready')`
+    return json(res,200,{ok:true})
+  }
+
   if(action==='team'&&req.method==='GET'){
     const rows=await sql`SELECT * FROM operators WHERE active=true ORDER BY CASE WHEN role='commander' THEN 0 ELSE 1 END,nickname`
     return json(res,200,{user:safe(u),operators:rows.map(safe)})
