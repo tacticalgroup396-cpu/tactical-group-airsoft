@@ -23,4 +23,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance,{once:true});else enhance();
   let tries=0;const timer=setInterval(()=>{enhance();if(++tries>=24)clearInterval(timer)},400);
   app.addEventListener('click',e=>{if(e.target.closest('[data-close-rsvp],[data-editgame]'))setTimeout(enhance,350)},true);
+  if(!document.querySelector('script[data-cmd-mission-visitors]')){const s=document.createElement('script');s.src='/commander-mission-visitors-v1.js?v=1';s.defer=true;s.dataset.cmdMissionVisitors='1';document.body.appendChild(s)}
 })();
