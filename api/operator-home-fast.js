@@ -29,7 +29,8 @@ export default async function handler(req,res){
     await ensureVisitorSchema()
     const [games,roster,visitorRoster,responsible,financeRows,alertRows]=await Promise.all([
       sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.briefing,g.elo_reward,g.rsvp_deadline_date,g.rsvp_deadline_time,g.rsvp_closed,gf.name field_name,gf.maps_url field_maps_url,COALESCE(me.response,'pending') response,me.loadout,
-        gm.total_rounds,gm.round_win_elo,gm.winner_elo,gm.loser_penalty,gm.absence_penalty,gm.no_response_penalty,gm.team_a_name,gm.team_b_name
+        gm.total_rounds,gm.round_win_elo,gm.winner_elo,gm.loser_penalty,gm.absence_penalty,gm.no_response_penalty,gm.team_a_name,gm.team_b_name,
+        gm.mission_objective,gm.mission_rules,gm.secondary_objectives,gm.mission_duration,gm.respawn_rules,gm.mission_photo
         FROM games g LEFT JOIN game_fields gf ON gf.id=g.field_id LEFT JOIN game_participants me ON me.game_id=g.id AND me.operator_id=${u.id} LEFT JOIN game_missions gm ON gm.game_id=g.id
         WHERE g.game_date>=CURRENT_DATE-interval '1 day' AND COALESCE(g.status,'')<>'cancelado' ORDER BY g.game_date,g.game_time NULLS LAST LIMIT 8`,
       sql`SELECT gp.game_id,gp.response,gp.loadout,o.id,o.name,o.nickname,o.rank,o.function,o.photo_url,o.elo_level,false visitor FROM game_participants gp JOIN games g ON g.id=gp.game_id JOIN operators o ON o.id=gp.operator_id WHERE g.game_date>=CURRENT_DATE-interval '1 day' AND COALESCE(g.status,'')<>'cancelado' AND o.active=true ORDER BY g.game_date,o.nickname LIMIT 400`,
