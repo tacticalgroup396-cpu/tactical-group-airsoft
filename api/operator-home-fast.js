@@ -8,14 +8,21 @@ const cookies=req=>Object.fromEntries((req.headers?.cookie||'').split(';').filte
 const json=(res,status,data)=>{res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store, max-age=0');res.end(JSON.stringify(data))}
 const safePhoto=p=>p&&!String(p).startsWith('data:image/')?p:null
 const person=o=>({id:o.id,name:o.name,nickname:o.nickname,rank:o.rank,function:o.function||'Operador',photo_url:safePhoto(o.photo_url),elo_level:Number(o.elo_level)||7,birth_date:o.birth_date||null,age:o.age??null,visitor:!!o.visitor})
+const visitorCode=()=>`VIS-${crypto.randomBytes(2).toString('hex').toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`
 let visitorSchemaReady=false
-async function ensureVisitorSchema(){if(visitorSchemaReady)return;await sql`CREATE TABLE IF NOT EXISTS visitor_game_rsvps (visitor_request_id UUID NOT NULL REFERENCES visitor_requests(id) ON DELETE CASCADE,game_id UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,response TEXT NOT NULL DEFAULT 'pending' CHECK(response IN ('pending','going','not_going')),responded_at TIMESTAMPTZ,team_code TEXT CHECK(team_code IN ('A','B')),PRIMARY KEY(visitor_request_id,game_id))`;visitorSchemaReady=true}
+async function ensureVisitorSchema(){if(visitorSchemaReady)return;await sql`ALTER TABLE visitor_requests ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending'`;await sql`ALTER TABLE visitor_requests ADD COLUMN IF NOT EXISTS access_code_hash TEXT`;await sql`ALTER TABLE visitor_requests ADD COLUMN IF NOT EXISTS access_code_expires_at TIMESTAMPTZ`;await sql`ALTER TABLE visitor_requests ADD COLUMN IF NOT EXISTS access_code_created_at TIMESTAMPTZ`;await sql`ALTER TABLE visitor_requests ADD COLUMN IF NOT EXISTS invited_by_operator_id UUID REFERENCES operators(id) ON DELETE SET NULL`;await sql`CREATE TABLE IF NOT EXISTS visitor_game_rsvps (visitor_request_id UUID NOT NULL REFERENCES visitor_requests(id) ON DELETE CASCADE,game_id UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,response TEXT NOT NULL DEFAULT 'pending' CHECK(response IN ('pending','going','not_going')),responded_at TIMESTAMPTZ,team_code TEXT CHECK(team_code IN ('A','B')),PRIMARY KEY(visitor_request_id,game_id))`;visitorSchemaReady=true}
 async function currentUser(req){const token=cookies(req)[COOKIE];if(!token)return null;const rows=await sql`SELECT o.id,o.name,o.nickname,o.role,o.rank,o.function,o.games_count,o.absences,o.elo_level,o.age,o.birth_date,o.guardian_operator_id,o.is_primary_commander,o.photo_url FROM sessions s JOIN operators o ON o.id=s.operator_id WHERE s.token_hash=${hash(token)} AND s.expires_at>now() AND o.active=true LIMIT 1`;return rows[0]||null}
 
 export default async function handler(req,res){
   try{
+    const action=new URL(req.url,'http://localhost').searchParams.get('action')||'dashboard',u=await currentUser(req);if(!u)return json(res,401,{error:'Faça login novamente.'});if(!['operator','commander'].includes(u.role))return json(res,403,{error:'Acesso restrito.'})
+    if(action==='invite-visitor'&&req.method==='POST'){
+      await ensureVisitorSchema();const code=visitorCode(),suffix=code.split('-').pop(),placeholder=`Visitante ${suffix}`
+      const vr=(await sql`INSERT INTO visitor_requests(name,nickname,contact,message,status,access_code_hash,access_code_created_at,access_code_expires_at,invited_by_operator_id) VALUES(${placeholder},NULL,'Convite de operador',${`Convidado por @${u.nickname}`},'approved',${hash(code)},now(),now()+interval '30 days',${u.id}) RETURNING id,name,status`)[0]
+      return json(res,201,{ok:true,code,expires_in_days:30,visitor:vr,login_path:'/visitante',invited_by:{id:u.id,nickname:u.nickname}})
+    }
     if(req.method!=='GET')return json(res,405,{error:'Método não permitido.'})
-    const action=new URL(req.url,'http://localhost').searchParams.get('action')||'dashboard',u=await currentUser(req);if(!u)return json(res,401,{error:'Faça login novamente.'});if(!['operator','commander'].includes(u.role))return json(res,403,{error:'Acesso restrito.'});if(action==='me')return json(res,200,{user:{...u,photo_url:safePhoto(u.photo_url)},instagram_url:null})
+    if(action==='me')return json(res,200,{user:{...u,photo_url:safePhoto(u.photo_url)},instagram_url:null})
     await ensureVisitorSchema()
     const [games,roster,visitorRoster,responsible,financeRows]=await Promise.all([
       sql`SELECT g.id,g.title,g.game_date,g.game_time,g.location,g.status,g.description,g.briefing,g.elo_reward,g.rsvp_deadline_date,g.rsvp_deadline_time,g.rsvp_closed,gf.name field_name,gf.maps_url field_maps_url,COALESCE(me.response,'pending') response,me.loadout,
