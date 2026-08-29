@@ -70,11 +70,14 @@
           const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s);
         }
       }
-      if(p==='/visitantes'||p==='/operador/jogos'){
-        const s=document.createElement('script');s.src='/game-history-v1.js?v=2';s.defer=true;document.body.appendChild(s);
+      if(p==='/visitantes'||p==='/operador/jogos'||p==='/comandante/historico'){
+        const s=document.createElement('script');s.src='/game-history-v1.js?v=3';s.defer=true;document.body.appendChild(s);
       }
       if(p==='/operador'||p==='/operador/jogos'){
         const s=document.createElement('script');s.src='/operator-mission-info-v1.js?v=1';s.defer=true;document.body.appendChild(s);
+      }
+      if(p==='/operador/jogos'){
+        const s=document.createElement('script');s.src='/operator-visitor-teams-v1.js?v=1';s.defer=true;document.body.appendChild(s);
       }
       if(p==='/operador'||p==='/visitantes'||p==='/entrar'){
         const s=document.createElement('script');s.src='/visitor-entry-links-v1.js?v=3';s.defer=true;document.body.appendChild(s);
@@ -83,7 +86,7 @@
         const s=document.createElement('script');s.src='/visitor-admin-ui-v1.js?v=4';s.defer=true;document.body.appendChild(s);
       }
       if(p==='/comandante/jogos'){
-        for(const src of ['/visitor-game-integration-v1.js?v=1','/commander-visitor-roster-v1.js?v=5','/commander-mission-visitors-v1.js?v=4']){
+        for(const src of ['/visitor-game-integration-v1.js?v=1','/commander-visitor-roster-v1.js?v=5','/commander-mission-visitors-v1.js?v=4','/commander-mission-save-fix-v1.js?v=1','/game-final-team-photos-v1.js?v=1']){
           const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s);
         }
       }
