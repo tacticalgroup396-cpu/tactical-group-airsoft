@@ -12,7 +12,16 @@
           return original(`/api/media?action=${encodeURIComponent(action)}`,init);
         }
         if(u.origin===location.origin&&(u.pathname==='/api/mission'||u.pathname==='/api/mission.js')&&action==='save'){
-          return original('/api/media?action=mission-save',init);
+          let payload=null;
+          try{payload=typeof init?.body==='string'?JSON.parse(init.body):null}catch{}
+          const hasPhoto=!!String(payload?.mission_photo||'');
+          if(!hasPhoto)return original(input,init);
+          return (async()=>{
+            const mediaResponse=await original('/api/media?action=mission-save',init);
+            if(!mediaResponse.ok)return mediaResponse;
+            const directPayload={...payload,mission_photo:''};
+            return original('/api/mission?action=save',{...init,body:JSON.stringify(directPayload)});
+          })();
         }
       }
     }catch(e){console.warn('blob router',e)}
