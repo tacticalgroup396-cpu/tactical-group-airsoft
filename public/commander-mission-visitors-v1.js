@@ -1,4 +1,5 @@
 (()=>{
+  if(window.__cmdMissionVisitorsLoaded)return;window.__cmdMissionVisitorsLoaded=true;
   if((location.pathname.replace(/\/+$/,'')||'/')!=='/comandante/jogos')return;
   const app=document.getElementById('app');if(!app)return;
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
