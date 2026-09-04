@@ -68,3 +68,39 @@
   const obs=new MutationObserver(enhance);obs.observe(document.documentElement,{childList:true,subtree:true});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance,{once:true});else enhance();
 })();
+
+(()=>{
+  if(!location.pathname.startsWith('/comandante'))return;
+  const call=async(action,data={})=>{const r=await fetch('/api/index.js?action='+encodeURIComponent(action),{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',cache:'no-store',body:JSON.stringify(data)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erro ao atualizar.');return d};
+  const say=m=>{if(typeof window.toast==='function')window.toast(m);else alert(m)};
+  async function cancelGame(btn){
+    if(btn.dataset.busy==='1')return;
+    const row=btn.closest('.commandGame');const title=row?.querySelector('b,h2')?.textContent?.trim()||'este jogo';
+    if(!confirm(`Cancelar ${title}?\n\nUse esta opção quando o jogo NÃO acontecer. Nenhuma falta será gerada por esse jogo.`))return;
+    const reason=prompt('Motivo do cancelamento (opcional):','Jogo não realizado');if(reason===null)return;
+    btn.dataset.busy='1';btn.disabled=true;const old=btn.textContent;btn.textContent='Cancelando...';
+    try{const d=await call('cancel-game',{game_id:btn.dataset.cancelGame,reason});say(d.message||'Jogo cancelado');if(typeof window.commanderPage==='function')await window.commanderPage('jogos');else location.reload()}catch(e){say(e.message);btn.disabled=false;btn.textContent=old;btn.dataset.busy='0'}
+  }
+  async function repairAbsences(btn){
+    if(btn.dataset.busy==='1')return;
+    if(!confirm('Corrigir as faltas automáticas indevidas?\n\nSerão mantidas apenas as faltas registradas manualmente pelo comando.'))return;
+    btn.dataset.busy='1';btn.disabled=true;const old=btn.textContent;btn.textContent='Corrigindo...';
+    try{const d=await call('repair-auto-absences');say(d.message||'Faltas corrigidas');if(typeof window.commanderPage==='function')await window.commanderPage('equipe');else location.reload()}catch(e){say(e.message);btn.disabled=false;btn.textContent=old;btn.dataset.busy='0'}
+  }
+  function enhanceGameControls(){
+    if(location.pathname==='/comandante/jogos'){
+      document.querySelectorAll('.commandGame').forEach(row=>{
+        const edit=row.querySelector('[data-editgame]');if(!edit||row.querySelector('[data-cancel-game]'))return;
+        const status=(row.querySelector('.tag')?.textContent||'').toLowerCase();if(status.includes('cancelado'))return;
+        const b=document.createElement('button');b.type='button';b.className='mini danger';b.dataset.cancelGame=edit.dataset.editgame;b.textContent='Cancelar jogo';b.addEventListener('click',()=>cancelGame(b));edit.insertAdjacentElement('afterend',b);
+      });
+    }
+    if(location.pathname==='/comandante/equipe'){
+      const nav=document.querySelector('.commandNav');if(nav&&!document.getElementById('repairAutoAbsences')){
+        const box=document.createElement('div');box.className='card';box.style.margin='18px 0';box.innerHTML='<div class="cardKicker">FALTAS</div><h2>Corrigir faltas automáticas</h2><p class="muted">Remove faltas que o sistema marcou apenas porque a data do jogo passou. Faltas registradas manualmente pelo comando são preservadas.</p><button type="button" class="outlinebtn" id="repairAutoAbsences">Corrigir faltas indevidas</button>';nav.insertAdjacentElement('afterend',box);box.querySelector('#repairAutoAbsences').addEventListener('click',e=>repairAbsences(e.currentTarget));
+      }
+    }
+  }
+  const obs=new MutationObserver(enhanceGameControls);obs.observe(document.documentElement,{childList:true,subtree:true});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhanceGameControls,{once:true});else enhanceGameControls();
+})();
