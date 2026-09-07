@@ -22,7 +22,11 @@
   if(!document.querySelector('script[data-commander-admin-shell]')){
     const a=document.createElement('script');a.src='/commander-admin-shell-v1.js?v=1';a.defer=true;a.dataset.commanderAdminShell='1';document.body.appendChild(a)
   }
-  if((location.pathname.replace(/\/+$/,'')||'/')==='/comandante/jogos'&&!document.querySelector('script[data-cmd-mission-visitors]')){
+  const p=(location.pathname.replace(/\/+$/,'')||'/');
+  if(p==='/comandante/financeiro'&&!document.querySelector('script[data-finance-admin-v2]')){
+    const f=document.createElement('script');f.src='/finance-admin-v2.js?v=1';f.defer=true;f.dataset.financeAdminV2='1';document.body.appendChild(f)
+  }
+  if(p==='/comandante/jogos'&&!document.querySelector('script[data-cmd-mission-visitors]')){
     const x=document.createElement('script');x.src='/commander-mission-visitors-v1.js?v=2';x.defer=true;x.dataset.cmdMissionVisitors='1';document.body.appendChild(x)
   }
 })();
