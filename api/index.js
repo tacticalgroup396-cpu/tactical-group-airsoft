@@ -1,6 +1,7 @@
 import { neon } from '@neondatabase/serverless'
 import crypto from 'node:crypto'
 import legacyHandler from '../lib/index-legacy.js'
+import financeAdminHandler from '../lib/finance-admin-v2.js'
 
 const sql = neon(process.env.DATABASE_URL)
 const COOKIE = 'tg_session'
@@ -141,6 +142,7 @@ export default async function handler(req,res){
   try{
     await ensureGuardSchema()
     const url=new URL(req.url,'http://localhost');const action=url.searchParams.get('action')||'public'
+    if(url.searchParams.get('finance_admin')==='1')return financeAdminHandler(req,res)
     if(action==='attendance'&&req.method==='POST')return handleAttendance(req,res)
     if(action==='cancel-game'&&req.method==='POST')return handleCancelGame(req,res)
     if(action==='repair-auto-absences'&&req.method==='POST')return handleRepairAbsences(req,res)
