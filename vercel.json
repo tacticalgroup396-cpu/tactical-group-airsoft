@@ -1,6 +1,7 @@
 {
   "functions": {
     "api/index.js": {"maxDuration": 30},
+    "api/finance-admin-v2.js": {"maxDuration": 30},
     "api/mission.js": {"maxDuration": 30},
     "api/media.js": {"maxDuration": 30},
     "api/operator-dashboard.js": {"maxDuration": 15},
@@ -17,6 +18,7 @@
     {"source": "/api/light", "destination": "/api/light.js"},
     {"source": "/api/mission", "destination": "/api/mission.js"},
     {"source": "/api/media", "destination": "/api/media.js"},
+    {"source": "/api/finance-admin-v2", "destination": "/api/finance-admin-v2.js"},
     {"source": "/api/operator-home-fast", "destination": "/api/operator-home-fast.js"},
     {"source": "/api/operator-dashboard", "destination": "/api/operator-dashboard-v2.js"},
     {"source": "/api/operator-game", "destination": "/api/operator-game.js"},
