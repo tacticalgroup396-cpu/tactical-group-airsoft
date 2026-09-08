@@ -24,7 +24,7 @@
   }
   const p=(location.pathname.replace(/\/+$/,'')||'/');
   if(p==='/comandante/financeiro'&&!document.querySelector('script[data-finance-admin-v2]')){
-    const f=document.createElement('script');f.src='/finance-admin-v2.js?v=2';f.defer=true;f.dataset.financeAdminV2='1';document.body.appendChild(f)
+    const f=document.createElement('script');f.src='/finance-admin-v2.js?v=3';f.defer=true;f.dataset.financeAdminV2='1';document.body.appendChild(f)
   }
   if(p==='/comandante/financeiro'&&!document.querySelector('script[data-finance-delete-v1]')){
     const d=document.createElement('script');d.src='/finance-admin-delete-v1.js?v=3';d.defer=true;d.dataset.financeDeleteV1='1';document.body.appendChild(d)
