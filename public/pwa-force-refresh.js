@@ -1,7 +1,7 @@
 (()=>{
   const p=(location.pathname.replace(/\/+$/,'')||'/');
   if(p==='/operador/mensalidades'&&!document.querySelector('script[data-operator-pix]')){
-    const s=document.createElement('script');s.src='/operator-pix-v1.js?v=1';s.defer=true;s.dataset.operatorPix='1';document.body.appendChild(s);
+    const s=document.createElement('script');s.src='/operator-pix-v1.js?v=2';s.defer=true;s.dataset.operatorPix='1';document.body.appendChild(s);
   }
   if(!('serviceWorker' in navigator))return;
   const KEY='tga_pwa_refresh_v58';
