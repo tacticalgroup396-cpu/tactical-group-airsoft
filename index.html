@@ -49,7 +49,7 @@
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/operador')||p==='/visitante')return;const s=document.createElement('script');s.src='/api-lite-router.js?v=11';s.async=false;document.body.appendChild(s)})();
   </script>
   <script>
-    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=1';pre.async=false;document.body.appendChild(pre)}const s=document.createElement('script');if(p==='/visitante')s.src='/visitor-access-v1.js?v=5';else if(p==='/operador/primeiro-acesso')s.src='/app.js?v=74';else if(p.startsWith('/operador'))s.src='/operator-entry-router-v5.js?v=1';else s.src='/app.js?v=74';s.async=false;document.body.appendChild(s)})();
+    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=1';pre.async=false;document.body.appendChild(pre)}const s=document.createElement('script');if(p==='/visitante')s.src='/visitor-access-v1.js?v=5';else if(p==='/operador/primeiro-acesso')s.src='/app.js?v=74';else if(p.startsWith('/operador'))s.src='/operator-entry-router-v5.js?v=2';else s.src='/app.js?v=74';s.async=false;document.body.appendChild(s)})();
   </script>
   <script>
     (()=>{
@@ -71,7 +71,7 @@
         }
       }
       if(p==='/visitantes'||p==='/operador/jogos'||p==='/comandante/historico'){
-        const s=document.createElement('script');s.src='/game-history-v1.js?v=3';s.defer=true;document.body.appendChild(s);
+        const s=document.createElement('script');s.src='/game-history-v1.js?v=5';s.defer=true;document.body.appendChild(s);
       }
       if(p==='/operador'||p==='/operador/jogos'){
         const s=document.createElement('script');s.src='/operator-mission-info-v1.js?v=1';s.defer=true;document.body.appendChild(s);
@@ -93,7 +93,7 @@
     })();
   </script>
   <script>
-    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/operador'){for(const src of ['/password-recovery-ui-v1.js?v=3','/operator-invite-visitor-v1.js?v=1','/operator-game-alerts-v1.js?v=1']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}}if(p==='/comandante/configuracoes'){const s=document.createElement('script');s.src='/password-recovery-admin-v1.js?v=1';s.defer=true;document.body.appendChild(s)}})();
+    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/operador'){for(const src of ['/password-recovery-ui-v1.js?v=3','/operator-invite-visitor-v1.js?v=2','/operator-game-alerts-v1.js?v=2']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}}if(p==='/comandante/configuracoes'){const s=document.createElement('script');s.src='/password-recovery-admin-v1.js?v=1';s.defer=true;document.body.appendChild(s)}})();
   </script>
   <script>
     (()=>{
