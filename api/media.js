@@ -9,6 +9,7 @@ const cookies=req=>Object.fromEntries((req.headers?.cookie||'').split(';').filte
 const hash=t=>crypto.createHash('sha256').update(t).digest('hex')
 const body=req=>new Promise((resolve,reject)=>{let d='';req.on('data',c=>{d+=c;if(d.length>5_000_000)reject(new Error('Payload muito grande.'))});req.on('end',()=>{try{resolve(d?JSON.parse(d):{})}catch(e){reject(e)}});req.on('error',reject)})
 let gameMediaSchemaReady=false
+let receiptSchemaReady=false
 
 async function currentUser(req){
   const token=cookies(req)[COOKIE];if(!token)return null
@@ -29,6 +30,23 @@ async function ensureGameMediaSchema(){
   await sql`ALTER TABLE game_missions ADD COLUMN IF NOT EXISTS team_a_photo_caption TEXT`
   await sql`ALTER TABLE game_missions ADD COLUMN IF NOT EXISTS team_b_photo_caption TEXT`
   gameMediaSchemaReady=true
+}
+async function ensureReceiptSchema(){
+  if(receiptSchemaReady)return
+  await sql`CREATE TABLE IF NOT EXISTS payment_receipts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    operator_id UUID NOT NULL REFERENCES operators(id) ON DELETE CASCADE,
+    due_id UUID NOT NULL UNIQUE REFERENCES membership_dues(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    note TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+    reviewed_by UUID REFERENCES operators(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`
+  await sql`CREATE INDEX IF NOT EXISTS payment_receipts_operator_idx ON payment_receipts(operator_id,created_at DESC)`
+  receiptSchemaReady=true
 }
 function blobToken(){const token=process.env.BLOB_READ_WRITE_TOKEN;if(!token)throw new Error('Vercel Blob ainda não está conectado ao projeto.');return token}
 function decodeImage(data){
@@ -63,6 +81,25 @@ export default async function handler(req,res){
       const games=await sql`SELECT g.id,gm.team_a_photo_url,gm.team_b_photo_url,gm.team_a_photo_caption,gm.team_b_photo_caption,gm.winning_team,gm.team_a_name,gm.team_b_name,gm.team_a_wins,gm.team_b_wins FROM games g LEFT JOIN game_missions gm ON gm.game_id=g.id WHERE g.status='finalizado' OR g.completed_at IS NOT NULL ORDER BY COALESCE(g.completed_at,g.game_date::timestamp) DESC LIMIT 80`
       const visitors=await sql`SELECT r.game_id,r.team_code,vr.id,COALESCE(NULLIF(vr.nickname,''),vr.name) nickname,'VISITANTE'::text rank,'Visitante'::text function,'/logo.webp'::text photo_url,true visitor FROM visitor_game_rsvps r JOIN visitor_requests vr ON vr.id=r.visitor_request_id JOIN games g ON g.id=r.game_id WHERE (g.status='finalizado' OR g.completed_at IS NOT NULL) AND r.team_code IN ('A','B') AND COALESCE(vr.status,'pending') IN ('approved','accepted') ORDER BY r.game_id,COALESCE(NULLIF(vr.nickname,''),vr.name)`
       return json(res,200,{games,visitors})
+    }
+
+    if(action==='upload-receipt'&&req.method==='POST'){
+      const u=await requireUser(req,res);if(!u)return
+      await ensureReceiptSchema()
+      const b=await body(req)
+      const m=String(b.period||'').match(/^(\d{4})-(\d{2})/)
+      if(!m)return json(res,400,{error:'Selecione o mês da mensalidade.'})
+      const period=`${m[1]}-${m[2]}-01`
+      const due=(await sql`SELECT id,period,status FROM membership_dues WHERE operator_id=${u.id} AND period=${period}::date LIMIT 1`)[0]
+      if(!due)return json(res,404,{error:'Mensalidade não encontrada para este mês.'})
+      const old=(await sql`SELECT image_url FROM payment_receipts WHERE due_id=${due.id} LIMIT 1`)[0]?.image_url||null
+      const imageUrl=await uploadImage(b.image_data,`operators/${u.id}/receipts/${String(due.period).slice(0,7)}`)
+      const rows=await sql`INSERT INTO payment_receipts(operator_id,due_id,image_url,note,status)
+        VALUES(${u.id},${due.id},${imageUrl},${cleanText(b.note,500)},'pending')
+        ON CONFLICT(due_id) DO UPDATE SET image_url=EXCLUDED.image_url,note=EXCLUDED.note,status='pending',reviewed_by=NULL,reviewed_at=NULL,updated_at=now()
+        RETURNING id,due_id,image_url,note,status,created_at,updated_at`
+      if(old&&old!==imageUrl)await cleanupBlob(old)
+      return json(res,200,{ok:true,receipt:rows[0],message:'Comprovante enviado ao Comandante.'})
     }
 
     if(action==='upload-photo'&&req.method==='POST'){
