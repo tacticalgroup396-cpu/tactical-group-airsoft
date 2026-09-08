@@ -27,7 +27,7 @@
     const f=document.createElement('script');f.src='/finance-admin-v2.js?v=1';f.defer=true;f.dataset.financeAdminV2='1';document.body.appendChild(f)
   }
   if(p==='/comandante/financeiro'&&!document.querySelector('script[data-finance-delete-v1]')){
-    const d=document.createElement('script');d.src='/finance-admin-delete-v1.js?v=1';d.defer=true;d.dataset.financeDeleteV1='1';document.body.appendChild(d)
+    const d=document.createElement('script');d.src='/finance-admin-delete-v1.js?v=2';d.defer=true;d.dataset.financeDeleteV1='1';document.body.appendChild(d)
   }
   if(p==='/comandante/jogos'&&!document.querySelector('script[data-cmd-mission-visitors]')){
     const x=document.createElement('script');x.src='/commander-mission-visitors-v1.js?v=2';x.defer=true;x.dataset.cmdMissionVisitors='1';document.body.appendChild(x)
