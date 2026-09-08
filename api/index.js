@@ -21,6 +21,7 @@ async function userFromSession(req){
   return rows[0]||null
 }
 async function requireCommander(req,res){const u=await userFromSession(req);if(!u){json(res,401,{error:'Faça login.'});return null}if(u.role!=='commander'){json(res,403,{error:'Acesso restrito ao comando.'});return null}return u}
+async function requireOperator(req,res){const u=await userFromSession(req);if(!u){json(res,401,{error:'Faça login.'});return null}if(!['operator','commander'].includes(u.role)){json(res,403,{error:'Acesso restrito ao operador.'});return null}return u}
 
 async function recomputeAbsences(){
   await sql`UPDATE operators o SET absences=COALESCE((SELECT count(*)::int FROM game_participants gp WHERE gp.operator_id=o.id AND COALESCE(gp.absence_manual,false)=true),0)`
@@ -31,6 +32,7 @@ async function ensureGuardSchema(){
     guardReady=(async()=>{
       await sql`ALTER TABLE game_participants ADD COLUMN IF NOT EXISTS absence_manual BOOLEAN NOT NULL DEFAULT FALSE`
       await sql`CREATE TABLE IF NOT EXISTS system_flags (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`
+      await sql`UPDATE finance_settings SET active=false WHERE id=1 AND active=true`
       const done=(await sql`SELECT value FROM system_flags WHERE key='manual_absence_guard_v1' LIMIT 1`)[0]
       if(!done){
         await sql`UPDATE game_participants gp SET absence_manual=true WHERE gp.absence_processed=true AND EXISTS (SELECT 1 FROM elo_history eh WHERE eh.operator_id=gp.operator_id AND eh.game_id=gp.game_id AND eh.action='absence')`
@@ -70,6 +72,64 @@ async function changeEloLevel(operatorId,action,reason,changedBy,gameId=null,ste
     await sql`INSERT INTO elo_history(operator_id,game_id,old_level,new_level,action,reason,changed_by) VALUES(${operatorId},${gameId},${oldLevel},${level},${action},${reason||action},${changedBy||null})`
   }
   return {operatorId,oldLevel,newLevel:level,promoted,rank:currentRank,elo:eloNames[level]}
+}
+
+async function closeRsvpWithoutFinance(gameId,changedBy=null,reason='Lista encerrada pelo comando'){
+  const game=(await sql`SELECT id,title,rsvp_closed FROM games WHERE id=${gameId} LIMIT 1`)[0]
+  if(!game)throw new Error('Jogo não encontrado.')
+  if(game.rsvp_closed)return {closed:true,already:true,penalized:0}
+  const settings=await currentEloSettings()
+  const activeOps=await sql`SELECT id FROM operators WHERE active=true`
+  for(const op of activeOps){
+    await sql`INSERT INTO game_participants(game_id,operator_id,response,responded_at,present,absence_processed) VALUES(${gameId},${op.id},'pending',NULL,false,false) ON CONFLICT(game_id,operator_id) DO NOTHING`
+  }
+  const pending=await sql`SELECT operator_id FROM game_participants WHERE game_id=${gameId} AND response='pending' AND absence_processed=false`
+  for(const p of pending){
+    await changeEloLevel(p.operator_id,'absence',`${reason}: não respondeu à lista`,changedBy,gameId,Number(settings.absence_penalty_level||1))
+    await sql`UPDATE game_participants SET absence_processed=true WHERE game_id=${gameId} AND operator_id=${p.operator_id}`
+    await sql`INSERT INTO notifications(operator_id,type,title,body,link) VALUES(${p.operator_id},'elo_penalty','Perda de Elo','Você não respondeu à lista do jogo e perdeu Elo por ausência de resposta.','/operador')`
+  }
+  await sql`UPDATE games SET rsvp_closed=true,rsvp_closed_at=now() WHERE id=${gameId}`
+  return {closed:true,already:false,penalized:pending.length}
+}
+
+async function handleRsvpWithoutFinance(req,res){
+  const u=await requireOperator(req,res);if(!u)return
+  const b=await body(req)
+  const response=['going','not_going'].includes(b.response)?b.response:null
+  if(!response)return json(res,400,{error:'Escolha Vou ou Não vou.'})
+  const game=(await sql`SELECT id,max_players,status,rsvp_deadline_date,rsvp_deadline_time,rsvp_closed FROM games WHERE id=${b.game_id} LIMIT 1`)[0]
+  if(!game)return json(res,404,{error:'Jogo não encontrado.'})
+  if(game.status==='cancelado')return json(res,409,{error:'Este jogo foi cancelado.'})
+  const deadlinePassed=game.rsvp_deadline_date?(await sql`SELECT (((rsvp_deadline_date + COALESCE(rsvp_deadline_time,'23:59:59'::time)) AT TIME ZONE 'America/Sao_Paulo') <= now()) AS passed FROM games WHERE id=${game.id}`)[0]?.passed:false
+  if(!game.rsvp_closed&&deadlinePassed){try{await closeRsvpWithoutFinance(game.id,null,'Prazo da lista encerrado automaticamente')}catch{}}
+  const effectiveClosed=Boolean(game.rsvp_closed||deadlinePassed)
+  if(effectiveClosed&&response==='not_going')return json(res,409,{error:'A lista foi encerrada. Não é mais permitido retirar sua presença. Só é possível marcar Vou.'})
+  if(response==='going'&&game.max_players){
+    const count=(await sql`SELECT count(*)::int AS c FROM game_participants WHERE game_id=${b.game_id} AND response='going' AND operator_id<>${u.id}`)[0]?.c||0
+    if(count>=Number(game.max_players))return json(res,409,{error:'Este jogo atingiu o limite de operadores.'})
+  }
+  await sql`INSERT INTO game_participants(game_id,operator_id,response,responded_at,present) VALUES(${b.game_id},${u.id},${response},now(),false) ON CONFLICT(game_id,operator_id) DO UPDATE SET response=EXCLUDED.response,responded_at=now(),present=false,absence_processed=false`
+  return json(res,200,{ok:true,response})
+}
+
+async function ensureCurrentDues(){
+  const settings=(await sql`SELECT * FROM finance_settings WHERE id=1 LIMIT 1`)[0]||{monthly_fee:0,due_day:10,grace_days:0,currency:'BRL'}
+  const period=(await sql`SELECT date_trunc('month',CURRENT_DATE)::date AS period`)[0]?.period
+  const dueDay=Math.min(28,Math.max(1,Number(settings.due_day||10)))
+  const dueDate=(await sql`SELECT make_date(EXTRACT(YEAR FROM ${period}::date)::int,EXTRACT(MONTH FROM ${period}::date)::int,${dueDay})::date AS due_date`)[0]?.due_date
+  await sql`INSERT INTO membership_dues(operator_id,period,amount,due_date) SELECT id,${period},${Number(settings.monthly_fee||0)},${dueDate} FROM operators WHERE active=true ON CONFLICT(operator_id,period) DO UPDATE SET amount=EXCLUDED.amount,due_date=EXCLUDED.due_date WHERE membership_dues.status='pending'`
+  if(Number(settings.monthly_fee)>0)await sql`UPDATE membership_dues SET status='overdue' WHERE status='pending' AND due_date<CURRENT_DATE AND CURRENT_DATE>due_date+(COALESCE(${Number(settings.grace_days||0)},0)||' days')::interval`
+}
+
+async function handleFinanceSettings(req,res){
+  const u=await requireCommander(req,res);if(!u)return
+  const b=await body(req)
+  const monthly=Number(b.monthly_fee);const dueDay=Math.min(28,Math.max(1,Number(b.due_day||10)));const grace=Math.min(30,Math.max(0,Number(b.grace_days||0)))
+  if(!Number.isFinite(monthly)||monthly<0)return json(res,400,{error:'Mensalidade inválida.'})
+  await sql`UPDATE finance_settings SET monthly_fee=${monthly},due_day=${dueDay},grace_days=${grace},currency=${b.currency||'BRL'},active=false,instagram_url=${String(b.instagram_url||'').trim()||null},pix_key=${String(b.pix_key||'').trim()||null},pix_holder=${String(b.pix_holder||'').trim()||null},updated_at=now(),updated_by=${u.id} WHERE id=1`
+  await ensureCurrentDues()
+  return json(res,200,{ok:true,active:false})
 }
 
 async function handleAttendance(req,res){
@@ -143,6 +203,8 @@ export default async function handler(req,res){
     await ensureGuardSchema()
     const url=new URL(req.url,'http://localhost');const action=url.searchParams.get('action')||'public'
     if(url.searchParams.get('finance_admin')==='1')return financeAdminHandler(req,res)
+    if(action==='rsvp'&&req.method==='POST')return handleRsvpWithoutFinance(req,res)
+    if(action==='finance-settings'&&req.method==='POST')return handleFinanceSettings(req,res)
     if(action==='attendance'&&req.method==='POST')return handleAttendance(req,res)
     if(action==='cancel-game'&&req.method==='POST')return handleCancelGame(req,res)
     if(action==='repair-auto-absences'&&req.method==='POST')return handleRepairAbsences(req,res)
