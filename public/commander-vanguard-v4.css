@@ -593,3 +593,124 @@ body.commander-vanguard-v2.commander-vertical-nav .vgCommanderMobileShade{displa
     grid-template-columns:1fr!important
   }
 }
+
+
+/* V8 — quadro moderno de comandantes e operadores */
+.commanderRosterV2{display:grid;gap:14px}
+.commanderRosterV2 .cmdRosterHero{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px;border:1px solid #263548;
+  background:linear-gradient(135deg,#0e151c,#0a1016);border-radius:4px
+}
+.commanderRosterV2 .cmdRosterHero h2{margin:4px 0 5px;color:#f5f7fa;font:800 clamp(22px,2.3vw,30px)/1 'Chakra Petch',sans-serif}
+.commanderRosterV2 .cmdRosterHero p{margin:0;color:#7f94a8;font-size:12px}
+.commanderRosterV2 .cmdRosterCounters{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.commanderRosterV2 .cmdRosterCounters span{
+  min-width:94px;padding:10px;border:1px solid #28384a;background:#0b1117;border-radius:3px;text-align:center
+}
+.commanderRosterV2 .cmdRosterCounters b{display:block;color:#fbbf24;font:800 21px 'Chakra Petch',sans-serif}
+.commanderRosterV2 .cmdRosterCounters small{color:#6f8498!important;font:700 7px 'JetBrains Mono',monospace}
+.commanderRosterV2 .cmdRosterTools{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:12px}
+.commanderRosterV2 .cmdRosterInvite,
+.commanderRosterV2 .cmdRosterProgress{
+  min-width:0;border:1px solid #263548;border-radius:4px;background:#0d141b;padding:13px
+}
+.commanderRosterV2 .cmdRosterInvite{display:grid;grid-template-columns:auto minmax(160px,1fr) auto;gap:10px;align-items:center}
+.commanderRosterV2 .cmdRosterInvite>div:first-child{display:grid;gap:2px}
+.commanderRosterV2 .cmdRosterInvite small,
+.commanderRosterV2 .cmdRosterProgress small{color:#34d399!important;font:800 7px 'JetBrains Mono',monospace;letter-spacing:.08em}
+.commanderRosterV2 .cmdRosterInvite b,
+.commanderRosterV2 .cmdRosterProgress b{color:#f4f7fa;font:800 11px 'Chakra Petch',sans-serif}
+.commanderRosterV2 .cmdRosterInvite input{
+  height:39px;min-width:0;border:1px solid #33465b;border-radius:3px;background:#091017;color:#eef3f7;padding:0 10px
+}
+.commanderRosterV2 .cmdRosterProgress{
+  display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit
+}
+.commanderRosterV2 .cmdRosterProgress>span{
+  width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(245,158,11,.45);color:#fbbf24;background:#121820;border-radius:3px
+}
+.commanderRosterV2 .cmdRosterProgress>div{display:grid;gap:2px;min-width:0}
+.commanderRosterV2 .cmdRosterProgress em{margin-left:auto;color:#fbbf24;font:800 8px 'JetBrains Mono',monospace;font-style:normal}
+.commanderRosterV2 .cmdRosterSection{
+  border:1px solid #263548;border-radius:4px;background:#0b1117;padding:13px
+}
+.commanderRosterV2 .cmdRosterSectionHead{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:11px;padding-bottom:9px;border-bottom:1px solid #263548
+}
+.commanderRosterV2 .cmdRosterSectionHead>div{display:grid;gap:2px}
+.commanderRosterV2 .cmdRosterSectionHead span{color:#34d399;font:800 7px 'JetBrains Mono',monospace;letter-spacing:.08em}
+.commanderRosterV2 .cmdRosterSection:nth-of-type(2) .cmdRosterSectionHead span{color:#fbbf24}
+.commanderRosterV2 .cmdRosterSectionHead h3{margin:0;color:#f8fafc;font:800 16px 'Chakra Petch',sans-serif}
+.commanderRosterV2 .cmdRosterSectionHead>b{
+  min-width:34px;padding:5px 8px;border:1px solid #33465b;border-radius:3px;color:#fbbf24;text-align:center;font:800 9px 'JetBrains Mono',monospace
+}
+.commanderRosterV2 .cmdRosterGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.commanderRosterV2 .cmdRosterCard{
+  min-width:0;border:1px solid #2a394b;border-radius:4px;background:linear-gradient(145deg,#101821,#0b1117);padding:11px
+}
+.commanderRosterV2 .cmdRosterCard.commander{border-color:rgba(16,185,129,.34)}
+.commanderRosterV2 .cmdRosterTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.commanderRosterV2 .cmdRosterIdentity{display:flex;align-items:center;gap:9px;min-width:0}
+.commanderRosterV2 .cmdRosterRankMark{
+  width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border:1px solid rgba(245,158,11,.42);border-radius:3px;background:#111820
+}
+.commanderRosterV2 .cmdRosterRankMark span{font-size:18px;line-height:1}
+.commanderRosterV2 .cmdRosterRankMark small{color:#fbbf24!important;font:800 6px 'JetBrains Mono',monospace}
+.commanderRosterV2 .cmdRosterIdentity .profilePhoto,
+.commanderRosterV2 .cmdRosterIdentity .avatar{width:42px;height:42px;flex:0 0 42px;border-radius:3px}
+.commanderRosterV2 .cmdRosterName{display:grid;gap:2px;min-width:0}
+.commanderRosterV2 .cmdRosterName>div{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.commanderRosterV2 .cmdRosterName b{color:#f7fafc;font:800 14px 'Chakra Petch',sans-serif}
+.commanderRosterV2 .cmdRosterName>small{color:#8397aa!important;font-size:9px}
+.commanderRosterV2 .cmdRosterName strong{color:#fbbf24;font:800 8px 'JetBrains Mono',monospace;text-transform:uppercase}
+.commanderRosterV2 .cmdRosterStatus{
+  padding:3px 5px;border-radius:3px;font:800 6px 'JetBrains Mono',monospace;letter-spacing:.04em
+}
+.commanderRosterV2 .cmdRosterStatus.active{color:#34d399;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3)}
+.commanderRosterV2 .cmdRosterStatus.command{color:#fbbf24;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3)}
+.commanderRosterV2 .cmdRosterProfile{
+  flex:0 0 auto;border:1px solid rgba(245,158,11,.45);border-radius:3px;padding:7px 8px;color:#fbbf24;text-decoration:none;
+  font:800 7px 'JetBrains Mono',monospace
+}
+.commanderRosterV2 .cmdRosterBio{
+  min-height:36px;margin:10px 0;color:#8da0b2;font-size:10px;line-height:1.45
+}
+.commanderRosterV2 .cmdRosterStats{
+  display:grid;grid-template-columns:1.35fr .65fr .65fr 1fr;gap:6px;padding:8px 0;border-top:1px solid #243244;border-bottom:1px solid #243244
+}
+.commanderRosterV2 .cmdRosterStats span{display:grid;gap:2px;min-width:0}
+.commanderRosterV2 .cmdRosterStats small{color:#60758a!important;font:700 6px 'JetBrains Mono',monospace}
+.commanderRosterV2 .cmdRosterStats b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dfe8f0;font:800 8px 'JetBrains Mono',monospace}
+.commanderRosterV2 .cmdRosterControls{display:grid;grid-template-columns:minmax(150px,.65fr) minmax(0,1.35fr);gap:8px;margin-top:9px;align-items:end}
+.commanderRosterV2 .cmdRosterControls label{display:grid;gap:4px}
+.commanderRosterV2 .cmdRosterControls label small{color:#60758a!important;font:700 6px 'JetBrains Mono',monospace}
+.commanderRosterV2 .cmdRosterControls select{
+  width:100%;height:33px;border:1px solid #33465b;border-radius:3px;background:#0b1117;color:#dce6ef;padding:0 7px;font-size:9px
+}
+.commanderRosterV2 .cmdRosterActions{display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap}
+.commanderRosterV2 .cmdRosterActions .mini{margin:0;min-height:30px;font-size:7px}
+.commanderRosterV2 .cmdRosterPrimary{color:#34d399;font:800 7px 'JetBrains Mono',monospace}
+.commanderRosterV2 .cmdRosterInviteList{display:grid;gap:6px}
+.commanderRosterV2 .cmdRosterInviteList>div{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px;border:1px solid #273548;background:#0d141b;border-radius:3px
+}
+.commanderRosterV2 .cmdRosterInviteList span{display:grid;gap:2px}
+.commanderRosterV2 .cmdRosterInviteList b{color:#f5f7fa;font-size:11px}
+.commanderRosterV2 .cmdRosterInviteList small{color:#778da1!important;font-size:8px}
+
+@media(max-width:980px){
+  .commanderRosterV2 .cmdRosterTools,
+  .commanderRosterV2 .cmdRosterGrid{grid-template-columns:1fr}
+}
+@media(max-width:680px){
+  .commanderRosterV2 .cmdRosterHero{align-items:flex-start;flex-direction:column}
+  .commanderRosterV2 .cmdRosterCounters{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}
+  .commanderRosterV2 .cmdRosterCounters span{min-width:0}
+  .commanderRosterV2 .cmdRosterInvite{grid-template-columns:1fr}
+  .commanderRosterV2 .cmdRosterTop{align-items:stretch;flex-direction:column}
+  .commanderRosterV2 .cmdRosterProfile{text-align:center}
+  .commanderRosterV2 .cmdRosterStats{grid-template-columns:repeat(2,1fr)}
+  .commanderRosterV2 .cmdRosterControls{grid-template-columns:1fr}
+  .commanderRosterV2 .cmdRosterActions{justify-content:stretch}
+  .commanderRosterV2 .cmdRosterActions .mini{flex:1}
+}
