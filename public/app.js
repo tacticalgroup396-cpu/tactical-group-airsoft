@@ -301,7 +301,73 @@ function renderRanksPage(d){
     <details class="card collapsibleCard" open><summary><div><div class="sectionHead compact"><div><div class="eyebrow">EQUIPE</div><h2>Todos os operadores</h2></div></div></div></summary><div class="collapsibleBody"><div class="rankProfileGrid">${activeOps.map(o=>`<article class="rankProfileCard">${photoOrInitial(o,true)}<div class="rankProfileMain"><a class="profileLink" href="/visitantes?operator=${o.id}&from=commander"><b>@${esc(o.nickname)}</b></a>${o.name?`<div class="operatorRealName">${esc(o.name)}</div>`:''}<div class="rankLine"><span>${esc(o.rank)}</span>${eloBadge(o.elo_level)}</div><small>${esc(o.function||'Operador')} · ${o.games_count||0} jogo(s) · ${o.absences||0} falta(s)</small><div class="rankActions"><select data-rank="${o.id}" aria-label="Patente de @${esc(o.nickname)}">${ranks.map(r=>`<option ${o.rank===r?'selected':''}>${r}</option>`).join('')}</select><select data-elo-level="${o.id}" aria-label="Elo de @${esc(o.nickname)}">${[7,6,5,4,3,2,1].map(n=>`<option value="${n}" ${Number(o.elo_level)===n?'selected':''}>Elo ${n} · ${eloMeta(n).label}</option>`).join('')}</select><a class="mini" href="/visitantes?operator=${o.id}&from=commander">Ver perfil</a></div><div class="rankPenaltyBox"><label>Falta / disciplina<select data-discipline-type="${o.id}" aria-label="Tipo de falta de @${esc(o.nickname)}"><option value="absence">Falta no jogo</option><option value="highlander">Highlander</option><option value="misconduct">Conduta</option></select></label><button type="button" class="mini danger" data-apply-penalty="${o.id}">Aplicar falta</button></div></div></article>`).join('')}</div></div></details>
   </section>`
 }
-function renderTeamPage(d){return `<section>${commandHeader('Equipe','Gerencie convites, operadores, comandantes, patentes e disciplina.')}${commandSubnav('equipe')}<div class="card commanderProfiles"><div class="cardKicker">COMANDO</div><h2>Comandantes do time</h2><div class="commandersGrid">${d.operators.filter(o=>o.role==='commander'&&o.active).map(o=>`<div class="commanderProfile card">${photoOrInitial(o,true)}<div><b>@${esc(o.nickname)}</b>${o.name?`<small class="operatorRealName">${esc(o.name)}</small>`:''}<span>${o.is_primary_commander?'Comandante principal':'Comandante'}</span><small>${esc(o.function||'Gestão e comando')}</small><a class="mini" href="/visitantes?operator=${o.id}&from=commander">Ver perfil</a></div></div>`).join('')||'<p class="muted">Nenhum comandante cadastrado.</p>'}</div></div><div class="adminGrid"><form id="inviteForm" class="card formCard commanderInvite"><div class="cardKicker">NOVO OPERADOR</div><h2>Gerar convite</h2><p class="muted">Informe apenas o apelido. O operador completa o próprio perfil.</p><input name="nickname" placeholder="Apelido" required><button class="goldbtn">Gerar código de acesso</button><div id="inviteResult"></div></form><div class="card"><div class="cardKicker">PROGRESSÃO</div><h2>Patentes e Elos</h2><p class="muted">Acompanhe a evolução de todos os operadores e aplique decisões disciplinares.</p><a class="goldbtn" href="/comandante/patentes-elos">Abrir Patentes e Elos</a></div></div><div class="card"><h2>Operadores e comandantes</h2><div class="table">${d.operators.map(o=>`<div class="row operatorAdminRow"><div class="adminIdentity">${photoOrInitial(o)}<div><b>@${esc(o.nickname)}</b>${o.name?`<small class="operatorRealName">${esc(o.name)}</small>`:''}<small>${esc(o.function||'Operador')} · ${o.absences||0} falta(s) · ${o.games_count||0} jogos · ${o.elo||0} elo</small><a class="mini" href="/visitantes?operator=${o.id}&from=commander">Ver perfil</a></div></div><span>${o.role==='commander'?(o.is_primary_commander?'COMANDANTE PRINCIPAL':'COMANDANTE'):o.active?'ATIVO':'CONVITE'}</span>${o.active?`<select data-rank="${o.id}">${d.ranks.map(r=>`<option ${o.rank===r?'selected':''}>${r}</option>`).join('')}</select><span>${o.email?esc(o.email):'sem e-mail'}</span>${o.role==='operator'?`<button class="mini" data-promote="${o.id}">Tornar comandante</button><button class="mini" data-penalty="${o.id}">Suspender 3 dias</button><button class="mini danger" data-deleteop="${o.id}">Excluir operador</button>`:(o.is_primary_commander?'':`<button class="mini danger" data-demote="${o.id}">Remover comando</button>`)}`:`<span class="tag">${o.invite_expires_at?'expira '+fmt(o.invite_expires_at):'expirado'}</span><button class="mini danger" data-revoke="${o.id}">Excluir convite e cadastro</button>`}</div>`).join('')}</div></div></section>`}
+function renderTeamPage(d){
+  const all=Array.isArray(d.operators)?d.operators:[];
+  const commanders=all.filter(o=>o.role==='commander'&&o.active);
+  const operators=all.filter(o=>o.role!=='commander'&&o.active);
+  const invites=all.filter(o=>!o.active);
+  const ranksList=d.ranks||ranks;
+  const statusLabel=o=>o.role==='commander'?(o.is_primary_commander?'COMANDANTE PRINCIPAL':'COMANDO'):'ATIVO';
+  const personCard=o=>{
+    const isCommander=o.role==='commander';
+    const elo=eloMeta(o.elo_level);
+    return `<article class="cmdRosterCard ${isCommander?'commander':'operator'}">
+      <div class="cmdRosterTop">
+        <div class="cmdRosterIdentity">
+          <div class="cmdRosterRankMark"><span>${rankIcon(o.rank||'Recruta')}</span><small>${esc(String(o.rank||'REC').slice(0,3).toUpperCase())}</small></div>
+          ${photoOrInitial(o)}
+          <div class="cmdRosterName">
+            <div><b>@${esc(o.nickname)}</b><span class="cmdRosterStatus ${isCommander?'command':'active'}">${statusLabel(o)}</span></div>
+            ${o.name?`<small>${esc(o.name)}</small>`:''}
+            <strong>${esc(o.rank||'Recruta')}</strong>
+          </div>
+        </div>
+        <a class="cmdRosterProfile" href="/visitantes?operator=${o.id}&from=commander">VER PERFIL</a>
+      </div>
+      <p class="cmdRosterBio">${esc(o.bio||o.function|| (isCommander?'Gestão e comando da equipe.':'Operador do Tactical Group Airsoft.'))}</p>
+      <div class="cmdRosterStats">
+        <span><small>FUNÇÃO</small><b>${esc(o.function|| (isCommander?'Comando':'Operador'))}</b></span>
+        <span><small>JOGOS</small><b>${Number(o.games_count||0)}</b></span>
+        <span><small>FALTAS</small><b>${Number(o.absences||0)}</b></span>
+        <span><small>ELO</small><b>${elo.symbol} ${elo.label}</b></span>
+      </div>
+      <div class="cmdRosterControls">
+        <label><small>PATENTE</small><select data-rank="${o.id}">${ranksList.map(r=>`<option ${o.rank===r?'selected':''}>${r}</option>`).join('')}</select></label>
+        <div class="cmdRosterActions">
+          ${o.role==='operator'
+            ?`<button class="mini" data-promote="${o.id}">Tornar comandante</button><button class="mini" data-penalty="${o.id}">Suspender 3 dias</button><button class="mini danger" data-deleteop="${o.id}">Excluir</button>`
+            :(o.is_primary_commander?'<span class="cmdRosterPrimary">COMANDO PRINCIPAL</span>':`<button class="mini danger" data-demote="${o.id}">Remover comando</button>`)}
+        </div>
+      </div>
+    </article>`;
+  };
+  return `<section class="commanderRosterV2">
+    ${commandHeader('Operadores','Gerencie comandantes, operadores, patentes, acessos e disciplina.')}
+    ${commandSubnav('equipe')}
+    <div class="cmdRosterHero">
+      <div><div class="cardKicker">GESTÃO DO EFETIVO</div><h2>QUADRO TÁTICO DA EQUIPE</h2><p>Comando e operadores no mesmo padrão visual, com patente, função, histórico e ações administrativas.</p></div>
+      <div class="cmdRosterCounters"><span><b>${commanders.length}</b><small>COMANDANTES</small></span><span><b>${operators.length}</b><small>OPERADORES</small></span><span><b>${all.filter(o=>o.active).length}</b><small>ATIVOS</small></span></div>
+    </div>
+    <div class="cmdRosterTools">
+      <form id="inviteForm" class="cmdRosterInvite">
+        <div><small>NOVO OPERADOR</small><b>GERAR CONVITE DE ACESSO</b></div>
+        <input name="nickname" placeholder="Apelido do operador" required>
+        <button class="goldbtn">GERAR CÓDIGO</button>
+        <div id="inviteResult"></div>
+      </form>
+      <a class="cmdRosterProgress" href="/comandante/patentes-elos"><span>◆</span><div><small>PROGRESSÃO & DISCIPLINA</small><b>PATENTES E ELOS</b></div><em>ABRIR →</em></a>
+    </div>
+    <section class="cmdRosterSection">
+      <div class="cmdRosterSectionHead"><div><span>COMANDO</span><h3>COMANDANTES</h3></div><b>${commanders.length}</b></div>
+      <div class="cmdRosterGrid">${commanders.map(personCard).join('')||'<p class="muted">Nenhum comandante cadastrado.</p>'}</div>
+    </section>
+    <section class="cmdRosterSection">
+      <div class="cmdRosterSectionHead"><div><span>EFETIVO OPERACIONAL</span><h3>OPERADORES</h3></div><b>${operators.length}</b></div>
+      <div class="cmdRosterGrid">${operators.map(personCard).join('')||'<p class="muted">Nenhum operador ativo.</p>'}</div>
+    </section>
+    ${invites.length?`<section class="cmdRosterSection invites"><div class="cmdRosterSectionHead"><div><span>ACESSO</span><h3>CONVITES PENDENTES</h3></div><b>${invites.length}</b></div><div class="cmdRosterInviteList">${invites.map(o=>`<div><span><b>@${esc(o.nickname)}</b><small>${o.invite_expires_at?'Expira '+fmt(o.invite_expires_at):'Convite expirado'}</small></span><button class="mini danger" data-revoke="${o.id}">Excluir convite</button></div>`).join('')}</div></section>`:''}
+  </section>`;
+}
 
 async function compressMatchPhoto(file){
   if(!file) return '';
