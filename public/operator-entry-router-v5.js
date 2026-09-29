@@ -90,7 +90,7 @@
     }catch(e){content.innerHTML=`<section class="ofdCard"><div class="eyebrow">MENSALIDADES</div><h2>Não foi possível carregar</h2><p>${esc(e.message)}</p></section>`}
   }
   const loadScript=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=ok;s.onerror=()=>no(new Error('Não foi possível abrir esta aba.'));document.body.appendChild(s)});
-  async function route(u){if(p==='/operador')return renderHome(u);if(p==='/operador/jogos')return renderGames(u);if(p==='/operador/patentes')return renderRanks(u);if(p==='/operador/mensalidades')return renderDues(u);if(p==='/operador/arena')return loadScript('/operator-minigames-v5.js?v=4');if(p==='/operador/equipe'||p==='/operador/configuracoes')return loadScript('/operator-profile-v3.js?v=6');location.replace('/operador')}
+  async function route(u){if(p==='/operador')return renderHome(u);if(p==='/operador/jogos')return renderGames(u);if(p==='/operador/patentes')return renderRanks(u);if(p==='/operador/mensalidades')return renderDues(u);if(p==='/operador/arena')return loadScript('/operator-minigames-v5.js?v=4');if(p==='/operador/equipe'||p==='/operador/configuracoes')return loadScript('/operator-profile-v3.js?v=7');location.replace('/operador')}
   async function start(){showCheck();try{const me=await requestJSON('/api/operator-home-fast?action=me&v=5&t='+Date.now(),{},5500);await route(me.user)}catch(err){if(err.status===401||err.status===403){showLogin();return}showCheckError(err?.name==='AbortError'?'O servidor demorou para confirmar a sessão.':err.message||'Erro ao verificar sua sessão.')}}
   addCss();watchSidebar();start();
 })();
