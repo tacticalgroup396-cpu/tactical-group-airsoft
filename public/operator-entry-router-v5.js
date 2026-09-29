@@ -231,6 +231,39 @@
   const loadScript=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=ok;s.onerror=()=>no(new Error('Não foi possível abrir esta aba.'));document.body.appendChild(s)});
   window.__tgaOperatorView={shell,tabs,hero,enhanceOperatorSidebar,routeReady,esc,requestJSON};
   async function route(u){if(p==='/operador')return renderHome(u);if(p==='/operador/jogos')return renderGames(u);if(p==='/operador/patentes')return renderRanks(u);if(p==='/operador/equipamentos'){await loadScript('/operator-gear-v1.js?v=2');return}if(p==='/operador/mensalidades')return renderDues(u);if(p==='/operador/arena'){await loadScript('/operator-minigames-v5.js?v=4');routeReady();return}if(p==='/operador/equipe'){if(new URLSearchParams(location.search).has('operator')){await loadScript('/operator-profile-view-v2.js?v=1');return}await loadScript('/operator-team-v1.js?v=3');return}if(p==='/operador/configuracoes'){await loadScript('/operator-settings-v1.js?v=2');return};location.replace('/operador')}
-  async function start(){showCheck();try{const me=await requestJSON('/api/operator-home-fast?action=me&v=5&t='+Date.now(),{},5500);window.__tgaCurrentOperator=me.user||null;window.dispatchEvent(new CustomEvent('tga:operator-user',{detail:window.__tgaCurrentOperator}));await route(me.user)}catch(err){if(err.status===401||err.status===403){showLogin();return}showCheckError(err?.name==='AbortError'?'O servidor demorou para confirmar a sessão.':err.message||'Erro ao verificar sua sessão.')}}
+  async function start(){
+    showCheck();
+    const key='tga_me_cache_v2';
+    let cached=null;
+    try{const x=JSON.parse(sessionStorage.getItem(key)||'null');if(x?.user&&Date.now()-Number(x.at||0)<900000)cached=x.user}catch{}
+    if(cached){
+      window.__tgaCurrentOperator=cached;
+      window.dispatchEvent(new CustomEvent('tga:operator-user',{detail:cached}));
+      await route(cached);
+      setTimeout(async()=>{
+        try{
+          const fresh=await requestJSON('/api/operator-home-fast?action=me&v=5&t='+Date.now(),{},4000);
+          if(fresh?.user){
+            try{sessionStorage.setItem(key,JSON.stringify({at:Date.now(),user:fresh.user}))}catch{}
+            window.__tgaCurrentOperator=fresh.user;
+            window.dispatchEvent(new CustomEvent('tga:operator-user',{detail:fresh.user}));
+          }
+        }catch(err){
+          if(err.status===401||err.status===403){try{sessionStorage.removeItem(key)}catch{};showLogin()}
+        }
+      },1400);
+      return;
+    }
+    try{
+      const me=await requestJSON('/api/operator-home-fast?action=me&v=5&t='+Date.now(),{},5500);
+      window.__tgaCurrentOperator=me.user||null;
+      try{if(me.user)sessionStorage.setItem(key,JSON.stringify({at:Date.now(),user:me.user}))}catch{}
+      window.dispatchEvent(new CustomEvent('tga:operator-user',{detail:window.__tgaCurrentOperator}));
+      await route(me.user);
+    }catch(err){
+      if(err.status===401||err.status===403){try{sessionStorage.removeItem(key)}catch{};showLogin();return}
+      showCheckError(err?.name==='AbortError'?'O servidor demorou para confirmar a sessão.':err.message||'Erro ao verificar sua sessão.');
+    }
+  }
   addCss();watchSidebar();start();
 })();
