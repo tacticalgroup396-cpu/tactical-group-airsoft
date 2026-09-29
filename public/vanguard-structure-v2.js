@@ -143,11 +143,11 @@
     '/operador/configuracoes':['DADOS DO OPERADOR','CONFIGURAÇÕES & TUTORIA','Atualize perfil, equipamentos, segurança e responsável quando necessário.']
   };
   const glyphs={
-    '/operador':'⌖','/operador/equipe':'◉','/operador/jogos':'◆','/operador/mensalidades':'$','/operador/arena':'◎','/operador/configuracoes':'⚙'
+    '/operador':'⌖','/operador/equipe':'◉','/operador/jogos':'◆','/operador/mensalidades':'▣','/operador/arena':'◎','/operador/configuracoes':'⚙'
   };
   const names={
-    '/operador':'Visão geral','/operador/equipe':'Operadores','/operador/jogos':'Jogos & Convocação',
-    '/operador/mensalidades':'Mensalidade Atual','/operador/arena':'Mini Jogos','/operador/configuracoes':'Configurações & Tutoria'
+    '/operador':'Painel do operador','/operador/equipe':'Perfis dos operadores','/operador/jogos':'Jogos atuais & finalizados',
+    '/operador/mensalidades':'Mensalidade atual','/operador/arena':'Mini jogos','/operador/configuracoes':'Configurações & tutoria'
   };
 
   function enhanceOperator(){
