@@ -1,5 +1,5 @@
 (()=>{
-  if(!['/operador/equipe','/operador/configuracoes'].includes(location.pathname))return;
+  if(location.pathname!=='/operador/configuracoes')return;
   const root=document.getElementById('app');if(!root)return;
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const api=async(action,opts={})=>{const q=opts.query||'',r=await fetch('/api/operator-replicas?action='+encodeURIComponent(action)+q,{method:opts.method||'GET',headers:{'Content-Type':'application/json'},body:opts.body?JSON.stringify(opts.body):undefined,credentials:'same-origin',cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Erro ao carregar arsenal.');return d};
