@@ -435,3 +435,17 @@ body.vanguard-ui .vgCompatMenu{
   pointer-events:none!important;
   opacity:0!important;
 }
+
+
+/* Tela de entrada do operador: somente login + controles do canto superior direito */
+body.operator-login-mode #vgStatusBanner{display:none!important}
+body.operator-login-mode .vgTopInner{justify-content:flex-end!important}
+body.operator-login-mode .vgBrandBlock{display:none!important}
+body.operator-login-mode .vgTopbar{min-height:64px!important}
+body.operator-login-mode main#app{min-height:calc(100vh - 64px)!important}
+body.operator-login-mode .auth{padding-top:28px!important}
+body.operator-login-mode .accessBox{margin-top:0!important}
+@media(max-width:860px){
+  body.operator-login-mode .vgTopInner{justify-content:flex-end!important}
+  body.operator-login-mode .vgHeaderMenu{display:grid!important}
+}
