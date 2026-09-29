@@ -85,6 +85,9 @@
     const level=Number(me.elo_level||me.elo||7)||7;
     const descriptor=commander?'Comando, operações, financeiro e segurança do grupo.':`${rankText(me)} • Elo ${level} • ${me.function||'Operador'}`;
     const avatar=me.photo_url?`<img src="${esc(me.photo_url)}" alt="">`:esc(initial(me));
+    const sig=[commander?'c':'o',me.id||'',nick(me),rankText(me),me.function||'',me.photo_url||'',level].join('|');
+    if(bar.dataset.vgStatusSig===sig)return;
+    bar.dataset.vgStatusSig=sig;
     bar.innerHTML=`<div class="vgStatusInner">
       <div class="vgStatusIdentity">
         <div class="vgStatusInsignia">${avatar}</div>
@@ -215,7 +218,11 @@
     const meta=commanderPageMeta[p]||commanderPageMeta['/comandante'];
     let head=content.querySelector(':scope > .vgCommanderPageHead');
     if(!head){head=document.createElement('section');head.className='vgCommanderPageHead';content.insertBefore(head,content.firstChild)}
-    head.innerHTML=`<div class="vgLiveLabel">${esc(meta[0])}</div><h2>${esc(meta[1])}</h2><p>${esc(meta[2])}</p>`;
+    const headSig=meta.join('|');
+    if(head.dataset.vgHeadSig!==headSig){
+      head.dataset.vgHeadSig=headSig;
+      head.innerHTML=`<div class="vgLiveLabel">${esc(meta[0])}</div><h2>${esc(meta[1])}</h2><p>${esc(meta[2])}</p>`;
+    }
     content.querySelector('.pageTitle')?.classList.add('vgLegacyPageTitle');
     return true;
   }
@@ -291,10 +298,18 @@
     sync();
     window.dispatchEvent(new Event('tga:vanguard-ready'));
   });
-  let timer;
+  let timer,syncing=false;
   const root=document.getElementById('app')||document.body;
-  new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(sync,45)}).observe(root,{childList:true,subtree:true});
+  const scheduleSync=()=>{
+    if(syncing)return;
+    clearTimeout(timer);
+    timer=setTimeout(()=>{
+      syncing=true;
+      try{sync()}finally{syncing=false}
+    },120);
+  };
+  new MutationObserver(scheduleSync).observe(root,{childList:true,subtree:true});
   let tries=0;
-  const retry=setInterval(()=>{sync();if(++tries>20)clearInterval(retry)},150);
+  const retry=setInterval(()=>{scheduleSync();if(++tries>6)clearInterval(retry)},250);
   sync();
 })();
