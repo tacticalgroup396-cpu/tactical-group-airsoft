@@ -23,7 +23,7 @@
     return {annual,ledger};
   }
 
-  window.renderFinancePage=async function(){
+  window.__renderCommanderFinanceAnnual=async function(){
     const {annual,ledger}=await data(),s=annual.settings||{},sum=annual.summary||{},currency=s.currency||'BRL';
     const opts=months.map((m,i)=>'<option value="'+period(i)+'" '+(i===currentMonth?'selected':'')+'>'+longMonths[i]+' '+year+'</option>').join('');
     const rows=(annual.members||[]).map((m,idx)=>{
@@ -77,4 +77,5 @@
     document.querySelectorAll('[data-fin-cell]').forEach(b=>{if(!b.dataset.bound){b.dataset.bound='1';b.onclick=()=>openCell(b)}});
     const q=document.getElementById('vgFinSearch');if(q&&!q.dataset.bound){q.dataset.bound='1';q.oninput=()=>{const v=q.value.trim().toLowerCase();document.querySelectorAll('.vgFinRow[data-fin-search]').forEach(r=>r.style.display=!v||r.dataset.finSearch.includes(v)?'grid':'none')}}
   }
+  window.renderFinancePage=window.__renderCommanderFinanceAnnual;
 })();
