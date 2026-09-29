@@ -305,7 +305,26 @@ async function compressMatchPhoto(file){
   throw new Error('Não foi possível reduzir a foto para o tamanho aceito.');
 }
 
-async function commanderPage(page='equipe'){const d=await commanderData();app.innerHTML=page==='jogos'?renderGamesPage(d):page==='patentes-elos'?renderRanksPage(d):page==='historico'?renderHistoryPage(d):page==='financeiro'?await renderFinancePage(d):page==='visitas'?renderVisitsPage(d):page==='configuracoes'?renderSettingsPage(d):renderTeamPage(d);bindCommander(page,d)}
+async function ensureCommanderFinanceAnnual(){
+  if(typeof window.__renderCommanderFinanceAnnual==='function')return window.__renderCommanderFinanceAnnual;
+  await new Promise((resolve,reject)=>{
+    const found=document.querySelector('script[data-commander-finance-annual]');
+    if(found){found.addEventListener('load',resolve,{once:true});found.addEventListener('error',reject,{once:true});return}
+    const s=document.createElement('script');s.src='/commander-finance-v1.js?v=2';s.async=false;s.dataset.commanderFinanceAnnual='1';s.onload=resolve;s.onerror=()=>reject(new Error('Não foi possível carregar o financeiro anual.'));document.body.appendChild(s);
+  });
+  if(typeof window.__renderCommanderFinanceAnnual!=='function')throw new Error('Financeiro anual não iniciou.');
+  return window.__renderCommanderFinanceAnnual;
+}
+async function commanderPage(page='equipe'){
+  const d=await commanderData();
+  if(page==='financeiro'){
+    const renderAnnual=await ensureCommanderFinanceAnnual();
+    app.innerHTML=await renderAnnual(d);
+  }else{
+    app.innerHTML=page==='jogos'?renderGamesPage(d):page==='patentes-elos'?renderRanksPage(d):page==='historico'?renderHistoryPage(d):page==='visitas'?renderVisitsPage(d):page==='configuracoes'?renderSettingsPage(d):renderTeamPage(d);
+  }
+  bindCommander(page,d)
+}
 
 function closeGameModal(){document.getElementById('gameEditModal')?.remove()}
 function openGameEditModal(g,d,page){
