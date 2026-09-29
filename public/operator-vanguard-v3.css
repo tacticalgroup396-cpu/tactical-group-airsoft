@@ -929,3 +929,14 @@ body.operator-vanguard-v2 .vgMissionCard.isFinished .vgMissionVisual img{
     min-width:0!important;
   }
 }
+
+
+/* Legibilidade da Área do Operador */
+body.operator-vanguard-v2 .vgOperatorIdentity strong{font-size:15px!important}
+body.operator-vanguard-v2 .vgOperatorIdentity small{font-size:9px!important}
+body.operator-vanguard-v2 .vgOperatorPanelLabel{font-size:9px!important}
+body.operator-vanguard-v2 .opSidebarLayout .operatorNav a{font-size:12px!important}
+body.operator-vanguard-v2 .eyebrow{font-size:10px!important}
+body.operator-vanguard-v2 .muted{font-size:12px}
+body.operator-vanguard-v2 .ofdRosterPerson b{font-size:11px!important}
+body.operator-vanguard-v2 .ofdRosterPerson small{font-size:10px!important}
