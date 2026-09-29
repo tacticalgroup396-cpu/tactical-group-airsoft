@@ -194,3 +194,15 @@ body.commander-vanguard-v2 .eyebrow{font-size:10px!important}
 body.commander-vanguard-v2 .pageTitle p{font-size:13px!important}
 body.commander-vanguard-v2 .card p,
 body.commander-vanguard-v2 .muted{font-size:12px}
+
+
+/* Legibilidade reforçada do Comandante */
+body.commander-vanguard-v2 .vgCommanderModule .vgModuleCopy strong{font-size:15px!important}
+body.commander-vanguard-v2 .vgCommanderModule .vgModuleCopy small{font-size:12px!important}
+body.commander-vanguard-v2 .vgCommanderUtility a{font-size:11.5px!important}
+body.commander-vanguard-v2 .pageTitle .eyebrow,
+body.commander-vanguard-v2 .cardKicker,
+body.commander-vanguard-v2 .eyebrow{font-size:10.5px!important}
+body.commander-vanguard-v2 .pageTitle p,
+body.commander-vanguard-v2 .card p,
+body.commander-vanguard-v2 .muted{font-size:13px!important}
