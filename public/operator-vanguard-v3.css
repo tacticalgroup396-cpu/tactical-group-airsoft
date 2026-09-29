@@ -416,3 +416,33 @@ body.operator-vanguard-v2 .vgAnnualBook .ofdMonthBox small{display:block;margin-
   body.operator-vanguard-v2 .vgRankCardTop em{grid-column:2}
   body.operator-vanguard-v2 .vgAnnualBook .ofdMonthlyGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+
+
+/* Transição de rota: evita exibir layout antigo antes do Vanguard finalizar */
+html.operator-booting body.vanguard-ui main#app{
+  visibility:hidden!important;
+}
+html.operator-booting body.vanguard-ui::after{
+  content:'CARREGANDO MÓDULO...';
+  position:fixed;left:0;right:0;top:64px;bottom:0;z-index:99998;
+  display:grid;place-items:center;
+  background:
+    linear-gradient(to right,rgba(255,255,255,.022) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(255,255,255,.022) 1px,transparent 1px),
+    #090d11;
+  background-size:28px 28px;
+  color:#f59e0b;
+  font:700 11px 'JetBrains Mono',monospace;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+html.operator-booting body.vanguard-ui::before{
+  content:'';
+  position:fixed;left:50%;top:calc(50% - 34px);z-index:99999;
+  width:26px;height:26px;margin:-13px 0 0 -13px;
+  border:2px solid #263447;border-top-color:#f59e0b;border-radius:50%;
+  animation:vgRouteSpin .75s linear infinite;
+  pointer-events:none;
+}
+@keyframes vgRouteSpin{to{transform:rotate(360deg)}}
+body.operator-route-loading{cursor:progress!important}
