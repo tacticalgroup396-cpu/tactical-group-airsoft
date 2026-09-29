@@ -364,6 +364,32 @@ body.operator-vanguard-v2 .vgRankCardTop{display:grid;grid-template-columns:40px
 body.operator-vanguard-v2 .vgRankInsignia{
   width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(245,158,11,.42);border-radius:3px;background:#111820;color:#fbbf24
 }
+body.operator-vanguard-v2 .vgRankInsignia svg{
+  width:28px;height:28px;display:block
+}
+body.operator-vanguard-v2 .vgRankCurrentTitle{
+  display:flex;align-items:center;gap:10px;margin-top:7px
+}
+body.operator-vanguard-v2 .vgRankCurrentTitle h2{margin:0!important}
+body.operator-vanguard-v2 .vgRankCurrentInsignia{
+  width:46px;height:46px;display:grid;place-items:center;flex:0 0 46px;
+  border:1px solid rgba(245,158,11,.55);border-radius:3px;background:#111820;color:#fbbf24
+}
+body.operator-vanguard-v2 .vgRankCurrentInsignia svg{width:32px;height:32px;display:block}
+body.operator-vanguard-v2 .vgRankCode{
+  display:inline-flex;align-items:center;vertical-align:middle;margin-left:5px;padding:2px 5px;
+  border:1px solid rgba(245,158,11,.34);border-radius:2px;background:rgba(245,158,11,.09);
+  color:#fbbf24;font:700 7px 'JetBrains Mono',monospace;letter-spacing:.02em
+}
+body.operator-vanguard-v2 .vgRankCard.locked .vgRankInsignia{
+  border-color:#334155;color:#64748b;background:#0b1117
+}
+body.operator-vanguard-v2 .vgRankCard.unlocked .vgRankInsignia{
+  border-color:rgba(16,185,129,.38);color:#34d399
+}
+body.operator-vanguard-v2 .vgRankCard.active .vgRankInsignia{
+  border-color:#f59e0b;color:#fbbf24;box-shadow:0 0 0 1px rgba(245,158,11,.09)
+}
 body.operator-vanguard-v2 .vgRankCard h3{margin:0!important;color:#fff!important;font:700 15px 'Chakra Petch',sans-serif!important;text-transform:uppercase}
 body.operator-vanguard-v2 .vgRankCardTop small{color:#64748b!important;font:8px 'JetBrains Mono',monospace}
 body.operator-vanguard-v2 .vgRankCardTop em{
