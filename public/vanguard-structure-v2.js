@@ -146,9 +146,24 @@
     }
     const aside=layout.querySelector('.vgCommanderSidebar'),content=layout.querySelector('.vgCommanderSidebarContent');
     const p=path(),avatar=me?.photo_url?`<img src="${esc(me.photo_url)}" alt="">`:esc(initial(me));
-    aside.innerHTML=`<div class="vgCommanderIdentity"><span class="vgCommanderSideAvatar">${avatar}</span><span><strong>@${esc(nick(me||{}))}</strong><small>${esc(rankText(me||{}))} • COMANDO</small></span></div>
-      <div class="vgCommanderPanelLabel">PAINEL DO COMANDANTE</div>
-      <nav class="vgCommanderVerticalNav">${commanderNavItems.map(([href,label,key])=>`<a class="${p===href?'active':''}" href="${href}" data-vg-glyph="${key}"><span>${icons[key]}</span><b>${esc(label)}</b></a>`).join('')}</nav>`;
+    const navSig=[p,me?.id||'',me?.nickname||'',me?.rank||'',me?.photo_url||''].join('|');
+    if(aside.dataset.vgNavSig!==navSig){
+      aside.dataset.vgNavSig=navSig;
+      aside.innerHTML=`<div class="vgCommanderIdentity"><span class="vgCommanderSideAvatar">${avatar}</span><span><strong>@${esc(nick(me||{}))}</strong><small>${esc(rankText(me||{}))} • COMANDO</small></span></div>
+        <div class="vgCommanderPanelLabel">PAINEL DO COMANDANTE</div>
+        <nav class="vgCommanderVerticalNav">${commanderNavItems.map(([href,label,key])=>`<a class="${p===href?'active':''}" href="${href}" data-vg-glyph="${key}"><span>${icons[key]}</span><b>${esc(label)}</b></a>`).join('')}</nav>`;
+    }
+    if(!aside.dataset.vgNavBound){
+      aside.dataset.vgNavBound='1';
+      aside.addEventListener('click',e=>{
+        const a=e.target.closest('.vgCommanderVerticalNav a[href]');
+        if(!a)return;
+        e.preventDefault();
+        e.stopPropagation();
+        const href=a.getAttribute('href');
+        if(href&&href!==location.pathname)location.assign(href);
+      });
+    }
     const meta=commanderPageMeta[p]||commanderPageMeta['/comandante'];
     let head=content.querySelector(':scope > .vgCommanderPageHead');
     if(!head){head=document.createElement('section');head.className='vgCommanderPageHead';content.insertBefore(head,content.firstChild)}
