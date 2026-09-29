@@ -446,3 +446,107 @@ html.operator-booting body.vanguard-ui::before{
 }
 @keyframes vgRouteSpin{to{transform:rotate(360deg)}}
 body.operator-route-loading{cursor:progress!important}
+
+
+/* Equipamentos, AEG & Fotos — página própria Vanguard */
+body.operator-vanguard-v2 .vgGearPage{max-width:1320px!important}
+body.operator-vanguard-v2 .vgGearBuilder{
+  border-color:rgba(245,158,11,.36)!important;
+  background:linear-gradient(180deg,#111820,#0c1218)!important
+}
+body.operator-vanguard-v2 .vgGearBuilder>h2{margin-bottom:4px!important}
+body.operator-vanguard-v2 .vgGearForm{
+  display:grid;grid-template-columns:1.05fr 1.45fr .72fr .72fr .9fr;gap:9px;
+  margin-top:16px;padding-top:15px;border-top:1px solid var(--op-line)
+}
+body.operator-vanguard-v2 .vgGearForm label{display:grid;gap:5px;min-width:0}
+body.operator-vanguard-v2 .vgGearForm label>span{
+  color:#7890aa;font:600 8px 'JetBrains Mono',monospace;letter-spacing:.055em;text-transform:uppercase
+}
+body.operator-vanguard-v2 .vgGearForm input,
+body.operator-vanguard-v2 .vgGearForm select{
+  width:100%;height:42px;min-width:0;padding:0 10px;border:1px solid #314156;border-radius:3px;
+  background:#0a1016;color:#dce6ef;font-size:11px
+}
+body.operator-vanguard-v2 .vgGearForm input:focus,
+body.operator-vanguard-v2 .vgGearForm select:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.08)}
+body.operator-vanguard-v2 .vgGearForm .wide{grid-column:1/4}
+body.operator-vanguard-v2 .vgGearPublic{align-content:end}
+body.operator-vanguard-v2 .vgGearPublic>span{
+  min-height:42px;display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid #314156;border-radius:3px;
+  background:#0a1016;color:#94a3b8!important
+}
+body.operator-vanguard-v2 .vgGearPublic input{width:auto;height:auto}
+body.operator-vanguard-v2 .vgGearAdd{align-self:end;min-height:42px!important}
+body.operator-vanguard-v2 .vgGearInventory{padding-top:14px!important}
+body.operator-vanguard-v2 .vgGearFilters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
+body.operator-vanguard-v2 .vgGearFilters button{
+  min-height:34px;padding:7px 12px;border:1px solid #334155;border-radius:3px;background:#0c1218;color:#a8bacd;
+  font:700 9px 'JetBrains Mono',monospace;cursor:pointer
+}
+body.operator-vanguard-v2 .vgGearFilters button:hover,
+body.operator-vanguard-v2 .vgGearFilters button.active{background:#f59e0b;border-color:#f59e0b;color:#111827}
+body.operator-vanguard-v2 .vgGearCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+body.operator-vanguard-v2 .vgGearCard{
+  min-width:0;border:1px solid var(--op-line);border-radius:4px;background:#0b1117;overflow:hidden;
+  display:flex;flex-direction:column
+}
+body.operator-vanguard-v2 .vgGearPhoto{position:relative;aspect-ratio:16/9;background:#070b0f;overflow:hidden}
+body.operator-vanguard-v2 .vgGearPhoto>img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+body.operator-vanguard-v2 .vgGearNoPhoto{
+  width:100%;height:100%;display:grid;place-items:center;color:#53677b;font:700 9px 'JetBrains Mono',monospace
+}
+body.operator-vanguard-v2 .vgGearTags{
+  position:absolute;left:8px;right:8px;top:8px;display:flex;justify-content:space-between;gap:7px;align-items:center
+}
+body.operator-vanguard-v2 .vgGearTags span,
+body.operator-vanguard-v2 .vgGearTags em{
+  padding:4px 6px;border-radius:2px;font:700 8px 'JetBrains Mono',monospace;font-style:normal
+}
+body.operator-vanguard-v2 .vgGearTags span{background:#f59e0b;color:#111827}
+body.operator-vanguard-v2 .vgGearTags em{background:#10b981;color:#052e22}
+body.operator-vanguard-v2 .vgGearCardBody{padding:12px;flex:1}
+body.operator-vanguard-v2 .vgGearCardBody h3{
+  margin:0 0 5px;color:#fff;font:700 16px/1.18 'Chakra Petch',sans-serif
+}
+body.operator-vanguard-v2 .vgGearCardBody>b{
+  display:block;margin-bottom:7px;color:#fbbf24;font:600 9px 'JetBrains Mono',monospace
+}
+body.operator-vanguard-v2 .vgGearCardBody p{
+  margin:0;color:#9db0c3;font-size:10px;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden
+}
+body.operator-vanguard-v2 .vgGearCard footer{
+  min-height:39px;padding:8px 11px;border-top:1px solid var(--op-line);display:flex;align-items:center;justify-content:space-between;gap:8px
+}
+body.operator-vanguard-v2 .vgGearCard footer>span{color:#34d399;font:700 8px 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .vgGearCard footer>button{
+  border:0;background:transparent;color:#fb7185;font:700 8px 'JetBrains Mono',monospace;cursor:pointer
+}
+body.operator-vanguard-v2 .vgGearEmpty,
+body.operator-vanguard-v2 .vgGearLoading{
+  grid-column:1/-1;min-height:160px;display:grid;place-items:center;border:1px dashed #2a394b;border-radius:3px;
+  background:#090f14;color:#657b90;font:700 9px 'JetBrains Mono',monospace
+}
+body.operator-vanguard-v2 .vgGearEmpty.error{color:#fca5a5;border-color:rgba(239,68,68,.35)}
+body.operator-vanguard-v2 .vgGearLight{
+  position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.94);display:none;place-items:center;padding:20px
+}
+body.operator-vanguard-v2 .vgGearLight.open{display:grid}
+body.operator-vanguard-v2 .vgGearLight img{max-width:94vw;max-height:90vh;object-fit:contain}
+body.operator-vanguard-v2 .vgGearLight button{
+  position:absolute;right:18px;top:18px;width:38px;height:38px;border:1px solid #475569;border-radius:3px;
+  background:#111827;color:#fff;font-size:24px
+}
+
+@media(max-width:1050px){
+  body.operator-vanguard-v2 .vgGearForm{grid-template-columns:repeat(2,minmax(0,1fr))}
+  body.operator-vanguard-v2 .vgGearForm .wide{grid-column:1/-1}
+  body.operator-vanguard-v2 .vgGearCards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:680px){
+  body.operator-vanguard-v2 .vgGearForm{grid-template-columns:1fr}
+  body.operator-vanguard-v2 .vgGearForm .wide{grid-column:auto}
+  body.operator-vanguard-v2 .vgGearCards{grid-template-columns:1fr}
+  body.operator-vanguard-v2 .vgGearFilters{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  body.operator-vanguard-v2 .vgGearFilters button{white-space:nowrap}
+}
