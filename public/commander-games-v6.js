@@ -109,12 +109,6 @@
     const box=host?.querySelector('#cmdGamesV6Mission');if(!box||!selectedId)return;
     box.innerHTML='<div class="cmdGamesV6Empty">CARREGANDO EFETIVO...</div>';
     try{
-      const [d,v]=await Promise.all([
-        mission('get',undefined),
-        visitor('game-visitors',undefined,'&game_id='+encodeURIComponent(selectedId)).catch(()=>({visitors:[]}))
-      ]);
-    }catch{}
-    try{
       current=await json('/api/mission?action=get&game_id='+encodeURIComponent(selectedId));
       const vd=await visitor('game-visitors',undefined,'&game_id='+encodeURIComponent(selectedId)).catch(()=>({visitors:[]}));
       visitors=vd.visitors||[];
