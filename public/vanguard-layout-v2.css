@@ -470,3 +470,18 @@ body.vanguard-ui .vgTelemetryCell small{font-size:9px!important}
 body.vanguard-ui .vgTelemetryCell b{font-size:11px!important}
 body.vanguard-ui .vgModuleCopy strong{font-size:13px!important}
 body.vanguard-ui .vgModuleCopy small{font-size:10px!important}
+
+
+/* Legibilidade reforçada */
+body.vanguard-ui .vgBrandTitle strong{font-size:18px!important}
+body.vanguard-ui .vgBrandSub{font-size:10.5px!important}
+body.vanguard-ui .vgOnline{font-size:10px!important}
+body.vanguard-ui .vgLogged{font-size:12px!important;padding:9px 11px!important}
+body.vanguard-ui .vgLogged b{font-size:13px!important}
+body.vanguard-ui .vgRoleSwitch a,
+body.vanguard-ui .vgRoleSwitch button{font-size:12.5px!important;min-height:38px!important;padding:9px 12px!important}
+body.vanguard-ui .vgMode{font-size:11px!important}
+body.vanguard-ui .vgOperatorActive{font-size:12px!important}
+body.vanguard-ui .vgStatusDesc{font-size:13px!important}
+body.vanguard-ui .vgTelemetryCell small{font-size:10px!important}
+body.vanguard-ui .vgTelemetryCell b{font-size:12px!important}
