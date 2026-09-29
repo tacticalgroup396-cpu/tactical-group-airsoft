@@ -16,15 +16,13 @@
   };
 
   window.renderSettingsPage=function(d){
-    const u=d?.me||{}; const settings=d?.financeSettings||{}; const fields=Array.isArray(d?.fields)?d.fields:[];
-    return `<section>${header('Configurações','Ajuste dados do comando, acesso, Instagram, aplicativo e campos de jogo.')}${nav('configuracoes')}
+    const u=d?.me||{}; const settings=d?.financeSettings||{};
+    return `<section>${header('Configurações','Ajuste dados do comando, acesso, Instagram e aplicativo.')}${nav('configuracoes')}
       <div class="adminGrid">
         <form id="instagramForm" class="card formCard"><div class="cardKicker">SITE</div><h2>Instagram da equipe</h2><label>Link do Instagram<input name="instagram_url" type="url" value="${h(settings.instagram_url||'')}" placeholder="https://instagram.com/..."></label><button class="goldbtn">Salvar Instagram</button></form>
         <div class="card"><div class="cardKicker">APLICATIVO</div><h2>Instalar Tactical Group Airsoft</h2><p class="muted">Instale o portal como aplicativo no celular ou computador.</p><button type="button" class="goldbtn" id="installSettings">Instalar aplicativo</button></div>
       </div>
       <form id="loginSettingsForm" class="card formCard"><div class="cardKicker">MINHA CONTA</div><h2>Dados de acesso do comandante</h2><div class="formGrid"><label>Nome<input name="name" value="${h(u.name||'')}"></label><label>Apelido<input name="nickname" value="${h(u.nickname||'')}" required></label><label>E-mail<input name="email" type="email" value="${h(u.email||'')}"></label><label>Senha atual<input name="current_password" type="password" autocomplete="current-password" required></label><label>Nova senha<input name="new_password" type="password" autocomplete="new-password" placeholder="Deixe em branco para manter"></label></div><button class="goldbtn">Salvar dados de acesso</button></form>
-      <div class="adminGrid"><form id="fieldForm" class="card formCard"><div class="cardKicker">NOVO CAMPO</div><h2>Cadastrar campo</h2><label>Nome do campo<input name="name" required placeholder="Nome do campo"></label><label>Endereço<input name="address" placeholder="Endereço completo"></label><label>Link do Google Maps<input name="maps_url" type="url" required placeholder="https://maps.google.com/..."></label><label>Observações<textarea name="notes" placeholder="Observações sobre o campo"></textarea></label><button class="goldbtn">Cadastrar campo</button></form>
-        <div class="card"><div class="cardKicker">CAMPOS</div><h2>Campos cadastrados</h2>${fields.map(f=>`<div class="fieldItem"><div><b>${h(f.name)}</b><small>${h(f.address||'')}</small></div><div class="heroActions"><a class="mini" href="${h(f.maps_url||'#')}" target="_blank" rel="noopener">Abrir Maps</a><button type="button" class="mini danger" data-delete-field="${h(f.id)}">Excluir</button></div></div>`).join('')||'<p class="muted">Nenhum campo cadastrado.</p>'}</div></div>
     </section>`;
   };
 
