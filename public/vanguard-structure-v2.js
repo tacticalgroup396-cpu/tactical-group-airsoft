@@ -51,12 +51,12 @@
     const header=document.querySelector('body>header');if(!header)return;
     if(header.dataset.vgStructure==='2')return;
     header.dataset.vgStructure='2';header.className='vgTopbar';
-    const role=me?.role||'operator',commander=role==='commander'||isCommander();
+    const role=me?.role||'operator',hasCommanderAccess=role==='commander',commanderArea=isCommander();
     header.innerHTML=`<div class="vgTopInner">
-      <a class="vgBrandBlock" href="${commander?'/comandante':'/operador'}" aria-label="${commander?'Comando Tactical Group':'Operador do Tactical Group'}">
+      <a class="vgBrandBlock" href="${commanderArea?'/comandante':'/operador'}" aria-label="${commanderArea?'Comando Tactical Group':'Operador Tactical Group'}">
         <span class="vgCrosshair">${icons.cross}</span>
         <span class="vgBrandText">
-          <span class="vgBrandTitle"><strong>${commander?'COMANDO TACTICAL GROUP':'OPERADOR DO TACTICAL GROUP'}</strong><span class="vgOnline">ONLINE • TGA NET</span></span>
+          <span class="vgBrandTitle"><strong>${commanderArea?'COMANDO TACTICAL GROUP':'OPERADOR TACTICAL GROUP'}</strong><span class="vgOnline">ONLINE • TGA NET</span></span>
           <span class="vgBrandSub">TACTICAL GROUP AIRSOFT</span>
         </span>
       </a>
@@ -67,7 +67,7 @@
         ${me?`<div class="vgLogged"><span>OPERADOR LOGADO:</span><b>@${esc(nick(me))}</b></div>`:''}
         <div class="vgRoleSwitch">
           <a class="operator ${isOperator()?'active':''}" href="/operador">ÁREA DO OPERADOR</a>
-          ${commander?`<a class="commander ${isCommander()?'active':''}" href="/comandante">ÁREA DO COMANDANTE</a>`:''}
+          ${hasCommanderAccess?`<a class="commander ${isCommander()?'active':''}" href="/comandante">ÁREA DO COMANDANTE</a>`:''}
           <button type="button" id="vgLogout">SAIR</button>
         </div>
       </div>
