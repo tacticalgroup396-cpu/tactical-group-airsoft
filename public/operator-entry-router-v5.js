@@ -23,15 +23,16 @@
       document.body.classList.remove('operator-route-loading');
       window.dispatchEvent(new Event('tga:operator-ready'));
     };
-    if(typeof window.__tgaSyncVanguard==='function'){
-      try{window.__tgaSyncVanguard()}catch{}
-      requestAnimationFrame(()=>requestAnimationFrame(finish));
-      return;
-    }
-    let ended=false;
-    const done=()=>{if(ended)return;ended=true;clearTimeout(timer);finish()};
-    const timer=setTimeout(done,900);
-    window.addEventListener('tga:vanguard-ready',done,{once:true});
+    const ready=()=>document.body.classList.contains('operator-login-mode')||
+      (document.body.classList.contains('operator-vanguard-v2')&&!!document.querySelector('.opSidebarLayout'));
+    const started=Date.now();
+    const wait=()=>{
+      try{window.__tgaSyncVanguard?.()}catch{}
+      if(ready())return requestAnimationFrame(()=>requestAnimationFrame(finish));
+      if(Date.now()-started>2200)return finish();
+      setTimeout(wait,45);
+    };
+    wait();
   }
   window.__tgaOperatorRouteReady=routeReady;
   document.addEventListener('click',e=>{
@@ -121,7 +122,7 @@
   }
   const loadScript=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=ok;s.onerror=()=>no(new Error('Não foi possível abrir esta aba.'));document.body.appendChild(s)});
   window.__tgaOperatorView={shell,tabs,hero,enhanceOperatorSidebar,routeReady,esc,requestJSON};
-  async function route(u){if(p==='/operador')return renderHome(u);if(p==='/operador/jogos')return renderGames(u);if(p==='/operador/patentes')return renderRanks(u);if(p==='/operador/equipamentos'){await loadScript('/operator-gear-v1.js?v=1');return}if(p==='/operador/mensalidades')return renderDues(u);if(p==='/operador/arena'){await loadScript('/operator-minigames-v5.js?v=4');routeReady();return}if(p==='/operador/equipe'||p==='/operador/configuracoes')return loadScript('/operator-profile-v3.js?v=8');location.replace('/operador')}
+  async function route(u){if(p==='/operador')return renderHome(u);if(p==='/operador/jogos')return renderGames(u);if(p==='/operador/patentes')return renderRanks(u);if(p==='/operador/equipamentos'){await loadScript('/operator-gear-v1.js?v=2');return}if(p==='/operador/mensalidades')return renderDues(u);if(p==='/operador/arena'){await loadScript('/operator-minigames-v5.js?v=4');routeReady();return}if(p==='/operador/equipe'||p==='/operador/configuracoes')return loadScript('/operator-profile-v3.js?v=9');location.replace('/operador')}
   async function start(){showCheck();try{const me=await requestJSON('/api/operator-home-fast?action=me&v=5&t='+Date.now(),{},5500);window.__tgaCurrentOperator=me.user||null;window.dispatchEvent(new CustomEvent('tga:operator-user',{detail:window.__tgaCurrentOperator}));await route(me.user)}catch(err){if(err.status===401||err.status===403){showLogin();return}showCheckError(err?.name==='AbortError'?'O servidor demorou para confirmar a sessão.':err.message||'Erro ao verificar sua sessão.')}}
   addCss();watchSidebar();start();
 })();
