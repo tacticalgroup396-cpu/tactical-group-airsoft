@@ -1,6 +1,9 @@
 const app=document.getElementById('app');
 const nav=document.getElementById('nav');
 let me=null;
+const ME_CACHE_KEY='tga_me_cache_v2';
+const readMeCache=()=>{try{const x=JSON.parse(sessionStorage.getItem(ME_CACHE_KEY)||'null');if(!x?.user||Date.now()-Number(x.at||0)>900000)return null;return x.user}catch{return null}};
+const writeMeCache=user=>{try{if(user)sessionStorage.setItem(ME_CACHE_KEY,JSON.stringify({at:Date.now(),user}));else sessionStorage.removeItem(ME_CACHE_KEY)}catch{}};
 
 const api=async(action,options={})=>{
   const [rawAction, rawQuery='']=String(action||'').split('&',2);
@@ -46,7 +49,7 @@ function shell(){
   menu?.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));});
   nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');menu?.setAttribute('aria-expanded','false');showRouteLoading()}));
   document.querySelectorAll('a[href^="/"]:not([target="_blank"])').forEach(a=>a.addEventListener('click',e=>{const href=a.getAttribute('href')||'';if(href&&!href.startsWith('#'))showRouteLoading()}));
-  document.getElementById('logout')?.addEventListener('click',async()=>{await api('logout');showRouteLoading();location.href='/'});
+  document.getElementById('logout')?.addEventListener('click',async()=>{writeMeCache(null);await api('logout').catch(()=>{});showRouteLoading();location.href='/'});
   document.getElementById('installApp')?.addEventListener('click',installPWA);
   document.getElementById('notifBell')?.addEventListener('click',()=>{document.getElementById('notifList')?.classList.toggle('open');loadNotifications()});
   if(me&&!window.__tgaBackgroundStarted){
@@ -140,7 +143,7 @@ function loginBox(mode='operator'){
   const label=mode==='commander'?'ENTRADA DO COMANDANTE':'ENTRADA DO OPERADOR';
   const title=mode==='commander'?'Comandante':'Operador';
   app.innerHTML=`<div class="auth"><form class="modalBox accessBox"><img class="accessLogo" src="/logo.webp" alt="Logo"><div class="eyebrow">${label}</div><h1>${title}</h1><a class="backLogin" href="/entrar">← Voltar</a><div id="err"></div><input name="identifier" placeholder="E-mail ou apelido" required><input name="password" type="password" placeholder="Senha" required><button class="goldbtn">Entrar</button>${mode==='operator'?'<a class="outlinebtn" href="/operador/primeiro-acesso">Primeiro acesso com código</a>':''}<div class="accessLinks"><a href="/visitantes">Visitante</a><a href="/">Início</a></div></form></div>`;
-  app.querySelector('form').onsubmit=async e=>{e.preventDefault();try{const d=await post('login',Object.fromEntries(new FormData(e.target)));if(mode==='commander'&&d.user.role!=='commander')throw new Error('Esta conta não é de comandante.');me=d.user;location.replace(mode==='commander'?'/comandante':'/operador')}catch(x){document.getElementById('err').innerHTML=`<div class="error">${esc(x.message)}</div>`}}
+  app.querySelector('form').onsubmit=async e=>{e.preventDefault();try{const d=await post('login',Object.fromEntries(new FormData(e.target)));if(mode==='commander'&&d.user.role!=='commander')throw new Error('Esta conta não é de comandante.');me=d.user;writeMeCache(me);location.replace(mode==='commander'?'/comandante':'/operador')}catch(x){document.getElementById('err').innerHTML=`<div class="error">${esc(x.message)}</div>`}}
 }
 function accessChoice(){app.innerHTML=`<div class="auth"><div class="modalBox accessBox"><img class="accessLogo" src="/logo.webp" alt="Logo"><div class="eyebrow">ACESSO RESTRITO</div><h1>Escolha seu acesso</h1><p class="muted">Comandantes também possuem acesso completo à área do operador.</p><div class="accessChoiceGrid"><a class="goldbtn" href="/operador">Entrar como Operador</a><a class="outlinebtn" href="/comandante">Entrar como Comandante</a></div><div class="accessLinks"><a href="/visitantes">Visitante</a><a href="/">Início</a></div></div></div>`}
 function firstAccess(){app.innerHTML=`<div class="auth"><form class="modalBox accessBox"><img class="accessLogo" src="/logo.webp"><div class="eyebrow">PRIMEIRO ACESSO</div><h1>Ativar conta de operador</h1><div id="err"></div><input name="code" placeholder="Código TGA-XXXXXX-XXXXXX" required><input name="email" type="email" placeholder="Seu e-mail" required><input name="password" type="password" placeholder="Crie uma senha (mínimo 8 caracteres)" minlength="8" required><input name="confirm_password" type="password" placeholder="Confirme a senha" minlength="8" required><button class="goldbtn">Ativar minha conta</button><a class="outlinebtn" href="/operador">Já tenho conta</a></form></div>`;app.querySelector('form').onsubmit=async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));if(d.password!==d.confirm_password)return toast('As senhas não conferem.');delete d.confirm_password;try{const r=await post('activate-operator',d);me=r.user;toast('Conta ativada');setTimeout(()=>location.href='/operador',250)}catch(x){document.getElementById('err').innerHTML=`<div class="error">${esc(x.message)}</div>`}}}
@@ -360,10 +363,27 @@ app.querySelector('#instagramForm')?.addEventListener('submit',async e=>{e.preve
 async function start(){
   if(location.pathname==='/entrar'){me=null;shell();return accessChoice()}
   if(location.pathname==='/operador/primeiro-acesso'){me=null;shell();return firstAccess()}
-  if(location.pathname==='/operador' || location.pathname.startsWith('/comandante')){try{me=(await api('me',{timeoutMs:5500})).user}catch{me=null}}else{try{me=(await api('me',{timeoutMs:5500})).user}catch{me=null}}
+  const cachedMe=readMeCache();
+  if(cachedMe){
+    me=cachedMe;
+  }else{
+    try{me=(await api('me',{timeoutMs:5500})).user;writeMeCache(me)}catch{me=null;writeMeCache(null)}
+  }
   window.__tgaCurrentOperator=me||null;
   window.dispatchEvent(new CustomEvent('tga:operator-user',{detail:me||null}));
   shell();
+  if(cachedMe){
+    setTimeout(async()=>{
+      try{
+        const fresh=(await api('me',{timeoutMs:4000})).user||null;
+        if(fresh){
+          writeMeCache(fresh);
+          window.__tgaCurrentOperator=fresh;
+          window.dispatchEvent(new CustomEvent('tga:operator-user',{detail:fresh}));
+        }else writeMeCache(null);
+      }catch{}
+    },1400);
+  }
   document.getElementById('routeLoading')?.classList.remove('show');
   try{
     if(location.pathname==='/visitantes')return await visitors();
