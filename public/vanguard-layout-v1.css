@@ -1,0 +1,225 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+body.vanguard-ui{
+  --vg-bg:#0B0E11;
+  --vg-panel:#12171D;
+  --vg-panel-2:#0E1318;
+  --vg-panel-3:#171D24;
+  --vg-border:#1E293B;
+  --vg-border-soft:#273244;
+  --vg-text:#F1F5F9;
+  --vg-muted:#94A3B8;
+  --vg-amber:#F59E0B;
+  --vg-amber-soft:rgba(245,158,11,.14);
+  --vg-green:#10B981;
+  --vg-red:#EF4444;
+  --vg-blue:#38BDF8;
+  margin:0;
+  min-height:100vh;
+  color:var(--vg-text);
+  font-family:'Plus Jakarta Sans',Rajdhani,system-ui,sans-serif;
+  background-color:var(--vg-bg);
+  background-image:
+    linear-gradient(to right,rgba(255,255,255,.024) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(255,255,255,.024) 1px,transparent 1px);
+  background-size:28px 28px;
+  background-attachment:fixed;
+}
+body.vanguard-ui::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:radial-gradient(circle at 50% -10%,rgba(245,158,11,.075),transparent 34%),linear-gradient(180deg,rgba(11,14,17,.15),rgba(11,14,17,.78));
+}
+body.vanguard-ui h1,body.vanguard-ui h2,body.vanguard-ui h3,body.vanguard-ui h4,
+body.vanguard-ui .brand,body.vanguard-ui .eyebrow,body.vanguard-ui .cardKicker,
+body.vanguard-ui button,body.vanguard-ui .goldbtn,body.vanguard-ui .outlinebtn,
+body.vanguard-ui .commandNav a,body.vanguard-ui .operatorNav a{
+  font-family:'Chakra Petch',Rajdhani,sans-serif;
+}
+body.vanguard-ui .eyebrow,body.vanguard-ui .cardKicker{
+  color:var(--vg-amber)!important;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px!important;font-weight:700!important;letter-spacing:.16em!important;text-transform:uppercase;
+}
+body.vanguard-ui .muted,body.vanguard-ui small{color:var(--vg-muted)}
+body.vanguard-ui ::selection{background:rgba(245,158,11,.32);color:#fff3d0}
+body.vanguard-ui ::-webkit-scrollbar{width:7px;height:7px}
+body.vanguard-ui ::-webkit-scrollbar-track{background:var(--vg-bg)}
+body.vanguard-ui ::-webkit-scrollbar-thumb{background:#334155;border-radius:999px}
+body.vanguard-ui ::-webkit-scrollbar-thumb:hover{background:var(--vg-amber)}
+
+body.vanguard-ui>header{
+  width:100%;max-width:none;height:72px;margin:0;padding:0 clamp(14px,4vw,54px);
+  position:sticky;top:0;z-index:120;
+  border-bottom:1px solid var(--vg-border);
+  background:rgba(11,14,17,.95);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  box-shadow:0 10px 35px rgba(0,0,0,.18);
+}
+body.vanguard-ui .brand{gap:12px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;font-size:16px}
+body.vanguard-ui .brand img{width:42px;height:42px;filter:drop-shadow(0 0 14px rgba(245,158,11,.18))}
+body.vanguard-ui .brand>span:not(.instagramHeader){display:flex;align-items:center;gap:5px}
+body.vanguard-ui .brand b{color:var(--vg-amber)}
+body.vanguard-ui #nav{gap:8px}
+body.vanguard-ui #nav a,body.vanguard-ui #nav .ghost{
+  border:1px solid var(--vg-border);border-radius:5px;background:var(--vg-panel);color:#CBD5E1;
+  padding:9px 13px;font-size:12px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;
+  transition:border-color .16s ease,color .16s ease,background .16s ease,transform .16s ease;
+}
+body.vanguard-ui #nav a:hover,body.vanguard-ui #nav a.active,body.vanguard-ui #nav .ghost:hover{
+  border-color:rgba(245,158,11,.62);background:var(--vg-amber-soft);color:#FDE68A;transform:translateY(-1px)
+}
+body.vanguard-ui .instagramLink{border-radius:5px!important;background:var(--vg-panel)!important;border-color:var(--vg-border)!important}
+body.vanguard-ui .menuToggle{border-radius:5px;background:var(--vg-panel);border-color:var(--vg-border)}
+body.vanguard-ui .menuToggle[aria-expanded="true"]{border-color:var(--vg-amber);background:var(--vg-amber-soft)}
+
+body.vanguard-ui main#app{width:100%;max-width:1440px;margin:0 auto;padding:28px clamp(14px,3vw,34px) 90px}
+body.vanguard-ui footer{border-top:1px solid var(--vg-border);background:rgba(11,14,17,.92);color:#64748B;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+
+body.vanguard-ui .card,body.vanguard-ui .profilePanel,body.vanguard-ui .modalBox,
+body.vanguard-ui .infoCard,body.vanguard-ui .game,body.vanguard-ui .operator,
+body.vanguard-ui .commandGame,body.vanguard-ui .equipmentPublicCard,
+body.vanguard-ui .ofdGame,body.vanguard-ui .ofdHero,body.vanguard-ui .ofdMonthlyRestricted,
+body.vanguard-ui .tgaMissionCreate,body.vanguard-ui .tgaMissionEditor,
+body.vanguard-ui .visitorGamePanel,body.vanguard-ui .pwAdminRow,
+body.vanguard-ui .tgaMobileTeams,body.vanguard-ui .mgCard{
+  background:linear-gradient(180deg,rgba(18,23,29,.97),rgba(15,20,25,.97))!important;
+  border:1px solid var(--vg-border)!important;
+  border-radius:6px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 15px 40px rgba(0,0,0,.12)!important;
+}
+body.vanguard-ui .card:hover,body.vanguard-ui .operator:hover,body.vanguard-ui .commandGame:hover{border-color:#334155!important}
+body.vanguard-ui .profilePanel,body.vanguard-ui .tgaMissionCreate,body.vanguard-ui .tgaMissionEditor{padding:20px!important}
+body.vanguard-ui .sectionHead,body.vanguard-ui .pageTitle{margin-top:34px}
+body.vanguard-ui .sectionHead h2,body.vanguard-ui .card h2,body.vanguard-ui .profilePanel h2{font-size:clamp(25px,3vw,34px);letter-spacing:.015em}
+body.vanguard-ui .pageTitle h1{font-size:clamp(38px,6vw,64px);letter-spacing:.01em;text-transform:uppercase}
+
+body.vanguard-ui .goldbtn,body.vanguard-ui .mini:not(.danger){
+  border:1px solid #F59E0B!important;border-radius:4px!important;background:var(--vg-amber)!important;color:#111827!important;
+  font-weight:800!important;letter-spacing:.035em!important;box-shadow:0 0 0 1px rgba(245,158,11,.08),0 8px 20px rgba(245,158,11,.08);
+}
+body.vanguard-ui .goldbtn:hover,body.vanguard-ui .mini:not(.danger):hover{filter:brightness(1.08);transform:translateY(-1px)}
+body.vanguard-ui .outlinebtn,body.vanguard-ui .ghost{
+  border:1px solid #475569!important;border-radius:4px!important;background:#111820!important;color:#E2E8F0!important;font-weight:700!important;
+}
+body.vanguard-ui .outlinebtn:hover{border-color:var(--vg-amber)!important;color:#FDE68A!important;background:var(--vg-amber-soft)!important}
+body.vanguard-ui .mini.danger{border:1px solid rgba(239,68,68,.42)!important;border-radius:4px!important;background:rgba(127,29,29,.34)!important;color:#FCA5A5!important}
+body.vanguard-ui button:disabled{opacity:.48!important;cursor:not-allowed!important;transform:none!important}
+
+body.vanguard-ui input,body.vanguard-ui textarea,body.vanguard-ui select{
+  color:#E2E8F0!important;background:#0D1217!important;border:1px solid #334155!important;border-radius:4px!important;
+  outline:none!important;box-shadow:none!important;
+}
+body.vanguard-ui input:focus,body.vanguard-ui textarea:focus,body.vanguard-ui select:focus{
+  border-color:var(--vg-amber)!important;box-shadow:0 0 0 3px rgba(245,158,11,.10)!important;
+}
+body.vanguard-ui input::placeholder,body.vanguard-ui textarea::placeholder{color:#64748B}
+body.vanguard-ui label{color:#CBD5E1}
+
+body.vanguard-ui .commandNav,body.vanguard-ui .operatorNav,body.vanguard-ui .ofdNavWrap .operatorNav{
+  border:1px solid var(--vg-border)!important;border-radius:5px!important;background:rgba(14,19,24,.96)!important;
+  padding:5px!important;gap:5px!important;box-shadow:0 12px 32px rgba(0,0,0,.14)!important;
+}
+body.vanguard-ui .commandNav a,body.vanguard-ui .operatorNav a{
+  border:1px solid transparent!important;border-radius:4px!important;background:transparent!important;color:#94A3B8!important;
+  font-size:12px!important;letter-spacing:.04em!important;text-transform:uppercase!important;
+}
+body.vanguard-ui .commandNav a:hover,body.vanguard-ui .commandNav a.active,
+body.vanguard-ui .operatorNav a:hover,body.vanguard-ui .operatorNav a.active{
+  color:#111827!important;background:var(--vg-amber)!important;border-color:#F59E0B!important;
+}
+body.vanguard-ui .opSidebarLayout .operatorNav a{
+  background:transparent!important;border-color:transparent!important;color:#94A3B8!important;border-radius:4px!important;
+}
+body.vanguard-ui .opSidebarLayout .operatorNav a.active,body.vanguard-ui .opSidebarLayout .operatorNav a:hover{
+  background:var(--vg-amber)!important;color:#111827!important;border-color:#F59E0B!important;
+}
+
+body.vanguard-ui .profileStats>div,body.vanguard-ui .commandStats>div,body.vanguard-ui .financeStats>div,
+body.vanguard-ui .ofdFinanceSummary span,body.vanguard-ui .ofdMonthBox,
+body.vanguard-ui .tgaRule,body.vanguard-ui .tgaStatusCol,body.vanguard-ui .tgaMobileTeamCard{
+  background:#0D1217!important;border:1px solid var(--vg-border)!important;border-radius:5px!important;
+}
+body.vanguard-ui .profileStats b,body.vanguard-ui .commandStats b,body.vanguard-ui .financeStats b,
+body.vanguard-ui .statLink b,body.vanguard-ui .tgaRule b{color:#FBBF24!important;font-family:'JetBrains Mono',monospace}
+body.vanguard-ui .tag,body.vanguard-ui .chips span,body.vanguard-ui .gameParticipantGear span,
+body.vanguard-ui .ofdGameRules span,body.vanguard-ui .eloBadge{
+  border-color:#334155!important;background:#111820!important;border-radius:999px!important;color:#CBD5E1!important;
+}
+
+body.vanguard-ui .profilePhoto,body.vanguard-ui .avatar,body.vanguard-ui .ofdPhoto,body.vanguard-ui .gameParticipantPhoto{
+  border:1px solid #475569!important;background:#0D1217!important;box-shadow:0 0 0 3px rgba(245,158,11,.045)
+}
+body.vanguard-ui .rank{color:#FBBF24!important}
+body.vanguard-ui .operator h3,body.vanguard-ui .profileHero h2,body.vanguard-ui .ofdHero h1{text-transform:uppercase;letter-spacing:.025em}
+
+body.vanguard-ui .homeHero{border-radius:8px!important;border-color:#334155!important;box-shadow:0 28px 70px rgba(0,0,0,.38)!important}
+body.vanguard-ui .heroShade{background:linear-gradient(90deg,rgba(6,9,12,.96) 0%,rgba(6,9,12,.74) 48%,rgba(6,9,12,.38) 76%,rgba(6,9,12,.68) 100%),linear-gradient(0deg,rgba(0,0,0,.8),transparent 58%)!important}
+body.vanguard-ui .heroContent h1{text-transform:uppercase;font-family:'Chakra Petch',sans-serif;letter-spacing:.015em}
+body.vanguard-ui .heroContent h1 span{color:var(--vg-amber)}
+body.vanguard-ui .heroCard{border-radius:6px!important;background:rgba(18,23,29,.90)!important;border-color:rgba(245,158,11,.32)!important}
+
+body.vanguard-ui .row,body.vanguard-ui .visit,body.vanguard-ui .fieldItem,body.vanguard-ui .historyRow,
+body.vanguard-ui .chipRow,body.vanguard-ui .visitorGamePerson,body.vanguard-ui .tgaMobileTeamPerson{border-bottom-color:var(--vg-border)!important}
+body.vanguard-ui .commandGame,body.vanguard-ui .gameParticipant,body.vanguard-ui .chipRow{background:#0D1217!important;border-color:var(--vg-border)!important;border-radius:5px!important}
+
+body.vanguard-ui .tgaMissionHead{
+  border:1px solid rgba(245,158,11,.30)!important;border-radius:5px!important;background:linear-gradient(90deg,rgba(245,158,11,.09),rgba(14,19,24,.96))!important;
+}
+body.vanguard-ui .tgaMissionGameCard,body.vanguard-ui .tgaMissionPerson,body.vanguard-ui .visitorGameCol{
+  border-radius:5px!important;background:#0D1217!important;border-color:var(--vg-border)!important;
+}
+body.vanguard-ui .tgaFieldLabel>span{color:#FBBF24!important;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+body.vanguard-ui .tgaMissionStatus.ok{border-color:rgba(16,185,129,.55)!important;background:rgba(16,185,129,.08)!important;color:#A7F3D0!important}
+body.vanguard-ui .tgaMissionStatus.err,body.vanguard-ui .error{border-color:rgba(239,68,68,.55)!important;background:rgba(127,29,29,.22)!important;color:#FCA5A5!important}
+body.vanguard-ui .visitorTeamA,body.vanguard-ui .visitorTeamB{border-color:rgba(245,158,11,.5)!important;color:#FBBF24!important;background:rgba(245,158,11,.08)}
+
+body.vanguard-ui .financePending{border-color:rgba(245,158,11,.4)!important;background:linear-gradient(90deg,rgba(245,158,11,.07),rgba(18,23,29,.97))!important}
+body.vanguard-ui .financeOk{border-color:rgba(16,185,129,.36)!important;background:linear-gradient(90deg,rgba(16,185,129,.06),rgba(18,23,29,.97))!important}
+body.vanguard-ui .ofdMonthBox.paid .ofdMonthMark{background:var(--vg-green)!important}
+body.vanguard-ui .ofdMonthBox.overdue .ofdMonthMark{background:#B45309!important}
+body.vanguard-ui .ofdFinanceSummary .ok{border-color:rgba(16,185,129,.45)!important;color:#6EE7B7!important}
+body.vanguard-ui .ofdFinanceSummary .bad{border-color:rgba(245,158,11,.45)!important;color:#FBBF24!important}
+
+body.vanguard-ui .auth{min-height:calc(100vh - 180px)}
+body.vanguard-ui .accessBox{border-color:rgba(245,158,11,.34)!important;box-shadow:inset 0 1px 0 rgba(245,158,11,.07),0 28px 70px rgba(0,0,0,.34)!important}
+body.vanguard-ui .accessLogo{filter:drop-shadow(0 0 18px rgba(245,158,11,.12))}
+body.vanguard-ui .pwRecoverModal{background:rgba(2,6,10,.90)!important;backdrop-filter:blur(10px)}
+body.vanguard-ui .pwRecoverNote,body.vanguard-ui .pwAdminCode{border-color:rgba(245,158,11,.34)!important;background:rgba(245,158,11,.065)!important}
+body.vanguard-ui .pwRecoverSuccess{border-color:rgba(16,185,129,.42)!important;background:rgba(16,185,129,.07)!important;color:#D1FAE5!important}
+
+body.vanguard-ui .toast{border:1px solid rgba(245,158,11,.5)!important;border-radius:5px!important;background:#12171D!important;color:#F8FAFC!important;box-shadow:0 16px 45px rgba(0,0,0,.38)!important}
+body.vanguard-ui .routeLoading{background:rgba(5,8,11,.82)!important;color:#FBBF24!important}
+body.vanguard-ui .routeSpinner{border-color:#334155!important;border-top-color:var(--vg-amber)!important}
+body.vanguard-ui .loading{color:#FBBF24!important;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
+body.vanguard-ui .notifMenu{background:#12171D!important;border-color:var(--vg-border)!important;border-radius:5px!important}
+body.vanguard-ui .notifItem{background:#0D1217!important;border-color:var(--vg-border)!important;border-radius:4px!important}
+body.vanguard-ui .notifItem.unread{border-color:rgba(245,158,11,.65)!important}
+
+@media(max-width:760px){
+  body.vanguard-ui>header{height:66px;padding:0 11px}
+  body.vanguard-ui .brand{font-size:14px;max-width:calc(100% - 58px)}
+  body.vanguard-ui .brand img{width:38px;height:38px}
+  body.vanguard-ui #nav{left:8px;right:8px;top:63px;padding:8px;background:rgba(11,14,17,.985)!important;border-color:var(--vg-border)!important;border-radius:6px!important}
+  body.vanguard-ui main#app{padding:18px 10px 72px}
+  body.vanguard-ui .card,body.vanguard-ui .profilePanel,body.vanguard-ui .modalBox,
+  body.vanguard-ui .tgaMissionEditor,body.vanguard-ui .tgaMissionCreate{padding:14px!important}
+  body.vanguard-ui .pageTitle{margin-top:20px}
+  body.vanguard-ui .commandNav,body.vanguard-ui .operatorNav{position:static!important;overflow-x:auto;flex-wrap:nowrap!important;scrollbar-width:thin}
+  body.vanguard-ui .commandNav a,body.vanguard-ui .operatorNav a{white-space:nowrap;min-height:42px;display:grid;place-items:center}
+  body.vanguard-ui .opSidebarLayout{grid-template-columns:1fr!important;gap:10px!important}
+  body.vanguard-ui .opSidebarLayout>.ofdNavWrap,body.vanguard-ui .opSidebarLayout>.operatorNav{position:static!important}
+  body.vanguard-ui .opSidebarLayout .operatorNav{display:flex!important;flex-direction:row!important;overflow-x:auto!important}
+  body.vanguard-ui .opSidebarLayout .operatorNav a{width:auto!important;min-width:max-content!important;text-align:center!important}
+  body.vanguard-ui .heroActions{display:grid!important;grid-template-columns:1fr!important}
+  body.vanguard-ui .heroActions>*{width:100%!important;text-align:center}
+  body.vanguard-ui .homeHero{border-radius:6px!important;padding:26px 18px!important}
+  body.vanguard-ui .homeHero .heroCard{border-radius:5px!important}
+  body.vanguard-ui input,body.vanguard-ui select,body.vanguard-ui textarea,body.vanguard-ui button{min-height:44px}
+}
+
+@media(max-width:440px){
+  body.vanguard-ui .brand>span:not(.instagramHeader){font-size:0}
+  body.vanguard-ui .brand>span:not(.instagramHeader)::after{content:'TACTICAL';font-size:13px;letter-spacing:.08em}
+  body.vanguard-ui .instagramHeader{margin-left:2px}
+  body.vanguard-ui .profileStats,body.vanguard-ui .commandStats,body.vanguard-ui .financeStats{grid-template-columns:1fr!important}
+}
