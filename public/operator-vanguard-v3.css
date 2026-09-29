@@ -948,3 +948,96 @@ body.operator-vanguard-v2 .vgOperatorIdentity small{font-size:10px!important}
 body.operator-vanguard-v2 .vgOperatorPanelLabel{font-size:10px!important}
 body.operator-vanguard-v2 .opSidebarLayout .operatorNav a{font-size:13px!important;line-height:1.3!important}
 body.operator-vanguard-v2 .eyebrow{font-size:10.5px!important}
+
+
+/* Configurações & Tutoria — página Vanguard isolada */
+body.operator-vanguard-v2 .vgSettingsV1Page{max-width:1320px!important}
+body.operator-vanguard-v2 .vgSettingsV1Content{display:flex;flex-direction:column;gap:14px;min-width:0}
+body.operator-vanguard-v2 .vgSettingsCard{padding:18px!important}
+body.operator-vanguard-v2 .vgSettingsCard>h2{margin-bottom:14px!important}
+body.operator-vanguard-v2 .vgSettingsGrid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:12px!important;
+}
+body.operator-vanguard-v2 .vgSettingsGrid label{
+  display:grid!important;gap:6px!important;min-width:0!important
+}
+body.operator-vanguard-v2 .vgSettingsGrid label>span{
+  color:#a8bacd!important;
+  font-size:12px!important;
+  font-weight:700!important
+}
+body.operator-vanguard-v2 .vgSettingsGrid input,
+body.operator-vanguard-v2 .vgSettingsGrid select,
+body.operator-vanguard-v2 .vgSettingsGrid textarea{
+  width:100%!important;min-width:0!important;
+  border:1px solid #34465a!important;border-radius:4px!important;
+  background:#0a1016!important;color:#f1f5f9!important;
+  font-size:13px!important;padding:10px 11px!important;
+  box-shadow:none!important
+}
+body.operator-vanguard-v2 .vgSettingsGrid input,
+body.operator-vanguard-v2 .vgSettingsGrid select{min-height:44px!important}
+body.operator-vanguard-v2 .vgSettingsGrid textarea{min-height:100px!important;resize:vertical!important}
+body.operator-vanguard-v2 .vgSettingsGrid input:focus,
+body.operator-vanguard-v2 .vgSettingsGrid select:focus,
+body.operator-vanguard-v2 .vgSettingsGrid textarea:focus{
+  outline:none!important;border-color:#f59e0b!important;box-shadow:0 0 0 2px rgba(245,158,11,.08)!important
+}
+body.operator-vanguard-v2 .vgSettingsGrid .wide{grid-column:1/-1!important}
+body.operator-vanguard-v2 .vgSettingsCheck>span{
+  min-height:44px!important;display:flex!important;align-items:center!important;gap:9px!important;
+  padding:9px 11px!important;border:1px solid #34465a!important;border-radius:4px!important;background:#0a1016!important
+}
+body.operator-vanguard-v2 .vgSettingsCheck input{width:auto!important;min-height:auto!important}
+body.operator-vanguard-v2 .vgSettingsGuardian{
+  padding:12px!important;border:1px solid rgba(245,158,11,.35)!important;
+  border-radius:4px!important;background:rgba(245,158,11,.05)!important
+}
+body.operator-vanguard-v2 .vgSettingsGuardian[hidden]{display:none!important}
+body.operator-vanguard-v2 .vgSettingsPhotoRow{
+  display:grid!important;grid-template-columns:110px minmax(0,1fr)!important;gap:16px!important;align-items:center!important
+}
+body.operator-vanguard-v2 .vgSettingsCurrentPhoto{
+  width:110px!important;height:110px!important;border:1px solid #415166!important;border-radius:5px!important;overflow:hidden!important;background:#080d12!important
+}
+body.operator-vanguard-v2 .vgSettingsCurrentPhoto img{
+  width:100%!important;height:100%!important;object-fit:cover!important;display:block!important
+}
+body.operator-vanguard-v2 .vgSettingsPhotoRow>div:last-child{display:grid!important;gap:9px!important;justify-items:start!important}
+body.operator-vanguard-v2 .vgSettingsPhotoRow input[type=file]{
+  width:100%!important;max-width:480px!important;color:#cbd5e1!important;font-size:12px!important
+}
+body.operator-vanguard-v2 .vgSettingsResponsible{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+body.operator-vanguard-v2 .vgSettingsResponsible a{
+  display:grid!important;grid-template-columns:44px minmax(0,1fr) auto!important;gap:10px!important;align-items:center!important;
+  padding:10px!important;border:1px solid #2b3b4d!important;border-radius:4px!important;background:#0b1117!important;color:inherit!important;text-decoration:none!important
+}
+body.operator-vanguard-v2 .vgSettingsResponsible img{width:44px!important;height:44px!important;object-fit:cover!important;border-radius:3px!important}
+body.operator-vanguard-v2 .vgSettingsResponsible b{display:block!important;font-size:13px!important;color:#fff!important}
+body.operator-vanguard-v2 .vgSettingsResponsible small{display:block!important;margin-top:2px!important;color:#94a3b8!important;font-size:10px!important}
+body.operator-vanguard-v2 .vgSettingsResponsible strong{
+  color:#fbbf24!important;font:700 9px 'JetBrains Mono',monospace!important;white-space:nowrap!important
+}
+body.operator-vanguard-v2 .vgSettingsGearLink{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important
+}
+body.operator-vanguard-v2 .vgSettingsGearLink>div{min-width:0!important}
+body.operator-vanguard-v2 .vgSettingsGearLink h2{margin-bottom:5px!important}
+body.operator-vanguard-v2 .vgSettingsGearLink .goldbtn{flex:0 0 auto!important;text-decoration:none!important}
+body.operator-vanguard-v2 .vgSettingsV1Loading,
+body.operator-vanguard-v2 .vgSettingsV1Error{
+  min-height:240px!important;display:grid!important;place-items:center!important;border:1px dashed #2a394b!important;border-radius:4px!important;
+  background:#090f14!important;color:#647a90!important;font:700 10px 'JetBrains Mono',monospace!important
+}
+body.operator-vanguard-v2 .vgSettingsV1Error{color:#fca5a5!important;border-color:rgba(239,68,68,.35)!important}
+
+@media(max-width:760px){
+  body.operator-vanguard-v2 .vgSettingsGrid,
+  body.operator-vanguard-v2 .vgSettingsResponsible{grid-template-columns:1fr!important}
+  body.operator-vanguard-v2 .vgSettingsGrid .wide{grid-column:auto!important}
+  body.operator-vanguard-v2 .vgSettingsPhotoRow{grid-template-columns:1fr!important}
+  body.operator-vanguard-v2 .vgSettingsGearLink{align-items:flex-start!important;flex-direction:column!important}
+  body.operator-vanguard-v2 .vgSettingsGearLink .goldbtn{width:100%!important;text-align:center!important}
+}
