@@ -147,17 +147,18 @@
     '/operador':['TERMINAL DO OPERADOR','VISÃO GERAL & PROGRESSÃO','Acompanhe jogos, progressão, financeiro e avisos do seu perfil.'],
     '/operador/jogos':['QUADRO DE OPERAÇÕES & CONVOCAÇÃO','JOGOS ATUAIS & MISSÕES','Confirme presença, acompanhe escalação e os times da operação.'],
     '/operador/patentes':['PROGRESSÃO DE CARREIRA','PATENTES & HIERARQUIA','Veja sua patente atual, requisitos e o quadro hierárquico completo.'],
+    '/operador/equipamentos':['ARSENAL DO OPERADOR','EQUIPAMENTOS, AEG & FOTOS','Gerencie seu inventário tático, réplicas, fardamento e galeria.'],
     '/operador/equipe':['EFETIVO TÁTICO','OPERADORES DA EQUIPE','Consulte patentes, funções e dossiês públicos do efetivo.'],
     '/operador/mensalidades':['TESOURARIA INDIVIDUAL','MENSALIDADE ATUAL','Acompanhe somente sua situação financeira no grupo.'],
     '/operador/arena':['TREINAMENTO DIGITAL','MINI JOGOS TÁTICOS','Treinos rápidos de reflexo e desempenho do operador.'],
     '/operador/configuracoes':['DADOS DO OPERADOR','CONFIGURAÇÕES & TUTORIA','Atualize perfil, equipamentos, segurança e responsável quando necessário.']
   };
   const glyphs={
-    '/operador':'⌖','/operador/equipe':'◉','/operador/jogos':'◆','/operador/patentes':'◇','/operador/mensalidades':'▣','/operador/arena':'◎','/operador/configuracoes':'⚙'
+    '/operador':'⌖','/operador/equipe':'◉','/operador/jogos':'◆','/operador/patentes':'◇','/operador/equipamentos':'⌘','/operador/mensalidades':'▣','/operador/arena':'◎','/operador/configuracoes':'⚙'
   };
   const names={
     '/operador':'Painel do operador','/operador/equipe':'Perfis dos operadores','/operador/jogos':'Jogos atuais & finalizados',
-    '/operador/patentes':'Progressões de patente','/operador/mensalidades':'Mensalidade atual','/operador/arena':'Mini jogos','/operador/configuracoes':'Configurações & tutoria'
+    '/operador/patentes':'Progressões de patente','/operador/equipamentos':'Equipamentos, AEG & fotos','/operador/mensalidades':'Mensalidade atual','/operador/arena':'Mini jogos','/operador/configuracoes':'Configurações & tutoria'
   };
 
   function enhanceOperator(){
