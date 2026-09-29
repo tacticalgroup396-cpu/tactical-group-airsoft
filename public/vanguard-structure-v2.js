@@ -104,42 +104,56 @@
     </div>`;
   }
 
-  const commanderModules=[
-    {href:'/comandante/financeiro',label:'Financeiro Anual (Jan–Dez)',sub:'Controle de mensalidades dos 12 meses',key:'money',match:p=>p==='/comandante/financeiro'},
-    {href:'/comandante/jogos',label:'Criar Jogos & Sorteador A/B',sub:'Briefing de missões e balanceamento',key:'game',match:p=>p==='/comandante/jogos'||p==='/comandante/historico'},
-    {href:'/comandante/equipe',label:'Recrutamento, Links & Gestão',sub:'Convites, operadores, patentes e disciplina',key:'users',match:p=>p==='/comandante'||p==='/comandante/equipe'||p==='/comandante/visitas'||p==='/comandante/patentes-elos'||p==='/comandante/configuracoes'}
-  ];
-  const commanderUtility=[
+  const commanderNavItems=[
     ['/comandante','Visão geral','home'],
     ['/comandante/equipe','Operadores','users'],
-    ['/comandante/patentes-elos','Patentes & Elos','rank'],
-    ['/comandante/historico','Histórico','history'],
+    ['/comandante/jogos','Jogos','game'],
+    ['/comandante/patentes-elos','Patentes e Elos','rank'],
+    ['/comandante/historico','Partidas / Histórico','history'],
+    ['/comandante/financeiro','Mensalidades','money'],
     ['/comandante/visitas','Visitantes','visitor'],
     ['/comandante/configuracoes','Configurações','settings']
   ];
+  const commanderPageMeta={
+    '/comandante':['COMANDO CENTRAL','VISÃO GERAL','Acompanhe equipe, operações, financeiro e administração do grupo.'],
+    '/comandante/equipe':['EFETIVO & GESTÃO','OPERADORES','Gerencie operadores, recrutamento, patentes, disciplina e acessos.'],
+    '/comandante/jogos':['PLANEJAMENTO DE OPERAÇÕES','JOGOS & MISSÕES','Crie operações, gerencie briefing e acompanhe o efetivo convocado.'],
+    '/comandante/patentes-elos':['HIERARQUIA DO COMANDO','PATENTES & ELOS','Gerencie progressão, elo, promoções e histórico do efetivo.'],
+    '/comandante/historico':['ARQUIVO DE OPERAÇÕES','PARTIDAS / HISTÓRICO','Consulte operações finalizadas, presença, faltas e resultados.'],
+    '/comandante/financeiro':['TESOURARIA DO COMANDO','FINANCEIRO ANUAL','Controle mensalidades, caixa, pendências e pagamentos dos 12 meses.'],
+    '/comandante/visitas':['ACESSO DE VISITANTES','VISITANTES','Gerencie convites, solicitações e presença de visitantes.'],
+    '/comandante/configuracoes':['CONFIGURAÇÃO DO COMANDO','CONFIGURAÇÕES','Ajuste conta, campos, site, aplicativo e segurança administrativa.']
+  };
 
   function enhanceCommander(){
     if(!isCommander())return false;
     document.body.classList.remove('commander-admin-mode');
-    document.body.classList.add('commander-vanguard-v2');
+    document.body.classList.add('commander-vanguard-v2','commander-vertical-nav');
     document.getElementById('cmdAdminSidebar')?.setAttribute('hidden','');
     document.getElementById('cmdAdminTopbar')?.setAttribute('hidden','');
     const section=document.querySelector('#app>section');if(!section)return false;
-    let modules=document.getElementById('vgCommanderModules');
-    if(!modules){modules=document.createElement('nav');modules.id='vgCommanderModules';modules.className='vgCommanderModules'}
-    const p=path();
-    if(modules.dataset.vgPath!==p){
-      modules.dataset.vgPath=p;
-      modules.innerHTML=commanderModules.map(item=>{
-        const active=item.match(p);
-        return `<a class="vgCommanderModule ${active?'active':''}" href="${item.href}">
-          <span class="vgModuleIcon">${icons[item.key]}</span>
-          <span class="vgModuleCopy"><strong>${esc(item.label)}</strong><small>${esc(item.sub)}</small></span>
-        </a>`
-      }).join('')+`<div class="vgCommanderUtility">${commanderUtility.map(([href,label,key])=>`<a class="${p===href?'active':''}" href="${href}"><span>${icons[key]}</span><b>${esc(label)}</b></a>`).join('')}</div>`;
+    document.getElementById('vgCommanderModules')?.remove();
+    section.querySelector('.commandNav')?.setAttribute('hidden','');
+
+    let layout=section.querySelector(':scope > .vgCommanderSidebarLayout');
+    if(!layout){
+      layout=document.createElement('div');layout.className='vgCommanderSidebarLayout';
+      const aside=document.createElement('aside');aside.className='vgCommanderSidebar';
+      const content=document.createElement('main');content.className='vgCommanderSidebarContent';
+      const children=[...section.children];
+      children.forEach(ch=>{if(ch!==layout)content.appendChild(ch)});
+      layout.append(aside,content);section.appendChild(layout);
     }
-    if(!modules.isConnected)section.insertBefore(modules,section.firstChild);
-    const oldNav=section.querySelector('.commandNav');if(oldNav)oldNav.style.display='none';
+    const aside=layout.querySelector('.vgCommanderSidebar'),content=layout.querySelector('.vgCommanderSidebarContent');
+    const p=path(),avatar=me?.photo_url?`<img src="${esc(me.photo_url)}" alt="">`:esc(initial(me));
+    aside.innerHTML=`<div class="vgCommanderIdentity"><span class="vgCommanderSideAvatar">${avatar}</span><span><strong>@${esc(nick(me||{}))}</strong><small>${esc(rankText(me||{}))} • COMANDO</small></span></div>
+      <div class="vgCommanderPanelLabel">PAINEL DO COMANDANTE</div>
+      <nav class="vgCommanderVerticalNav">${commanderNavItems.map(([href,label,key])=>`<a class="${p===href?'active':''}" href="${href}" data-vg-glyph="${key}"><span>${icons[key]}</span><b>${esc(label)}</b></a>`).join('')}</nav>`;
+    const meta=commanderPageMeta[p]||commanderPageMeta['/comandante'];
+    let head=content.querySelector(':scope > .vgCommanderPageHead');
+    if(!head){head=document.createElement('section');head.className='vgCommanderPageHead';content.insertBefore(head,content.firstChild)}
+    head.innerHTML=`<div class="vgLiveLabel">${esc(meta[0])}</div><h2>${esc(meta[1])}</h2><p>${esc(meta[2])}</p>`;
+    content.querySelector('.pageTitle')?.classList.add('vgLegacyPageTitle');
     return true;
   }
 
