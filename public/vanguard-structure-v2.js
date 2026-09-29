@@ -53,11 +53,11 @@
     header.dataset.vgStructure='2';header.className='vgTopbar';
     const role=me?.role||'operator',commander=role==='commander'||isCommander();
     header.innerHTML=`<div class="vgTopInner">
-      <a class="vgBrandBlock" href="${commander?'/comandante':'/operador'}" aria-label="Vanguard TAC-OPS">
+      <a class="vgBrandBlock" href="${commander?'/comandante':'/operador'}" aria-label="${commander?'Comando Tactical Group':'Operador do Tactical Group'}">
         <span class="vgCrosshair">${icons.cross}</span>
         <span class="vgBrandText">
-          <span class="vgBrandTitle"><strong>VANGUARD TAC-OPS</strong><span class="vgOnline">ONLINE • TGA NET</span></span>
-          <span class="vgBrandSub">SISTEMA INTEGRADO DE JOGADORES DE AIRSOFT</span>
+          <span class="vgBrandTitle"><strong>${commander?'COMANDO TACTICAL GROUP':'OPERADOR DO TACTICAL GROUP'}</strong><span class="vgOnline">ONLINE • TGA NET</span></span>
+          <span class="vgBrandSub">TACTICAL GROUP AIRSOFT</span>
         </span>
       </a>
       <button type="button" class="vgHeaderMenu" id="vgHeaderMenu" aria-label="Abrir controles">${icons.menu}</button>
