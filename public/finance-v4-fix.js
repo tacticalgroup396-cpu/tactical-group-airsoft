@@ -11,6 +11,7 @@
   }
   function patch(){
     cleanCopy();
+    if(document.querySelector('.vgFinanceAnnual'))return false;
     const form=document.getElementById('financeSettingsForm');if(!form||form.dataset.finV4)return false;
     form.dataset.finV4='1';css();
     const active=form.elements.active,fee=form.elements.monthly_fee;
