@@ -53,11 +53,93 @@
   function ensureDuesLink(opNav){if(!opNav||opNav.querySelector('a[href="/operador/mensalidades"]'))return;const a=document.createElement('a');a.href='/operador/mensalidades';a.textContent='Mensalidades';const games=opNav.querySelector('a[href="/operador/jogos"]');games?.insertAdjacentElement('afterend',a)||opNav.appendChild(a)}
   function enhanceOperatorSidebar(){const opNav=app.querySelector('.operatorNav');if(!opNav)return false;ensureDuesLink(opNav);const current=(location.pathname.replace(/\/+$/,'')||'/');opNav.querySelectorAll('a').forEach(a=>a.classList.toggle('active',(a.getAttribute('href')||'')===current));const navNode=opNav.closest('.ofdNavWrap')||opNav;if(navNode.closest('.opSidebarLayout'))return true;const page=navNode.parentElement;if(!page||!page.matches('.ofdPage,.tgaV3Page,.mgV5'))return true;const layout=document.createElement('div');layout.className='opSidebarLayout';const content=document.createElement('div');content.className='opSidebarContent';page.insertBefore(layout,navNode);layout.appendChild(navNode);layout.appendChild(content);while(layout.nextSibling)content.appendChild(layout.nextSibling);return true}
   function watchSidebar(){const run=()=>enhanceOperatorSidebar();new MutationObserver(run).observe(app,{childList:true,subtree:true});setTimeout(run,0)}
-  const personMini=o=>`<div class="ofdRosterPerson"><img src="${esc(o.photo_url||'/logo.webp')}" alt=""><span><b>@${esc(o.nickname)}</b><small> · ${esc(o.rank||'')}</small></span></div>`;
-  function gameHtml(g,detailed=false){const closed=!!g.rsvp_closed,going=g.participants||[],no=g.not_going_participants||[],pending=g.pending_participants||[],status=String(g.status||'confirmado').toLowerCase(),finished=['finalizado','encerrado','concluido','concluído'].includes(status),img=g.match_photo_url||g.photo_url||'/hero-airsoft.jpg';return `<article class="ofdGame vgMissionCard ${finished?'isFinished':'isActive'}"><div class="vgMissionVisual"><img src="${esc(img)}" alt="" loading="lazy"><span>${finished?'MISSÃO FINALIZADA':'OPERAÇÃO ATIVA'}</span></div><div class="vgMissionBody"><div class="ofdGameHead"><div><div class="eyebrow">${finished?'ARQUIVO DE MISSÃO':'QUADRO DE OPERAÇÕES & CONVOCAÇÃO'}</div><h3>${esc(g.title)}</h3><p>⌖ ${esc(g.field_name||g.location||'Local não informado')}</p><p class="vgMissionDate">${fmt(g.game_date)}${g.game_time?' · '+fmtTime(g.game_time):''}</p></div><span class="ofdResponse">${g.response==='going'||g.response==='attended'?'CONFIRMADO: EU VOU':g.response==='not_going'?'NÃO VOU':'AGUARDANDO RESPOSTA'}</span></div>${g.briefing?`<div class="vgBriefing"><b>BRIEFING PRIMÁRIO DA MISSÃO</b><p>${esc(g.briefing)}</p></div>`:''}${g.rsvp_deadline_date?`<div class="ofdDeadline"><b>Responder até ${fmt(g.rsvp_deadline_date)}${g.rsvp_deadline_time?' · '+fmtTime(g.rsvp_deadline_time):''}</b> · ${closed?'lista encerrada':'lista aberta'}</div>`:''}<div class="ofdGameRules"><span>${going.length} confirmados (vou)</span><span>${no.length} baixas (não vou)</span><span>${pending.length} sem resposta</span><span>+${Number(g.elo_reward||1)} Elo</span></div>${finished?'':`<div class="ofdRsvp"><button class="goldbtn small ${g.response==='going'||g.response==='attended'?'selected':''}" data-v5-rsvp="going" data-game="${g.id}" ${g.status==='cancelado'?'disabled':''}>◉ Confirmado: eu vou</button><button class="outlinebtn small ${g.response==='not_going'?'selected':''}" data-v5-rsvp="not_going" data-game="${g.id}" ${g.status==='cancelado'||closed?'disabled':''}>⊗ Não vou</button></div>`}${g.response==='pending'&&!finished?'<p class="ofdPenaltyNote">Se a lista expirar sem resposta, poderá haver perda de Elo conforme a regra deste jogo.</p>':''}${detailed?`<div class="ofdRosterCols"><div class="ofdRosterCol"><b>TIME / CONFIRMADOS (${going.length})</b>${going.map(personMini).join('')||'<span class="muted">Ninguém.</span>'}</div><div class="ofdRosterCol"><b>BAIXAS / NÃO VÃO (${no.length})</b>${no.map(personMini).join('')||'<span class="muted">Ninguém.</span>'}</div><div class="ofdRosterCol"><b>SEM RESPOSTA (${pending.length})</b>${pending.map(personMini).join('')||'<span class="muted">Todos responderam.</span>'}</div></div>`:''}</div></article>`}
-  function bindRsvp(box,all){box?.querySelectorAll('[data-v5-rsvp]').forEach(b=>b.onclick=async()=>{const buttons=box.querySelectorAll(`[data-game="${b.dataset.game}"]`);buttons.forEach(x=>x.disabled=true);try{await requestJSON('/api/index.js?action=rsvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game_id:b.dataset.game,response:b.dataset.v5Rsvp})},8000);await fillHome(all)}catch(e){alert(e.message);buttons.forEach(x=>x.disabled=false)}})}
-  async function fillHome(all=false){const box=document.getElementById(all?'gamesList':'homeGames'),fin=document.getElementById('homeFinance');requestJSON('/api/mission?action=roster&t='+Date.now(),{},7000).catch(()=>{});try{const d=await requestJSON('/api/operator-home-fast?dashboard=1&t='+Date.now(),{},8000);if(box){box.innerHTML=(d.games||[]).map(g=>gameHtml(g,all)).join('')||'<p class="muted">Nenhum jogo ativo.</p>';bindRsvp(box,all)}if(fin){const f=d.finance;fin.innerHTML=f?`<h2>${f.status==='paid'?'Mensalidade em dia':f.status==='overdue'?'Mensalidade atrasada':'Mensalidade pendente'}</h2><p>${Number(f.amount||0).toLocaleString('pt-BR',{style:'currency',currency:d.financeSettings?.currency||'BRL'})} · vencimento ${fmt(f.due_date)}</p><a class="outlinebtn small" href="/operador/mensalidades">Ver minhas mensalidades</a>`:'<h2>Sem cobrança pendente</h2><a class="outlinebtn small" href="/operador/mensalidades">Ver mensalidades</a>'}}catch{if(box)box.innerHTML='<p class="muted">Jogos temporariamente indisponíveis. Sua área continua funcionando.</p>';if(fin)fin.innerHTML='<p class="muted">Financeiro temporariamente indisponível.</p>'}}
-  function renderHome(u){shell(u);const e=elo(u.elo_level);app.innerHTML=`<section class="ofdPage vgOperatorDashboard">${hero(u)}${tabs('home')}<section id="progressao" class="ofdCard ofdProgress vgProgressCard"><div class="eyebrow">PATENTE ATUAL & PROGRESSÃO</div><div class="vgProgressHead"><div><h2>${e[0]} ${esc(u.rank||'Recruta')} — @${esc(u.nickname||'OPERADOR')}</h2><p class="muted">${esc(u.function||'Operador')} · acompanhe seu avanço dentro da equipe.</p></div><div class="vgProgressStats"><span><small>JOGOS</small><b>${Number(u.games_count)||0}</b></span><span><small>FALTAS</small><b>${Number(u.absences)||0}</b></span><span><small>ELO</small><b>${Number(u.elo_level)||7}</b></span></div></div><div class="vgProgressBar"><i style="width:${Math.max(8,Math.min(100,100-((Number(u.elo_level)||7)-1)*12))}%"></i></div></section><section class="ofdCard vgOpsBoard"><div class="eyebrow">QUADRO DE OPERAÇÕES & CONVOCAÇÃO</div><h2>Jogos atuais & missões</h2><p class="muted">Confirme presença e acompanhe escalação, briefing e participantes.</p><div id="homeGames"><p class="muted">Buscando próximos jogos...</p></div></section><section class="ofdCard vgFinanceCard"><div class="eyebrow">TESOURARIA DO OPERADOR</div><div id="homeFinance"><p class="muted">Buscando situação financeira...</p></div></section></section>`;enhanceOperatorSidebar();fillHome(true);routeReady()}
+  const personMini=o=>'<div class="ofdRosterPerson"><img src="'+esc(o.photo_url||'/logo.webp')+'" alt=""><span><b>@'+esc(o.nickname)+'</b><small> · '+esc(o.rank||'')+'</small></span></div>';
+  const teamChip=o=>'<span class="vgTeamChip '+(o.visitor?'visitor':'')+'">@'+esc(o.nickname||o.name||'Operador')+' <small>'+esc(o.function||o.mission_role||o.rank||'Operador')+'</small></span>';
+  function teamsHtml(g,finished=false){
+    const base=g.participants||[],teamA=(g.team_a?.length?g.team_a:base.filter(x=>x.team_code==='A'))||[],teamB=(g.team_b?.length?g.team_b:base.filter(x=>x.team_code==='B'))||[];
+    if(!teamA.length&&!teamB.length)return'';
+    const me=String(window.__tgaCurrentOperator?.id||''),mine=teamA.some(x=>String(x.id)===me)?'A':teamB.some(x=>String(x.id)===me)?'B':'';
+    const aName=g.team_a_name||'Time Alpha',bName=g.team_b_name||'Time Bravo';
+    const myLabel=mine==='A'?aName:mine==='B'?bName:'';
+    return '<section class="vgOperatorTeams '+(finished?'finished':'')+'">'+
+      (myLabel?'<div class="vgMySquad '+(mine==='B'?'bravo':'alpha')+'">SEU ESQUADRÃO: <b>'+esc(myLabel)+'</b></div>':'')+
+      '<div class="vgOperatorTeamGrid">'+
+        '<div class="vgOperatorTeam alpha"><div class="vgOperatorTeamHead"><b>'+esc(aName)+'</b><span>'+teamA.length+' OPS</span></div><div class="vgTeamChips">'+(teamA.map(teamChip).join('')||'<span class="muted">Sem operadores.</span>')+'</div></div>'+
+        '<div class="vgOperatorTeam bravo"><div class="vgOperatorTeamHead"><b>'+esc(bName)+'</b><span>'+teamB.length+' OPS</span></div><div class="vgTeamChips">'+(teamB.map(teamChip).join('')||'<span class="muted">Sem operadores.</span>')+'</div></div>'+
+      '</div></section>';
+  }
+  function resultHtml(g){
+    const winner=String(g.winning_team||''),a=Number(g.team_a_wins||0),b=Number(g.team_b_wins||0);
+    if(!winner&&!a&&!b)return'';
+    const label=winner==='A'?(g.team_a_name||'Time Alpha'):winner==='B'?(g.team_b_name||'Time Bravo'):winner==='Empate'?'Empate':'Resultado registrado';
+    return '<div class="vgMissionResult '+(winner==='B'?'bravo':winner==='A'?'alpha':'')+'"><span>RESULTADO FINAL</span><b>'+esc(label)+'</b><strong>'+a+' × '+b+'</strong></div>';
+  }
+  function gameHtml(g,detailed=false){
+    const closed=!!g.rsvp_closed,status=String(g.status||'confirmado').toLowerCase(),finished=['finalizado','encerrado','concluido','concluído'].includes(status);
+    const fallbackTeams=[...(g.team_a||[]),...(g.team_b||[])],going=(g.participants?.length?g.participants:fallbackTeams)||[],no=g.not_going_participants||[],pending=g.pending_participants||[];
+    const img=g.mission_photo||g.match_photo_url||g.photo_url||'/hero-airsoft.jpg',isGoing=g.response==='going'||g.response==='attended',isNo=g.response==='not_going';
+    const responseLabel=finished?'MISSÃO ENCERRADA':isGoing?'CONFIRMADO: EU VOU':isNo?'NÃO VOU':'AGUARDANDO RESPOSTA';
+    const rsvpButtons=finished?'':'<div class="ofdRsvp">'+
+      '<button class="'+(isGoing?'goldbtn selected-going':'outlinebtn')+' small" data-v5-rsvp="going" data-game="'+esc(g.id)+'" '+(g.status==='cancelado'?'disabled':'')+'>◉ '+(isGoing?'Confirmado: eu vou':'Vou')+'</button>'+
+      '<button class="'+(isNo?'vgNoBtn selected-no':'outlinebtn')+' small" data-v5-rsvp="not_going" data-game="'+esc(g.id)+'" '+(g.status==='cancelado'||closed?'disabled':'')+'>⊗ '+(isNo?'Confirmado: não vou':'Não vou')+'</button>'+
+    '</div>';
+    const rosters=detailed?'<div class="ofdRosterCols"><div class="ofdRosterCol"><b>TIME / CONFIRMADOS ('+going.length+')</b>'+(going.map(personMini).join('')||'<span class="muted">Ninguém.</span>')+'</div><div class="ofdRosterCol"><b>BAIXAS / NÃO VÃO ('+no.length+')</b>'+(no.map(personMini).join('')||'<span class="muted">Ninguém.</span>')+'</div><div class="ofdRosterCol"><b>SEM RESPOSTA ('+pending.length+')</b>'+(pending.map(personMini).join('')||'<span class="muted">Todos responderam.</span>')+'</div></div>':'';
+    return '<article class="ofdGame vgMissionCard '+(finished?'isFinished':'isActive')+'"><div class="vgMissionVisual"><img src="'+esc(img)+'" alt="" loading="lazy"><span>'+(finished?'MISSÃO FINALIZADA':'OPERAÇÃO ATIVA')+'</span></div><div class="vgMissionBody"><div class="ofdGameHead"><div><div class="eyebrow">'+(finished?'ARQUIVO DE MISSÃO':'QUADRO DE OPERAÇÕES & CONVOCAÇÃO')+'</div><h3>'+esc(g.title)+'</h3><p>⌖ '+esc(g.field_name||g.location||'Local não informado')+'</p><p class="vgMissionDate">'+fmt(g.game_date)+(g.game_time?' · '+fmtTime(g.game_time):'')+'</p></div><span class="ofdResponse">'+responseLabel+'</span></div>'+
+      (g.briefing?'<div class="vgBriefing"><b>BRIEFING PRIMÁRIO DA MISSÃO</b><p>'+esc(g.briefing)+'</p></div>':'')+
+      (g.rsvp_deadline_date&&!finished?'<div class="ofdDeadline"><b>Responder até '+fmt(g.rsvp_deadline_date)+(g.rsvp_deadline_time?' · '+fmtTime(g.rsvp_deadline_time):'')+'</b> · '+(closed?'lista encerrada':'lista aberta')+'</div>':'')+
+      (finished?resultHtml(g):'<div class="ofdGameRules"><span>'+going.length+' confirmados (vou)</span><span>'+no.length+' baixas (não vou)</span><span>'+pending.length+' sem resposta</span><span>+'+Number(g.elo_reward||1)+' Elo</span></div>')+
+      rsvpButtons+
+      (g.response==='pending'&&!finished?'<p class="ofdPenaltyNote">Se a lista expirar sem resposta, poderá haver perda de Elo conforme a regra deste jogo.</p>':'')+
+      teamsHtml(g,finished)+rosters+
+    '</div></article>';
+  }
+  function bindRsvp(box,detailed,targetId,includeHistory=false){
+    box?.querySelectorAll('[data-v5-rsvp]').forEach(b=>b.onclick=async()=>{
+      const buttons=box.querySelectorAll('[data-game="'+b.dataset.game+'"]'),wanted=b.dataset.v5Rsvp;
+      buttons.forEach(x=>x.disabled=true);
+      try{
+        const saved=await requestJSON('/api/index.js?action=rsvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game_id:b.dataset.game,response:wanted})},8000);
+        if(saved.response!==wanted)throw new Error('A resposta retornada pelo servidor não corresponde à opção escolhida.');
+        await fillHome(detailed,targetId,includeHistory);
+      }catch(e){alert(e.message);buttons.forEach(x=>x.disabled=false)}
+    })
+  }
+  function bindGameTabs(box){
+    const buttons=document.querySelectorAll('[data-v5-game-tab]');
+    const set=mode=>{
+      buttons.forEach(b=>b.classList.toggle('active',b.dataset.v5GameTab===mode));
+      box.querySelectorAll('[data-v5-game-section]').forEach(s=>{s.hidden=mode!=='all'&&s.dataset.v5GameSection!==mode});
+    };
+    buttons.forEach(b=>b.onclick=()=>set(b.dataset.v5GameTab));
+    set(location.hash==='#finalizados'?'finished':'active');
+  }
+  async function fillHome(detailed=false,targetId='',includeHistory=false){
+    const box=document.getElementById(targetId||(detailed?'gamesList':'homeGames')),fin=document.getElementById('homeFinance');
+    requestJSON('/api/mission?action=roster&t='+Date.now(),{},7000).catch(()=>{});
+    try{
+      const tasks=[requestJSON('/api/operator-home-fast?dashboard=1&t='+Date.now(),{},8000)];
+      if(includeHistory)tasks.push(requestJSON('/api/mission?action=history&t='+Date.now(),{},9000).catch(()=>({games:[]})));
+      const [d,h]=await Promise.all(tasks);
+      if(box){
+        const active=(d.games||[]).filter(g=>!['finalizado','encerrado','concluido','concluído'].includes(String(g.status||'').toLowerCase()));
+        if(includeHistory){
+          const history=(h?.games||[]).map(g=>({...g,status:'finalizado',participants:[...(g.team_a||[]),...(g.team_b||[])],not_going_participants:[],pending_participants:[]}));
+          box.innerHTML='<section data-v5-game-section="active">'+(active.map(g=>gameHtml(g,detailed)).join('')||'<div class="vgGamesEmpty">Nenhuma operação ativa.</div>')+'</section>'+
+            '<section data-v5-game-section="finished" hidden>'+(history.map(g=>gameHtml(g,false)).join('')||'<div class="vgGamesEmpty">Nenhuma missão finalizada.</div>')+'</section>';
+          bindGameTabs(box);
+        }else box.innerHTML=active.map(g=>gameHtml(g,detailed)).join('')||'<p class="muted">Nenhum jogo ativo.</p>';
+        bindRsvp(box,detailed,targetId,includeHistory);
+      }
+      if(fin){
+        const f=d.finance;
+        fin.innerHTML=f?'<h2>'+(f.status==='paid'?'Mensalidade em dia':f.status==='overdue'?'Mensalidade atrasada':'Mensalidade pendente')+'</h2><p>'+Number(f.amount||0).toLocaleString('pt-BR',{style:'currency',currency:d.financeSettings?.currency||'BRL'})+' · vencimento '+fmt(f.due_date)+'</p><a class="outlinebtn small" href="/operador/mensalidades">Ver minhas mensalidades</a>':'<h2>Sem cobrança pendente</h2><a class="outlinebtn small" href="/operador/mensalidades">Ver mensalidades</a>';
+      }
+    }catch{
+      if(box)box.innerHTML='<p class="muted">Jogos temporariamente indisponíveis. Sua área continua funcionando.</p>';
+      if(fin)fin.innerHTML='<p class="muted">Financeiro temporariamente indisponível.</p>';
+    }
+  }
+  function renderHome(u){shell(u);const e=elo(u.elo_level);app.innerHTML='<section class="ofdPage vgOperatorDashboard">'+hero(u)+tabs('home')+'<section id="progressao" class="ofdCard ofdProgress vgProgressCard"><div class="eyebrow">PATENTE ATUAL & PROGRESSÃO</div><div class="vgProgressHead"><div><h2>'+e[0]+' '+esc(u.rank||'Recruta')+' — @'+esc(u.nickname||'OPERADOR')+'</h2><p class="muted">'+esc(u.function||'Operador')+' · acompanhe seu avanço dentro da equipe.</p></div><div class="vgProgressStats"><span><small>JOGOS</small><b>'+Number(u.games_count||0)+'</b></span><span><small>FALTAS</small><b>'+Number(u.absences||0)+'</b></span><span><small>ELO</small><b>'+Number(u.elo_level||7)+'</b></span></div></div><div class="vgProgressBar"><i style="width:'+Math.max(8,Math.min(100,100-((Number(u.elo_level)||7)-1)*12))+'%"></i></div></section><section class="ofdCard vgOpsBoard"><div class="eyebrow">QUADRO DE OPERAÇÕES & CONVOCAÇÃO</div><h2>Jogos atuais & missões</h2><p class="muted">Confirme presença e acompanhe escalação, briefing e participantes.</p><div id="homeGames"><p class="muted">Buscando próximos jogos...</p></div></section><section class="ofdCard vgFinanceCard"><div class="eyebrow">TESOURARIA DO OPERADOR</div><div id="homeFinance"><p class="muted">Buscando situação financeira...</p></div></section></section>';enhanceOperatorSidebar();fillHome(true,'homeGames',false);routeReady()}
   const rankSteps=[
     ['Recruta',0,'Entrada no quadro operacional e fase de adaptação.'],
     ['Soldado',2,'Operador integrado ao efetivo e às rotinas do time.'],
