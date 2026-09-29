@@ -333,3 +333,86 @@ body.operator-vanguard-v2 .vgDossierGallery figcaption{
   body.operator-vanguard-v2 .vgDossierGear img,
   body.operator-vanguard-v2 .vgGearPlaceholder{width:70px;height:58px}
 }
+
+
+/* Atualização Vanguard — Progressão e Mensalidade */
+body.operator-vanguard-v2 .vgRankCurrent{border-color:rgba(245,158,11,.5)!important}
+body.operator-vanguard-v2 .vgRankCurrentHead{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+body.operator-vanguard-v2 .vgRankCounter{
+  display:inline-flex;padding:4px 7px;border:1px solid rgba(245,158,11,.32);border-radius:2px;
+  background:rgba(245,158,11,.08);color:#fbbf24;font:700 8px 'JetBrains Mono',monospace
+}
+body.operator-vanguard-v2 .vgRankCurrentHead h2{margin:7px 0 4px!important}
+body.operator-vanguard-v2 .vgRankTelemetry{display:grid;grid-template-columns:repeat(3,minmax(82px,1fr));gap:7px}
+body.operator-vanguard-v2 .vgRankTelemetry span{
+  padding:9px 11px;border:1px solid var(--op-line);border-radius:3px;background:#0a1016;text-align:center
+}
+body.operator-vanguard-v2 .vgRankTelemetry small{display:block;color:#64748b!important;font:8px 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .vgRankTelemetry b{display:block;color:#fbbf24;font:700 17px 'JetBrains Mono',monospace;margin-top:3px}
+body.operator-vanguard-v2 .vgRankProgressText{display:flex;justify-content:space-between;gap:10px;margin-top:16px;color:#94a3b8;font:500 9px 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .vgRankProgressText b{color:#f8fafc}
+body.operator-vanguard-v2 .vgRankProgress{height:8px;margin-top:7px;background:#111827;border:1px solid #263447;border-radius:99px;overflow:hidden}
+body.operator-vanguard-v2 .vgRankProgress i{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#a3e635,#34d399)}
+body.operator-vanguard-v2 .vgRankGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+body.operator-vanguard-v2 .vgRankCard{
+  padding:13px;border:1px solid var(--op-line);border-radius:4px;background:#0b1117
+}
+body.operator-vanguard-v2 .vgRankCard.unlocked{border-color:rgba(16,185,129,.3)!important}
+body.operator-vanguard-v2 .vgRankCard.active{border-color:rgba(245,158,11,.65)!important;background:rgba(245,158,11,.065)!important}
+body.operator-vanguard-v2 .vgRankCard.locked{opacity:.65}
+body.operator-vanguard-v2 .vgRankCardTop{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center}
+body.operator-vanguard-v2 .vgRankInsignia{
+  width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(245,158,11,.42);border-radius:3px;background:#111820;color:#fbbf24
+}
+body.operator-vanguard-v2 .vgRankCard h3{margin:0!important;color:#fff!important;font:700 15px 'Chakra Petch',sans-serif!important;text-transform:uppercase}
+body.operator-vanguard-v2 .vgRankCardTop small{color:#64748b!important;font:8px 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .vgRankCardTop em{
+  font-style:normal;padding:3px 5px;border-radius:2px;background:#1e293b;color:#94a3b8;font:700 7px 'JetBrains Mono',monospace
+}
+body.operator-vanguard-v2 .vgRankCard.unlocked .vgRankCardTop em{background:rgba(16,185,129,.13);color:#34d399}
+body.operator-vanguard-v2 .vgRankCard.active .vgRankCardTop em{background:#f59e0b;color:#111827}
+body.operator-vanguard-v2 .vgRankCard p{margin:11px 0!important;color:#a8bacd!important;font-size:11px;line-height:1.45}
+body.operator-vanguard-v2 .vgRankRequirement{padding-top:9px;border-top:1px solid var(--op-line);color:#8ca0b4;font:500 8px 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .vgRankRequirement b{color:#fbbf24}
+
+body.operator-vanguard-v2 .vgDuesCurrent{border-color:rgba(245,158,11,.5)!important}
+body.operator-vanguard-v2 .vgDuesCurrentHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+body.operator-vanguard-v2 .vgDuesStatus{
+  display:inline-flex;padding:7px 10px;border:1px solid #475569;border-radius:3px;background:#111827;color:#fbbf24;
+  font:800 9px 'JetBrains Mono',monospace;white-space:nowrap
+}
+body.operator-vanguard-v2 .vgDuesStatus.paid{background:#10b981;color:#052e22;border-color:#10b981}
+body.operator-vanguard-v2 .vgDuesStatus.overdue{background:#7f1d1d;color:#fecaca;border-color:#ef4444}
+body.operator-vanguard-v2 .vgDuesStatus.waived{background:#334155;color:#e2e8f0}
+body.operator-vanguard-v2 .vgDuesMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:16px}
+body.operator-vanguard-v2 .vgDuesMetrics>div{padding:13px;border:1px solid var(--op-line);border-radius:3px;background:#0a1016}
+body.operator-vanguard-v2 .vgDuesMetrics small{display:block;color:#64748b!important;font:8px 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .vgDuesMetrics b{display:block;margin:5px 0 2px;color:#f8fafc;font:700 19px 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .vgDuesMetrics b.ok{color:#34d399}
+body.operator-vanguard-v2 .vgDuesMetrics span{color:#64748b;font-size:9px}
+body.operator-vanguard-v2 .vgAnnualBook .ofdMonthlyGrid{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+body.operator-vanguard-v2 .vgAnnualBook .ofdMonthBox{
+  display:block!important;min-height:118px!important;padding:11px!important;text-align:left!important
+}
+body.operator-vanguard-v2 .vgMonthTop{display:flex;align-items:center;justify-content:space-between;gap:6px}
+body.operator-vanguard-v2 .vgMonthTop b{font:700 13px 'Chakra Petch',sans-serif!important;color:#f8fafc}
+body.operator-vanguard-v2 .vgMonthTop span{padding:3px 5px;border-radius:2px;background:#1e293b;color:#fbbf24;font:700 7px 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .ofdMonthBox.paid .vgMonthTop span{background:#10b981;color:#052e22}
+body.operator-vanguard-v2 .ofdMonthBox.overdue .vgMonthTop span{background:#7f1d1d;color:#fecaca}
+body.operator-vanguard-v2 .ofdMonthBox.waived .vgMonthTop span{background:#475569;color:#f8fafc}
+body.operator-vanguard-v2 .vgAnnualBook .ofdMonthBox strong{display:block;margin-top:13px;color:#f8fafc;font:700 13px 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .vgAnnualBook .ofdMonthBox small{display:block;margin-top:4px;color:#64748b!important;font-size:8px}
+
+@media(max-width:850px){
+  body.operator-vanguard-v2 .vgRankCurrentHead,
+  body.operator-vanguard-v2 .vgDuesCurrentHead{flex-direction:column}
+  body.operator-vanguard-v2 .vgRankTelemetry{width:100%}
+  body.operator-vanguard-v2 .vgDuesMetrics{grid-template-columns:1fr}
+  body.operator-vanguard-v2 .vgAnnualBook .ofdMonthlyGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:620px){
+  body.operator-vanguard-v2 .vgRankGrid{grid-template-columns:1fr}
+  body.operator-vanguard-v2 .vgRankCardTop{grid-template-columns:36px minmax(0,1fr)}
+  body.operator-vanguard-v2 .vgRankCardTop em{grid-column:2}
+  body.operator-vanguard-v2 .vgAnnualBook .ofdMonthlyGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
