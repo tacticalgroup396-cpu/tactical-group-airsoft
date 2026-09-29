@@ -55,6 +55,8 @@
         </span>
       </a>
       <button type="button" class="vgHeaderMenu" id="vgHeaderMenu" aria-label="Abrir controles">${icons.menu}</button>
+      <nav id="nav" class="vgCompatNav" aria-hidden="true"></nav>
+      <button id="menuToggle" class="vgCompatMenu" type="button" aria-hidden="true" tabindex="-1"></button>
       <div class="vgHeaderControls" id="vgHeaderControls">
         ${me?`<div class="vgLogged"><span>OPERADOR LOGADO:</span><b>@${esc(nick(me))}</b></div>`:''}
         <div class="vgRoleSwitch">
@@ -117,13 +119,16 @@
     let modules=document.getElementById('vgCommanderModules');
     if(!modules){modules=document.createElement('nav');modules.id='vgCommanderModules';modules.className='vgCommanderModules'}
     const p=path();
-    modules.innerHTML=commanderModules.map(([href,label,sub,key])=>{
-      const active=p===href;
-      return `<a class="vgCommanderModule ${active?'active':''}" href="${href}">
-        <span class="vgModuleIcon">${icons[key]}</span>
-        <span class="vgModuleCopy"><strong>${esc(label)}</strong><small>${esc(sub)}</small></span>
-      </a>`
-    }).join('');
+    if(modules.dataset.vgPath!==p){
+      modules.dataset.vgPath=p;
+      modules.innerHTML=commanderModules.map(([href,label,sub,key])=>{
+        const active=p===href;
+        return `<a class="vgCommanderModule ${active?'active':''}" href="${href}">
+          <span class="vgModuleIcon">${icons[key]}</span>
+          <span class="vgModuleCopy"><strong>${esc(label)}</strong><small>${esc(sub)}</small></span>
+        </a>`
+      }).join('');
+    }
     if(!modules.isConnected)section.insertBefore(modules,section.firstChild);
     const oldNav=section.querySelector('.commandNav');if(oldNav)oldNav.style.display='none';
     return true;
@@ -159,8 +164,8 @@
     }
     nav.querySelectorAll('a').forEach(a=>{
       const href=(a.getAttribute('href')||'').replace(/\/+$/,'')||'/';
-      if(names[href])a.textContent=names[href];
-      a.dataset.vgGlyph=glyphs[href]||'•';
+      if(names[href]&&a.textContent!==names[href])a.textContent=names[href];
+      const glyph=glyphs[href]||'•';if(a.dataset.vgGlyph!==glyph)a.dataset.vgGlyph=glyph;
     });
     const content=document.querySelector('.opSidebarContent');if(content&&!content.querySelector(':scope > .vgOperatorPageHead')){
       const meta=operatorPages[path()]||operatorPages['/operador'];
@@ -177,6 +182,7 @@
     if(me){buildStatus();enhanceCommander();enhanceOperator()}
   }
 
+  window.__tgaVanguardCompatibility=true;
   loadMe().finally(()=>{const header=document.querySelector('body>header');if(header)delete header.dataset.vgStructure;sync()});
   let timer;
   const root=document.getElementById('app')||document.body;
