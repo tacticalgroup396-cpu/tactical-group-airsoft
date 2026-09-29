@@ -105,7 +105,10 @@
     nav.querySelectorAll('a').forEach(a=>a.classList.toggle('active',(a.getAttribute('href')||'')===p));
     return true;
   };
-  const root=document.getElementById('app')||document.body;
-  completeOperatorNav();
-  new MutationObserver(()=>completeOperatorNav()).observe(root,{childList:true,subtree:true});
+  if(location.pathname.startsWith('/operador')){
+    const root=document.getElementById('app')||document.body;
+    completeOperatorNav();
+    let navTimer;
+    new MutationObserver(()=>{clearTimeout(navTimer);navTimer=setTimeout(completeOperatorNav,140)}).observe(root,{childList:true,subtree:true});
+  }
 })();
