@@ -145,15 +145,49 @@
       layout.append(aside,content);section.appendChild(layout);
     }
     const aside=layout.querySelector('.vgCommanderSidebar'),content=layout.querySelector('.vgCommanderSidebarContent');
+    let drawerBtn=layout.querySelector(':scope > .vgCommanderMobileDrawerButton');
+    if(!drawerBtn){
+      drawerBtn=document.createElement('button');
+      drawerBtn.type='button';
+      drawerBtn.className='vgCommanderMobileDrawerButton';
+      drawerBtn.setAttribute('aria-expanded','false');
+      layout.insertBefore(drawerBtn,aside);
+    }
+    let drawerShade=layout.querySelector(':scope > .vgCommanderMobileShade');
+    if(!drawerShade){
+      drawerShade=document.createElement('button');
+      drawerShade.type='button';
+      drawerShade.className='vgCommanderMobileShade';
+      drawerShade.setAttribute('aria-label','Fechar menu do comandante');
+      layout.insertBefore(drawerShade,content);
+    }
     const p=path(),avatar=me?.photo_url?`<img src="${esc(me.photo_url)}" alt="">`:esc(initial(me));
     const navSig=[p,me?.id||'',me?.nickname||'',me?.rank||'',me?.photo_url||''].join('|');
+    const currentItem=commanderNavItems.find(([href])=>href===p)||commanderNavItems[0];
+    drawerBtn.innerHTML=`<span>${icons[currentItem[2]]}</span><b>${esc(currentItem[1])}</b><em>☰</em>`;
     if(aside.dataset.vgNavSig!==navSig){
       aside.dataset.vgNavSig=navSig;
-      const currentItem=commanderNavItems.find(([href])=>href===p)||commanderNavItems[0];
       aside.innerHTML=`<button type="button" class="vgCommanderMobileNavToggle" aria-expanded="false"><span>${icons[currentItem[2]]}</span><b>${esc(currentItem[1])}</b><em>☰</em></button>
         <div class="vgCommanderIdentity"><span class="vgCommanderSideAvatar">${avatar}</span><span><strong>@${esc(nick(me||{}))}</strong><small>${esc(rankText(me||{}))} • COMANDO</small></span></div>
         <div class="vgCommanderPanelLabel">PAINEL DO COMANDANTE</div>
         <nav class="vgCommanderVerticalNav">${commanderNavItems.map(([href,label,key])=>`<a class="${p===href?'active':''}" href="${href}" data-vg-glyph="${key}"><span>${icons[key]}</span><b>${esc(label)}</b></a>`).join('')}</nav>`;
+    }
+    if(!drawerBtn.dataset.vgDrawerBound){
+      drawerBtn.dataset.vgDrawerBound='1';
+      const closeDrawer=()=>{
+        aside.classList.remove('mobile-open');
+        layout.classList.remove('mobile-nav-open');
+        drawerBtn.setAttribute('aria-expanded','false');
+      };
+      drawerBtn.addEventListener('click',e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const open=!aside.classList.contains('mobile-open');
+        aside.classList.toggle('mobile-open',open);
+        layout.classList.toggle('mobile-nav-open',open);
+        drawerBtn.setAttribute('aria-expanded',open?'true':'false');
+      });
+      drawerShade.addEventListener('click',e=>{e.preventDefault();closeDrawer()});
     }
     if(!aside.dataset.vgNavBound){
       aside.dataset.vgNavBound='1';
@@ -171,6 +205,8 @@
         e.preventDefault();
         e.stopPropagation();
         aside.classList.remove('mobile-open');
+        layout.classList.remove('mobile-nav-open');
+        drawerBtn.setAttribute('aria-expanded','false');
         aside.querySelector('.vgCommanderMobileNavToggle')?.setAttribute('aria-expanded','false');
         const href=a.getAttribute('href');
         if(href&&href!==location.pathname)location.assign(href);
