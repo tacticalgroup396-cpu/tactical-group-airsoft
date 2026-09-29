@@ -99,14 +99,17 @@
   }
 
   const commanderModules=[
-    ['/comandante','Visão geral','Resumo e telemetria do comando','home'],
-    ['/comandante/equipe','Operadores','Efetivo, perfis e disciplina','users'],
-    ['/comandante/jogos','Jogos & Missões','Briefing e sorteador A/B','game'],
-    ['/comandante/patentes-elos','Patentes & Elo','Progressão e graduações','rank'],
-    ['/comandante/historico','Histórico','Partidas encerradas','history'],
-    ['/comandante/financeiro','Financeiro Anual','Mensalidades Jan–Dez','money'],
-    ['/comandante/visitas','Visitantes','Convites e aprovações','visitor'],
-    ['/comandante/configuracoes','Configurações','Acesso, campos e segurança','settings']
+    {href:'/comandante/financeiro',label:'Financeiro Anual (Jan–Dez)',sub:'Controle de mensalidades dos 12 meses',key:'money',match:p=>p==='/comandante/financeiro'},
+    {href:'/comandante/jogos',label:'Criar Jogos & Sorteador A/B',sub:'Briefing de missões e balanceamento',key:'game',match:p=>p==='/comandante/jogos'||p==='/comandante/historico'},
+    {href:'/comandante/equipe',label:'Recrutamento, Links & Gestão',sub:'Convites, operadores, patentes e disciplina',key:'users',match:p=>p==='/comandante'||p==='/comandante/equipe'||p==='/comandante/visitas'||p==='/comandante/patentes-elos'||p==='/comandante/configuracoes'}
+  ];
+  const commanderUtility=[
+    ['/comandante','Visão geral','home'],
+    ['/comandante/equipe','Operadores','users'],
+    ['/comandante/patentes-elos','Patentes & Elos','rank'],
+    ['/comandante/historico','Histórico','history'],
+    ['/comandante/visitas','Visitantes','visitor'],
+    ['/comandante/configuracoes','Configurações','settings']
   ];
 
   function enhanceCommander(){
@@ -121,13 +124,13 @@
     const p=path();
     if(modules.dataset.vgPath!==p){
       modules.dataset.vgPath=p;
-      modules.innerHTML=commanderModules.map(([href,label,sub,key])=>{
-        const active=p===href;
-        return `<a class="vgCommanderModule ${active?'active':''}" href="${href}">
-          <span class="vgModuleIcon">${icons[key]}</span>
-          <span class="vgModuleCopy"><strong>${esc(label)}</strong><small>${esc(sub)}</small></span>
+      modules.innerHTML=commanderModules.map(item=>{
+        const active=item.match(p);
+        return `<a class="vgCommanderModule ${active?'active':''}" href="${item.href}">
+          <span class="vgModuleIcon">${icons[item.key]}</span>
+          <span class="vgModuleCopy"><strong>${esc(item.label)}</strong><small>${esc(item.sub)}</small></span>
         </a>`
-      }).join('');
+      }).join('')+`<div class="vgCommanderUtility">${commanderUtility.map(([href,label,key])=>`<a class="${p===href?'active':''}" href="${href}"><span>${icons[key]}</span><b>${esc(label)}</b></a>`).join('')}</div>`;
     }
     if(!modules.isConnected)section.insertBefore(modules,section.firstChild);
     const oldNav=section.querySelector('.commandNav');if(oldNav)oldNav.style.display='none';
@@ -137,17 +140,18 @@
   const operatorPages={
     '/operador':['TERMINAL DO OPERADOR','VISÃO GERAL & PROGRESSÃO','Acompanhe jogos, progressão, financeiro e avisos do seu perfil.'],
     '/operador/jogos':['QUADRO DE OPERAÇÕES & CONVOCAÇÃO','JOGOS ATUAIS & MISSÕES','Confirme presença, acompanhe escalação e os times da operação.'],
+    '/operador/patentes':['PROGRESSÃO DE CARREIRA','PATENTES & HIERARQUIA','Veja sua patente atual, requisitos e o quadro hierárquico completo.'],
     '/operador/equipe':['EFETIVO TÁTICO','OPERADORES DA EQUIPE','Consulte patentes, funções e dossiês públicos do efetivo.'],
     '/operador/mensalidades':['TESOURARIA INDIVIDUAL','MENSALIDADE ATUAL','Acompanhe somente sua situação financeira no grupo.'],
     '/operador/arena':['TREINAMENTO DIGITAL','MINI JOGOS TÁTICOS','Treinos rápidos de reflexo e desempenho do operador.'],
     '/operador/configuracoes':['DADOS DO OPERADOR','CONFIGURAÇÕES & TUTORIA','Atualize perfil, equipamentos, segurança e responsável quando necessário.']
   };
   const glyphs={
-    '/operador':'⌖','/operador/equipe':'◉','/operador/jogos':'◆','/operador/mensalidades':'▣','/operador/arena':'◎','/operador/configuracoes':'⚙'
+    '/operador':'⌖','/operador/equipe':'◉','/operador/jogos':'◆','/operador/patentes':'◇','/operador/mensalidades':'▣','/operador/arena':'◎','/operador/configuracoes':'⚙'
   };
   const names={
     '/operador':'Painel do operador','/operador/equipe':'Perfis dos operadores','/operador/jogos':'Jogos atuais & finalizados',
-    '/operador/mensalidades':'Mensalidade atual','/operador/arena':'Mini jogos','/operador/configuracoes':'Configurações & tutoria'
+    '/operador/patentes':'Progressões de patente','/operador/mensalidades':'Mensalidade atual','/operador/arena':'Mini jogos','/operador/configuracoes':'Configurações & tutoria'
   };
 
   function enhanceOperator(){
