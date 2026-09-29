@@ -14,10 +14,34 @@
   const mission=(action,body)=>body===undefined?json('/api/mission?action='+encodeURIComponent(action)):post('/api/mission?action='+encodeURIComponent(action),body);
   const visitor=(action,body,query='')=>body===undefined?json('/api/visitor-admin?action='+encodeURIComponent(action)+query):post('/api/visitor-admin?action='+encodeURIComponent(action),body);
 
-  let host=null,fields=[],games=[],selectedId='',current=null,visitors=[];
+  let host=null,fields=[],games=[],selectedId='',current=null,visitors=[],booting=false;
 
   function fieldOptions(){
     return '<option value="">Selecione o campo</option>'+fields.map(f=>`<option value="${esc(f.id)}">${esc(f.name)}${f.address?' — '+esc(f.address):''}</option>`).join('');
+  }
+  async function loadFields(){
+    const d=await api('fields');
+    fields=Array.isArray(d.fields)?d.fields:[];
+    return fields;
+  }
+  function fieldCards(){
+    if(!fields.length)return '<div class="cmdGamesV6FieldEmpty">Nenhum campo cadastrado. Cadastre o primeiro campo ao lado.</div>';
+    return fields.map(f=>`<article class="cmdGamesV6FieldCard" data-field-card="${esc(f.id)}">
+      <div class="cmdGamesV6FieldIcon">⌖</div>
+      <div class="cmdGamesV6FieldInfo"><b>${esc(f.name)}</b><small>${esc(f.address||'Endereço não informado')}</small>${f.notes?`<p>${esc(f.notes)}</p>`:''}</div>
+      <div class="cmdGamesV6FieldActions">${f.maps_url?`<a href="${esc(f.maps_url)}" target="_blank" rel="noopener">ABRIR MAPS</a>`:''}<button type="button" data-delete-field-v6="${esc(f.id)}">EXCLUIR</button></div>
+    </article>`).join('');
+  }
+  function refreshFields(selected=''){
+    const select=host?.querySelector('#cmdGamesV6Form [name="field_id"]');
+    if(select){
+      const keep=selected||select.value;
+      select.innerHTML=fieldOptions();
+      if(keep&&fields.some(f=>String(f.id)===String(keep)))select.value=keep;
+    }
+    const list=host?.querySelector('#cmdGamesV6FieldList');
+    if(list)list.innerHTML=fieldCards();
+    bindFieldDelete();
   }
   function codePreview(){
     const y=new Date().getFullYear();
@@ -56,7 +80,7 @@
           </div>
           <button class="cmdGamesV6Primary" type="submit">＋ PUBLICAR JOGO & CONVOCAR OPERADORES</button>
         </form>
-        <p class="cmdGamesV6Hint">Campos são cadastrados em Configurações. Esta tela mostra somente criação, briefing e balanceamento.</p>
+        <p class="cmdGamesV6Hint">Cadastre e gerencie os campos logo abaixo. O campo selecionado será vinculado à operação.</p>
       </section>
 
       <section class="cmdGamesV6Panel cmdGamesV6Balancer">
@@ -65,8 +89,30 @@
         <select id="cmdGamesV6GameSelect" class="cmdGamesV6GameSelect"><option value="">Carregando operações...</option></select>
         <div id="cmdGamesV6Mission"><div class="cmdGamesV6Empty">Selecione uma operação para carregar os confirmados.</div></div>
       </section>
+
+      <section class="cmdGamesV6Panel cmdGamesV6FieldsPanel">
+        <div class="cmdGamesV6FieldsHead">
+          <div><div class="cmdGamesV6Kicker">LOGÍSTICA DE OPERAÇÃO</div><h1>CAMPOS DE AIRSOFT</h1><p>Cadastre os locais usados nas operações e mantenha o acesso ao Maps junto da criação dos jogos.</p></div>
+          <span>${fields.length} CAMPO${fields.length===1?'':'S'} ATIVO${fields.length===1?'':'S'}</span>
+        </div>
+        <div class="cmdGamesV6FieldsLayout">
+          <form id="cmdGamesV6FieldForm" class="cmdGamesV6FieldForm">
+            <div class="cmdGamesV6FieldFormTitle"><b>＋ CADASTRAR NOVO CAMPO</b><small>O campo ficará disponível imediatamente no seletor de criação de jogo.</small></div>
+            <label><span>NOME DO CAMPO *</span><input name="name" required placeholder="Ex.: Campo Cidade Nova"></label>
+            <label><span>ENDEREÇO / REFERÊNCIA</span><input name="address" placeholder="Rua, bairro, cidade ou ponto de referência"></label>
+            <label><span>LINK DO GOOGLE MAPS *</span><input name="maps_url" type="url" required placeholder="https://maps.google.com/..."></label>
+            <label><span>OBSERVAÇÕES DO CAMPO</span><textarea name="notes" placeholder="Regras locais, estacionamento, estrutura, observações..."></textarea></label>
+            <button class="cmdGamesV6Primary" type="submit">＋ SALVAR CAMPO</button>
+          </form>
+          <div class="cmdGamesV6FieldListWrap">
+            <div class="cmdGamesV6FieldListTitle"><b>CAMPOS CADASTRADOS</b><small>Use o Maps para conferir a localização antes de publicar a operação.</small></div>
+            <div id="cmdGamesV6FieldList" class="cmdGamesV6FieldList">${fieldCards()}</div>
+          </div>
+        </div>
+      </section>
     </div>`;
     bindCreate();
+    bindFieldManager();
     loadGames();
     return true;
   }
@@ -89,6 +135,44 @@
       const f=fields.find(x=>String(x.id)===String(field.value));
       if(f?.address)field.title=f.address;
     });
+  }
+
+  function bindFieldDelete(){
+    host?.querySelectorAll('[data-delete-field-v6]').forEach(btn=>{
+      if(btn.dataset.bound==='1')return;btn.dataset.bound='1';
+      btn.onclick=async()=>{
+        const id=btn.dataset.deleteFieldV6;
+        const f=fields.find(x=>String(x.id)===String(id));
+        if(!confirm(`Excluir o campo "${f?.name||'selecionado'}"?`))return;
+        btn.disabled=true;
+        try{
+          await api('delete-field',{id});
+          fields=fields.filter(x=>String(x.id)!==String(id));
+          refreshFields();
+          toast('Campo removido.');
+        }catch(e){toast(e.message);btn.disabled=false}
+      };
+    });
+  }
+
+  function bindFieldManager(){
+    const form=host?.querySelector('#cmdGamesV6FieldForm');if(!form)return;
+    bindFieldDelete();
+    form.onsubmit=async e=>{
+      e.preventDefault();
+      const btn=e.submitter||form.querySelector('button[type="submit"]');
+      const old=btn.textContent;btn.disabled=true;btn.textContent='SALVANDO CAMPO...';
+      try{
+        const data=Object.fromEntries(new FormData(form));
+        const r=await api('create-field',data);
+        if(r.field){
+          fields=[...fields.filter(x=>String(x.id)!==String(r.field.id)),r.field].sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR'));
+          refreshFields(r.field.id);
+        }
+        form.reset();
+        toast('Campo cadastrado e disponível para o novo jogo.');
+      }catch(err){toast(err.message)}finally{btn.disabled=false;btn.textContent=old}
+    };
   }
 
   async function loadGames(forceId=''){
@@ -213,8 +297,20 @@
     }catch(e){toast(e.message)}
   }
 
-  const obs=new MutationObserver(()=>{if(!host||!document.documentElement.contains(host))render()});
+  async function boot(){
+    if(booting)return false;
+    const h=document.getElementById('commanderGamesV6Host');if(!h)return false;
+    booting=true;host=h;
+    host.innerHTML='<div class="cmdGamesV6Loading">PREPARANDO CENTRAL DE OPERAÇÕES...</div>';
+    try{await loadFields()}catch(e){fields=[];toast('Não foi possível carregar os campos: '+e.message)}
+    render();
+    booting=false;
+    return true;
+  }
+
+  const obs=new MutationObserver(()=>{if(!host||!document.documentElement.contains(host))boot()});
   obs.observe(document.getElementById('app')||document.body,{childList:true,subtree:true});
-  let tries=0;const t=setInterval(()=>{if(render()||++tries>40)clearInterval(t)},100);
-  render();
+  window.addEventListener('tga:commander-games-ready',()=>boot());
+  let tries=0;const t=setInterval(async()=>{if(await boot()||++tries>40)clearInterval(t)},100);
+  boot();
 })();
