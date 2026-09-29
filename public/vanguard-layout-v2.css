@@ -449,3 +449,24 @@ body.operator-login-mode .accessBox{margin-top:0!important}
   body.operator-login-mode .vgTopInner{justify-content:flex-end!important}
   body.operator-login-mode .vgHeaderMenu{display:grid!important}
 }
+
+
+/* Legibilidade — contas Operador e Comandante */
+body.vanguard-ui .vgLogged{
+  font-size:10.5px!important;
+  padding:8px 10px!important;
+}
+body.vanguard-ui .vgLogged b{font-size:11.5px!important}
+body.vanguard-ui .vgRoleSwitch a,
+body.vanguard-ui .vgRoleSwitch button{
+  font-size:11.5px!important;
+  min-height:36px!important;
+  padding:8px 11px!important;
+}
+body.vanguard-ui .vgMode{font-size:10px!important}
+body.vanguard-ui .vgOperatorActive{font-size:11px!important}
+body.vanguard-ui .vgStatusDesc{font-size:12px!important}
+body.vanguard-ui .vgTelemetryCell small{font-size:9px!important}
+body.vanguard-ui .vgTelemetryCell b{font-size:11px!important}
+body.vanguard-ui .vgModuleCopy strong{font-size:13px!important}
+body.vanguard-ui .vgModuleCopy small{font-size:10px!important}
