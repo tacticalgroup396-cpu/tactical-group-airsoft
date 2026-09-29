@@ -940,3 +940,11 @@ body.operator-vanguard-v2 .eyebrow{font-size:10px!important}
 body.operator-vanguard-v2 .muted{font-size:12px}
 body.operator-vanguard-v2 .ofdRosterPerson b{font-size:11px!important}
 body.operator-vanguard-v2 .ofdRosterPerson small{font-size:10px!important}
+
+
+/* Legibilidade reforçada do Operador */
+body.operator-vanguard-v2 .vgOperatorIdentity strong{font-size:16px!important}
+body.operator-vanguard-v2 .vgOperatorIdentity small{font-size:10px!important}
+body.operator-vanguard-v2 .vgOperatorPanelLabel{font-size:10px!important}
+body.operator-vanguard-v2 .opSidebarLayout .operatorNav a{font-size:13px!important;line-height:1.3!important}
+body.operator-vanguard-v2 .eyebrow{font-size:10.5px!important}
