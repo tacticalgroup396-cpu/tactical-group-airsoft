@@ -4,6 +4,32 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const fmt=d=>{if(!d)return'';const s=String(d).slice(0,10),m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:s};const fmtTime=t=>t?String(t).slice(0,5):'';
   const elo=n=>({1:['💎','Diamante'],2:['🟩','Esmeralda'],3:['🔷','Platina'],4:['🏆','Ouro'],5:['🥈','Prata'],6:['🥉','Bronze'],7:['⚙️','Ferro']}[Math.min(7,Math.max(1,Number(n)||7))]);
+  const rankKey=name=>String(name||'Recruta').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const rankCode=name=>({
+    'recruta':'REC','soldado':'SD','cabo':'CB','3º sargento':'3º SGT','3o sargento':'3º SGT',
+    '2º sargento':'2º SGT','2o sargento':'2º SGT','1º sargento':'1º SGT','1o sargento':'1º SGT',
+    'subtenente':'ST','aspirante':'ASP','tenente':'TEN','capitao':'CAP','major':'MAJ',
+    'tenente-coronel':'TC','coronel':'CEL'
+  }[rankKey(name)]||'TGA');
+  const rankInsignia=name=>{
+    const k=rankKey(name);
+    const base=(body)=>'<svg viewBox="0 0 36 36" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'+body+'</g></svg>';
+    const chev=y=>'<path d="M8 '+y+' L18 '+(y-7)+' L28 '+y+'"/>';
+    if(k==='recruta')return base(chev(23));
+    if(k==='soldado')return base(chev(19)+chev(26));
+    if(k==='cabo')return base(chev(15)+chev(22)+chev(29));
+    if(k==='3º sargento'||k==='3o sargento')return base(chev(14)+chev(21)+chev(28)+'<path d="M11 32H25"/>');
+    if(k==='2º sargento'||k==='2o sargento')return base(chev(12)+chev(19)+chev(26)+'<path d="M10 30H26M12 34H24"/>');
+    if(k==='1º sargento'||k==='1o sargento')return base(chev(10)+chev(17)+chev(24)+'<path d="M9 28H27M11 32H25M13 35H23"/>');
+    if(k==='subtenente')return base('<path d="M18 5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z"/>'+chev(30));
+    if(k==='aspirante')return base('<path d="M18 6l3.3 6.7 7.4 1.1-5.3 5.2 1.3 7.3-6.7-3.5-6.7 3.5 1.3-7.3-5.3-5.2 7.4-1.1z"/>');
+    if(k==='tenente')return base('<rect x="14" y="7" width="8" height="22" rx="1.5"/><path d="M14 13H22M14 23H22"/>');
+    if(k==='capitao')return base('<rect x="8" y="7" width="7" height="22" rx="1.5"/><rect x="21" y="7" width="7" height="22" rx="1.5"/>');
+    if(k==='major')return base('<path d="M18 5l7 13-7 13-7-13z"/><path d="M18 10v16M13.5 18h9"/>');
+    if(k==='tenente-coronel')return base('<path d="M6 19l7-5 5 4 5-4 7 5-7 2-5 7-5-7z"/><path d="M18 7v11M14 10h8"/>');
+    if(k==='coronel')return base('<path d="M6 21l7-6 5 4 5-4 7 6-7 2-5 7-5-7z"/><path d="M11 11l2-4 2 4 4-4 2 4 4-4 2 4"/><path d="M10 12H26"/>');
+    return base('<path d="M18 7l4 8 8 1-6 6 2 8-8-4-8 4 2-8-6-6 8-1z"/>');
+  };
   const photo=u=>u?.photo_url?`<img class="ofdPhoto" src="${esc(u.photo_url)}" alt="Foto de ${esc(u.nickname||'operador')}">`:`<div class="ofdAvatar">${esc((u?.nickname||'?').slice(0,2))}</div>`;
   const tabItems=[['games','Jogos atuais & finalizados','/operador/jogos'],['rank','Progressões de patente','/operador/patentes'],['gear','Equipamentos, AEG & fotos','/operador/equipamentos'],['team','Perfis dos operadores','/operador/equipe'],['dues','Mensalidade atual','/operador/mensalidades'],['settings','Configurações & tutoria','/operador/configuracoes'],['mini','Mini jogos','/operador/arena']];
   const tabs=active=>`<div class="ofdNavWrap"><div class="operatorNav">${tabItems.map(([id,label,href])=>`<a class="${active===id?'active':''}" href="${href}">${label}</a>`).join('')}</div></div>`;
@@ -164,10 +190,10 @@
     app.innerHTML=`<section class="ofdPage vgRanksPage">${hero(u)}${tabs('rank')}
       <section class="ofdCard vgRankCurrent">
         <div class="eyebrow">PATENTE ATUAL • PROGRESSÃO DO OPERADOR</div>
-        <div class="vgRankCurrentHead"><div><span class="vgRankCounter">PATENTE #${currentIndex+1} DE ${rankSteps.length}</span><h2>${esc(u.rank||'Recruta')} — @${esc(u.nickname||'OPERADOR')}</h2><p class="muted">${esc(u.function||'Operador')} · ${games} jogo(s) contabilizado(s).</p></div><div class="vgRankTelemetry"><span><small>JOGOS</small><b>${games}</b></span><span><small>FALTAS</small><b>${Number(u.absences)||0}</b></span><span><small>ELO</small><b>${Number(u.elo_level)||7}</b></span></div></div>
+        <div class="vgRankCurrentHead"><div><span class="vgRankCounter">PATENTE #${currentIndex+1} DE ${rankSteps.length}</span><div class="vgRankCurrentTitle"><span class="vgRankCurrentInsignia">${rankInsignia(u.rank||'Recruta')}</span><h2>${esc(u.rank||'Recruta')} <span class="vgRankCode">${esc(rankCode(u.rank||'Recruta'))}</span> — @${esc(u.nickname||'OPERADOR')}</h2></div><p class="muted">${esc(u.function||'Operador')} · ${games} jogo(s) contabilizado(s).</p></div><div class="vgRankTelemetry"><span><small>JOGOS</small><b>${games}</b></span><span><small>FALTAS</small><b>${Number(u.absences)||0}</b></span><span><small>ELO</small><b>${Number(u.elo_level)||7}</b></span></div></div>
         ${next?`<div class="vgRankProgressText"><span>PROGRESSO PARA <b>${esc(next[0])}</b></span><span>${games} / ${next[1]} jogos</span></div><div class="vgRankProgress"><i style="width:${pct}%"></i></div>`:'<div class="vgRankProgressText"><span>GRADUAÇÃO SUPERIOR</span><span>Definida pelo comando</span></div>'}
       </section>
-      <section class="ofdCard vgRankLadder"><div class="eyebrow">QUADRO HIERÁRQUICO COMPLETO</div><h2>Do Recruta ao Coronel</h2><div class="vgRankGrid">${rankSteps.map((r,i)=>{const unlocked=i<=currentIndex,active=i===currentIndex,req=r[1];return `<article class="vgRankCard ${active?'active':unlocked?'unlocked':'locked'}"><div class="vgRankCardTop"><span class="vgRankInsignia">◆</span><div><h3>${esc(r[0])}</h3><small>${req===null?'PROMOÇÃO PELO COMANDO':`Mínimo: ${req} jogos`}</small></div><em>${active?'ATUAL':unlocked?'CONQUISTADA':'BLOQUEADA'}</em></div><p>${esc(r[2])}</p><div class="vgRankRequirement"><b>REQUISITO:</b> ${req===null?'Avaliação e decisão do comando.':`${req} jogos oficiais contabilizados.`}</div></article>`}).join('')}</div></section>
+      <section class="ofdCard vgRankLadder"><div class="eyebrow">QUADRO HIERÁRQUICO COMPLETO</div><h2>Do Recruta ao Coronel</h2><div class="vgRankGrid">${rankSteps.map((r,i)=>{const unlocked=i<=currentIndex,active=i===currentIndex,req=r[1];return `<article class="vgRankCard ${active?'active':unlocked?'unlocked':'locked'}"><div class="vgRankCardTop"><span class="vgRankInsignia">${rankInsignia(r[0])}</span><div><h3>${esc(r[0])} <span class="vgRankCode">${esc(rankCode(r[0]))}</span></h3><small>${req===null?'PROMOÇÃO PELO COMANDO':`Mínimo: ${req} jogos`}</small></div><em>${active?'ATUAL':unlocked?'CONQUISTADA':'BLOQUEADA'}</em></div><p>${esc(r[2])}</p><div class="vgRankRequirement"><b>REQUISITO:</b> ${req===null?'Avaliação e decisão do comando.':`${req} jogos oficiais contabilizados.`}</div></article>`}).join('')}</div></section>
     </section>`;
     enhanceOperatorSidebar();
     routeReady();
