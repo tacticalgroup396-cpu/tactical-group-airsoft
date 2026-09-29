@@ -65,7 +65,10 @@
     document.querySelectorAll('[data-commander-photo]:not([data-v5-bound])').forEach(img=>{img.dataset.v5Bound='1';img.style.cursor='zoom-in';img.addEventListener('click',()=>{if(typeof window.openImageLightbox==='function')window.openImageLightbox(img.src,img.alt||'Foto do jogo')})});
   }
 
-  const obs=new MutationObserver(enhance);obs.observe(document.documentElement,{childList:true,subtree:true});
+  const enhanceRoot=document.getElementById('app')||document.body;
+  let enhanceTimer;
+  const obs=new MutationObserver(()=>{clearTimeout(enhanceTimer);enhanceTimer=setTimeout(enhance,120)});
+  obs.observe(enhanceRoot,{childList:true,subtree:true});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance,{once:true});else enhance();
 })();
 
@@ -101,6 +104,9 @@
       }
     }
   }
-  const obs=new MutationObserver(enhanceGameControls);obs.observe(document.documentElement,{childList:true,subtree:true});
+  const controlsRoot=document.getElementById('app')||document.body;
+  let controlsTimer;
+  const obs=new MutationObserver(()=>{clearTimeout(controlsTimer);controlsTimer=setTimeout(enhanceGameControls,120)});
+  obs.observe(controlsRoot,{childList:true,subtree:true});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhanceGameControls,{once:true});else enhanceGameControls();
 })();
