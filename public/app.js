@@ -6,13 +6,22 @@ const api=async(action,options={})=>{
   const [rawAction, rawQuery='']=String(action||'').split('&',2);
   const query=rawQuery?('&'+rawQuery):'';
   const cacheBust=(options.method||'GET')==='GET'?`${query?'&':'&'}_t=${Date.now()}`:'';
-  const fetchOptions={cache:'no-store',headers:{'Content-Type':'application/json',...(options.headers||{})},...options};
-  const r=await fetch('/api/index.js?action='+encodeURIComponent(rawAction)+query+cacheBust,fetchOptions);
-  const text=await r.text();
-  let data={};
-  try{data=text?JSON.parse(text):{}}catch{data={error:'Resposta inválida do servidor.'}}
-  if(!r.ok)throw new Error(data.error||'Erro interno.');
-  return data;
+  const controller=!options.signal&&'AbortController' in window?new AbortController():null;
+  const timeoutMs=Math.max(2500,Number(options.timeoutMs||7500));
+  const timer=controller?setTimeout(()=>controller.abort(),timeoutMs):null;
+  const {timeoutMs:_timeout,...rest}=options;
+  const fetchOptions={cache:'no-store',headers:{'Content-Type':'application/json',...(options.headers||{})},...rest,signal:options.signal||controller?.signal};
+  try{
+    const r=await fetch('/api/index.js?action='+encodeURIComponent(rawAction)+query+cacheBust,fetchOptions);
+    const text=await r.text();
+    let data={};
+    try{data=text?JSON.parse(text):{}}catch{data={error:'Resposta inválida do servidor.'}}
+    if(!r.ok)throw new Error(data.error||'Erro interno.');
+    return data;
+  }catch(e){
+    if(e?.name==='AbortError')throw new Error('A conexão demorou demais. Tente novamente.');
+    throw e;
+  }finally{if(timer)clearTimeout(timer)}
 };
 const post=(action,data)=>api(action,{method:'POST',body:JSON.stringify(data)});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -26,7 +35,7 @@ const rankSymbols={
 const rankIcon=rank=>rankSymbols[rank]||'🎖️';
 
 const eloBadge=level=>{const e=eloMeta(level);return `<span class="eloBadge ${e.tone}"><span class="eloSymbol">${e.symbol}</span> Elo ${e.level} · ${e.label}</span>`};
-function showRouteLoading(){let x=document.getElementById('routeLoading');if(!x){x=document.createElement('div');x.id='routeLoading';x.className='routeLoading';x.innerHTML='<div class="routeSpinner"></div><span>Carregando...</span>';document.body.appendChild(x)}requestAnimationFrame(()=>x.classList.add('show'));}
+function showRouteLoading(){let x=document.getElementById('routeLoading');if(!x){x=document.createElement('div');x.id='routeLoading';x.className='routeLoading';x.innerHTML='<div class="routeSpinner"></div><span>Abrindo...</span>';document.body.appendChild(x)}clearTimeout(window.__tgaRouteLoadingTimer);requestAnimationFrame(()=>x.classList.add('show'));window.__tgaRouteLoadingTimer=setTimeout(()=>x.classList.remove('show'),3200);}
 function gameParticipantSummary(p,admin=false,gameId=''){const l=p.loadout||{};const extras=Array.isArray(l.equipamentos_extras)?l.equipamentos_extras.filter(Boolean):[];const gear=[l.funcao,l.aeg_secundaria||l.replica,...extras].filter(Boolean);return `<div class="gameParticipant"><a class="gameParticipantIdentity" href="/visitantes?operator=${encodeURIComponent(p.id)}${admin?'&from=commander':''}"><img loading="lazy" decoding="async" src="${p.photo_url||'/logo.webp'}" alt="Foto de ${esc(p.nickname)}" class="gameParticipantPhoto"><div><b>@${esc(p.nickname)}</b>${p.name?`<span class=\"participantName\">${esc(p.name)}</span>`:''}<span>${esc(p.rank||'Operador')} · ${esc(p.function||'Operador')}</span>${p.elo_level?eloBadge(p.elo_level):''}</div></a><div class="gameParticipantGear">${gear.length?gear.map(x=>`<span>${esc(x)}</span>`).join(''):'<span class="muted">Sem equipamentos informados</span>'}</div>${admin?`<div class="gameParticipantAdmin"><button type="button" class="mini" data-attendance="${gameId}" data-operator="${p.id}" data-present="1">✓ Presente</button><button type="button" class="mini danger" data-attendance="${gameId}" data-operator="${p.id}" data-present="0">Faltou</button><button type="button" class="mini" data-discipline="${p.id}" data-type="highlander">Highlander</button><button type="button" class="mini danger" data-discipline="${p.id}" data-type="misconduct">Conduta</button></div>`:''}</div>`;}
 function openImageLightbox(src,alt='Imagem'){const m=document.createElement('div');m.className='lightbox';m.innerHTML=`<button class="lightboxClose" type="button">×</button><img src="${src}" alt="${esc(alt)}">`;document.body.appendChild(m);const close=()=>m.remove();m.onclick=e=>{if(e.target===m||e.target.classList.contains('lightboxClose'))close()};document.addEventListener('keydown',function onKey(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',onKey)}},{once:true});}
 function toast(t){const x=document.createElement('div');x.className='toast';x.textContent=t;document.body.appendChild(x);setTimeout(()=>x.remove(),3500)}
@@ -40,7 +49,12 @@ function shell(){
   document.getElementById('logout')?.addEventListener('click',async()=>{await api('logout');showRouteLoading();location.href='/'});
   document.getElementById('installApp')?.addEventListener('click',installPWA);
   document.getElementById('notifBell')?.addEventListener('click',()=>{document.getElementById('notifList')?.classList.toggle('open');loadNotifications()});
-  if(me){loadNotifications();pushSetup()}
+  if(me&&!window.__tgaBackgroundStarted){
+    window.__tgaBackgroundStarted=true;
+    const later=fn=>'requestIdleCallback' in window?requestIdleCallback(fn,{timeout:2800}):setTimeout(fn,1800);
+    later(()=>loadNotifications());
+    if(typeof Notification!=='undefined'&&Notification.permission==='granted')later(()=>pushSetup());
+  }
 }
 function syncInstagramHeader(url){try{if(url)localStorage.setItem('tga_instagram_url',String(url));else localStorage.removeItem('tga_instagram_url')}catch{} const host=document.getElementById('instagramHeader');if(!host)return;if(url){host.innerHTML=`<a class="instagramLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram da equipe" title="Instagram da equipe"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" class="fill"></circle></svg></a>`}else host.innerHTML=''}
 let deferredPrompt=null;
@@ -316,13 +330,14 @@ async function ensureCommanderFinanceAnnual(){
   return window.__renderCommanderFinanceAnnual;
 }
 async function commanderPage(page='equipe'){
-  const d=await commanderData();
   if(page==='financeiro'){
     const renderAnnual=await ensureCommanderFinanceAnnual();
-    app.innerHTML=await renderAnnual(d);
-  }else{
-    app.innerHTML=page==='jogos'?renderGamesPage(d):page==='patentes-elos'?renderRanksPage(d):page==='historico'?renderHistoryPage(d):page==='visitas'?renderVisitsPage(d):page==='configuracoes'?renderSettingsPage(d):renderTeamPage(d);
+    app.innerHTML=await renderAnnual();
+    document.getElementById('routeLoading')?.classList.remove('show');
+    return;
   }
+  const d=await commanderData();
+  app.innerHTML=page==='jogos'?renderGamesPage(d):page==='patentes-elos'?renderRanksPage(d):page==='historico'?renderHistoryPage(d):page==='visitas'?renderVisitsPage(d):page==='configuracoes'?renderSettingsPage(d):renderTeamPage(d);
   bindCommander(page,d)
 }
 
@@ -345,7 +360,9 @@ app.querySelector('#instagramForm')?.addEventListener('submit',async e=>{e.preve
 async function start(){
   if(location.pathname==='/entrar'){me=null;shell();return accessChoice()}
   if(location.pathname==='/operador/primeiro-acesso'){me=null;shell();return firstAccess()}
-  if(location.pathname==='/operador' || location.pathname.startsWith('/comandante')){try{me=(await api('me')).user}catch{me=null}}else{try{me=(await api('me')).user}catch{me=null}}
+  if(location.pathname==='/operador' || location.pathname.startsWith('/comandante')){try{me=(await api('me',{timeoutMs:5500})).user}catch{me=null}}else{try{me=(await api('me',{timeoutMs:5500})).user}catch{me=null}}
+  window.__tgaCurrentOperator=me||null;
+  window.dispatchEvent(new CustomEvent('tga:operator-user',{detail:me||null}));
   shell();
   document.getElementById('routeLoading')?.classList.remove('show');
   try{
