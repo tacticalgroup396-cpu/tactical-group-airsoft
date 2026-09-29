@@ -149,17 +149,29 @@
     const navSig=[p,me?.id||'',me?.nickname||'',me?.rank||'',me?.photo_url||''].join('|');
     if(aside.dataset.vgNavSig!==navSig){
       aside.dataset.vgNavSig=navSig;
-      aside.innerHTML=`<div class="vgCommanderIdentity"><span class="vgCommanderSideAvatar">${avatar}</span><span><strong>@${esc(nick(me||{}))}</strong><small>${esc(rankText(me||{}))} • COMANDO</small></span></div>
+      const currentItem=commanderNavItems.find(([href])=>href===p)||commanderNavItems[0];
+      aside.innerHTML=`<button type="button" class="vgCommanderMobileNavToggle" aria-expanded="false"><span>${icons[currentItem[2]]}</span><b>${esc(currentItem[1])}</b><em>☰</em></button>
+        <div class="vgCommanderIdentity"><span class="vgCommanderSideAvatar">${avatar}</span><span><strong>@${esc(nick(me||{}))}</strong><small>${esc(rankText(me||{}))} • COMANDO</small></span></div>
         <div class="vgCommanderPanelLabel">PAINEL DO COMANDANTE</div>
         <nav class="vgCommanderVerticalNav">${commanderNavItems.map(([href,label,key])=>`<a class="${p===href?'active':''}" href="${href}" data-vg-glyph="${key}"><span>${icons[key]}</span><b>${esc(label)}</b></a>`).join('')}</nav>`;
     }
     if(!aside.dataset.vgNavBound){
       aside.dataset.vgNavBound='1';
       aside.addEventListener('click',e=>{
+        const toggle=e.target.closest('.vgCommanderMobileNavToggle');
+        if(toggle){
+          e.preventDefault();
+          e.stopPropagation();
+          const open=aside.classList.toggle('mobile-open');
+          toggle.setAttribute('aria-expanded',open?'true':'false');
+          return;
+        }
         const a=e.target.closest('.vgCommanderVerticalNav a[href]');
         if(!a)return;
         e.preventDefault();
         e.stopPropagation();
+        aside.classList.remove('mobile-open');
+        aside.querySelector('.vgCommanderMobileNavToggle')?.setAttribute('aria-expanded','false');
         const href=a.getAttribute('href');
         if(href&&href!==location.pathname)location.assign(href);
       });
