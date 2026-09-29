@@ -26,8 +26,10 @@
     try{
       const r=await fetch('/api/index.js?action=me',{credentials:'same-origin',cache:'no-store'});
       const d=await r.json().catch(()=>({}));
-      if(r.ok)me=d?.user||d?.me||d||null;
-    }catch{}
+      const candidate=d?.user??d?.me??null;
+      if(r.ok&&candidate&&typeof candidate==='object'&&(candidate.id||candidate.nickname||candidate.email))me=candidate;
+      else me=null;
+    }catch{me=null}
     meLoaded=true;
     return me;
   }
@@ -183,7 +185,9 @@
   function sync(){
     if(isCommander())document.body.classList.remove('commander-admin-mode');
     buildHeader();
-    if(me){buildStatus();enhanceCommander();enhanceOperator()}
+    const loginMode=document.body.classList.contains('operator-login-mode');
+    if(!me||loginMode)document.getElementById('vgStatusBanner')?.remove();
+    if(me&&!loginMode){buildStatus();enhanceCommander();enhanceOperator()}
   }
 
   window.__tgaVanguardCompatibility=true;
