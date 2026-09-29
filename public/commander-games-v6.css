@@ -2,7 +2,8 @@
 body.commander-games-v6-mode main#app{max-width:1440px!important;padding-top:16px!important}
 body.commander-games-v6-mode #vgCommanderModules,
 body.commander-games-v6-mode .commanderGamesV6Page .pageTitle,
-body.commander-games-v6-mode .commanderGamesV6Page .commandNav{display:none!important}
+body.commander-games-v6-mode .commanderGamesV6Page .commandNav,
+body.commander-games-v6-mode .commanderGamesV6Page .vgCommanderPageHead{display:none!important}
 body.commander-games-v6-mode .commanderGamesV6Page{max-width:1390px!important;margin:0 auto!important}
 body.commander-games-v6-mode .cmdGamesV6Shell{
   display:grid;grid-template-columns:minmax(360px,.92fr) minmax(520px,1.35fr);gap:16px;align-items:start
@@ -149,4 +150,84 @@ body.commander-games-v6-mode .cmdGamesV6Loading{
   body.commander-games-v6-mode .cmdGamesV6Actions{width:100%}
   body.commander-games-v6-mode .cmdGamesV6Actions>button,
   body.commander-games-v6-mode .cmdGamesV6Finalize button{flex:1}
+}
+
+
+/* Campos integrados à central de jogos */
+body.commander-games-v6-mode #commanderGamesV6Host{width:100%;min-width:0}
+body.commander-games-v6-mode .cmdGamesV6FieldsPanel{grid-column:1/-1;border-color:#344255}
+body.commander-games-v6-mode .cmdGamesV6FieldsHead{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #263548
+}
+body.commander-games-v6-mode .cmdGamesV6FieldsHead h1{
+  margin:5px 0 4px;color:#f8fafc;font:700 clamp(19px,2vw,24px)/1.08 'Chakra Petch',sans-serif;text-transform:uppercase
+}
+body.commander-games-v6-mode .cmdGamesV6FieldsHead p{margin:0;color:#7890a7;font-size:10px}
+body.commander-games-v6-mode .cmdGamesV6FieldsHead>span{
+  flex:0 0 auto;padding:6px 9px;border:1px solid rgba(16,185,129,.4);border-radius:3px;background:rgba(16,185,129,.08);
+  color:#34d399;font:800 8px 'JetBrains Mono',monospace;letter-spacing:.05em
+}
+body.commander-games-v6-mode .cmdGamesV6FieldsLayout{display:grid;grid-template-columns:minmax(300px,.82fr) minmax(420px,1.18fr);gap:14px;align-items:start}
+body.commander-games-v6-mode .cmdGamesV6FieldForm,
+body.commander-games-v6-mode .cmdGamesV6FieldListWrap{
+  min-width:0;border:1px solid #263548;border-radius:3px;background:#090f14;padding:14px
+}
+body.commander-games-v6-mode .cmdGamesV6FieldForm{display:flex;flex-direction:column;gap:11px}
+body.commander-games-v6-mode .cmdGamesV6FieldFormTitle,
+body.commander-games-v6-mode .cmdGamesV6FieldListTitle{display:grid;gap:3px;margin-bottom:3px}
+body.commander-games-v6-mode .cmdGamesV6FieldFormTitle b,
+body.commander-games-v6-mode .cmdGamesV6FieldListTitle b{color:#fbbf24;font:800 11px 'Chakra Petch',sans-serif}
+body.commander-games-v6-mode .cmdGamesV6FieldFormTitle small,
+body.commander-games-v6-mode .cmdGamesV6FieldListTitle small{color:#60758a!important;font-size:8px}
+body.commander-games-v6-mode .cmdGamesV6FieldForm label{display:grid;gap:6px}
+body.commander-games-v6-mode .cmdGamesV6FieldForm label>span{
+  color:#7890aa;font:600 8px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase
+}
+body.commander-games-v6-mode .cmdGamesV6FieldForm input,
+body.commander-games-v6-mode .cmdGamesV6FieldForm textarea{
+  width:100%;min-width:0;border:1px solid #33465b!important;border-radius:3px!important;background:#0a1016!important;
+  color:#dce6ef!important;font:500 11px 'Plus Jakarta Sans',sans-serif!important;box-shadow:none!important
+}
+body.commander-games-v6-mode .cmdGamesV6FieldForm input{height:43px;padding:0 10px}
+body.commander-games-v6-mode .cmdGamesV6FieldForm textarea{min-height:82px;padding:10px;resize:vertical}
+body.commander-games-v6-mode .cmdGamesV6FieldForm input:focus,
+body.commander-games-v6-mode .cmdGamesV6FieldForm textarea:focus{
+  border-color:#f59e0b!important;box-shadow:0 0 0 2px rgba(245,158,11,.08)!important;outline:none
+}
+body.commander-games-v6-mode .cmdGamesV6FieldList{display:grid;gap:8px;margin-top:11px}
+body.commander-games-v6-mode .cmdGamesV6FieldCard{
+  display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;
+  border:1px solid #263548;border-radius:3px;background:#0e151c
+}
+body.commander-games-v6-mode .cmdGamesV6FieldIcon{
+  width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(245,158,11,.42);border-radius:3px;
+  background:#111820;color:#fbbf24;font-size:18px
+}
+body.commander-games-v6-mode .cmdGamesV6FieldInfo{min-width:0}
+body.commander-games-v6-mode .cmdGamesV6FieldInfo b{display:block;color:#f8fafc;font:700 11px 'Chakra Petch',sans-serif}
+body.commander-games-v6-mode .cmdGamesV6FieldInfo small{display:block;margin-top:2px;color:#8196aa!important;font-size:9px}
+body.commander-games-v6-mode .cmdGamesV6FieldInfo p{margin:4px 0 0;color:#60758a;font-size:8px}
+body.commander-games-v6-mode .cmdGamesV6FieldActions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+body.commander-games-v6-mode .cmdGamesV6FieldActions a,
+body.commander-games-v6-mode .cmdGamesV6FieldActions button{
+  min-height:30px;padding:6px 8px;border:1px solid #33465b!important;border-radius:3px!important;background:#111820!important;
+  color:#c8d5e2!important;font:800 7px 'JetBrains Mono',monospace!important;text-decoration:none!important
+}
+body.commander-games-v6-mode .cmdGamesV6FieldActions a{border-color:rgba(16,185,129,.4)!important;color:#34d399!important}
+body.commander-games-v6-mode .cmdGamesV6FieldActions button{border-color:rgba(244,63,94,.38)!important;color:#fb7185!important}
+body.commander-games-v6-mode .cmdGamesV6FieldEmpty{
+  padding:18px;border:1px dashed #334155;border-radius:3px;color:#6f8498;background:#0a1016;
+  font:600 9px/1.5 'JetBrains Mono',monospace;text-align:center
+}
+
+@media(max-width:900px){
+  body.commander-games-v6-mode .cmdGamesV6FieldsLayout{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  body.commander-games-v6-mode .cmdGamesV6FieldsHead{align-items:flex-start;flex-direction:column}
+  body.commander-games-v6-mode .cmdGamesV6FieldCard{grid-template-columns:34px minmax(0,1fr)}
+  body.commander-games-v6-mode .cmdGamesV6FieldIcon{width:34px;height:34px}
+  body.commander-games-v6-mode .cmdGamesV6FieldActions{grid-column:1/-1;justify-content:stretch}
+  body.commander-games-v6-mode .cmdGamesV6FieldActions a,
+  body.commander-games-v6-mode .cmdGamesV6FieldActions button{flex:1;text-align:center}
 }
