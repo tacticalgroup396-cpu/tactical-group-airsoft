@@ -23,6 +23,10 @@
 
   async function loadMe(){
     if(meLoaded)return me;
+    const shared=window.__tgaCurrentOperator;
+    if(shared&&typeof shared==='object'&&(shared.id||shared.nickname||shared.email)){
+      me=shared;meLoaded=true;return me;
+    }
     try{
       const r=await fetch('/api/index.js?action=me',{credentials:'same-origin',cache:'no-store'});
       const d=await r.json().catch(()=>({}));
@@ -191,11 +195,28 @@
   }
 
   window.__tgaVanguardCompatibility=true;
-  loadMe().finally(()=>{const header=document.querySelector('body>header');if(header)delete header.dataset.vgStructure;sync()});
+  window.__tgaSyncVanguard=()=>{
+    const shared=window.__tgaCurrentOperator;
+    if(shared&&typeof shared==='object'&&(shared.id||shared.nickname||shared.email)){me=shared;meLoaded=true}
+    sync();
+  };
+  window.addEventListener('tga:operator-user',e=>{
+    const shared=e.detail||window.__tgaCurrentOperator;
+    if(shared&&typeof shared==='object'&&(shared.id||shared.nickname||shared.email)){me=shared;meLoaded=true}
+    else if(isOperator()){me=null;meLoaded=true}
+    const header=document.querySelector('body>header');if(header)delete header.dataset.vgStructure;
+    sync();
+    window.dispatchEvent(new Event('tga:vanguard-ready'));
+  });
+  loadMe().finally(()=>{
+    const header=document.querySelector('body>header');if(header)delete header.dataset.vgStructure;
+    sync();
+    window.dispatchEvent(new Event('tga:vanguard-ready'));
+  });
   let timer;
   const root=document.getElementById('app')||document.body;
-  new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(sync,60)}).observe(root,{childList:true,subtree:true});
+  new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(sync,45)}).observe(root,{childList:true,subtree:true});
   let tries=0;
-  const retry=setInterval(()=>{sync();if(++tries>50)clearInterval(retry)},200);
+  const retry=setInterval(()=>{sync();if(++tries>20)clearInterval(retry)},150);
   sync();
 })();
