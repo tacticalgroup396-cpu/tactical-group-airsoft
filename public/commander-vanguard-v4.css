@@ -1,0 +1,184 @@
+/* Vanguard TAC-OPS — Comandante v4 (porta o frontend novo sem trocar a lógica antiga) */
+body.commander-vanguard-v2{
+  --cmd4-bg:#090d11;--cmd4-panel:#10161d;--cmd4-panel2:#0b1117;--cmd4-line:#223041;
+  --cmd4-amber:#f59e0b;--cmd4-green:#10b981;--cmd4-red:#ef4444;--cmd4-blue:#38bdf8;
+}
+body.commander-vanguard-v2 main#app{max-width:1440px!important;padding-top:22px!important}
+body.commander-vanguard-v2 #vgCommanderModules{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;margin:0 0 18px!important
+}
+body.commander-vanguard-v2 .vgCommanderModule{
+  min-height:78px!important;padding:14px!important;border-radius:4px!important;border:1px solid var(--cmd4-line)!important;
+  background:linear-gradient(180deg,#121922,#0d1319)!important;box-shadow:none!important
+}
+body.commander-vanguard-v2 .vgCommanderModule:hover{border-color:#475569!important;background:#151d26!important}
+body.commander-vanguard-v2 .vgCommanderModule.active{
+  border-color:rgba(245,158,11,.7)!important;background:linear-gradient(180deg,rgba(245,158,11,.13),rgba(245,158,11,.055))!important;
+  box-shadow:0 0 24px rgba(245,158,11,.07)!important
+}
+body.commander-vanguard-v2 .vgCommanderModule .vgModuleIcon{width:42px!important;height:42px!important;flex-basis:42px!important;border-radius:3px!important}
+body.commander-vanguard-v2 .vgCommanderModule .vgModuleCopy strong{font-size:13px!important}
+body.commander-vanguard-v2 .vgCommanderModule .vgModuleCopy small{font-size:10px!important;line-height:1.35!important}
+body.commander-vanguard-v2 .vgCommanderUtility{
+  grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;padding-top:2px
+}
+body.commander-vanguard-v2 .vgCommanderUtility a{
+  display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:7px 10px;border:1px solid var(--cmd4-line);
+  border-radius:3px;background:#0c1218;color:#94a3b8;text-decoration:none;font:700 9px 'JetBrains Mono',monospace;text-transform:uppercase
+}
+body.commander-vanguard-v2 .vgCommanderUtility a:hover,
+body.commander-vanguard-v2 .vgCommanderUtility a.active{border-color:rgba(245,158,11,.5);color:#fbbf24;background:rgba(245,158,11,.07)}
+body.commander-vanguard-v2 .vgCommanderUtility svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.7}
+
+body.commander-vanguard-v2 #app>section{max-width:1380px!important}
+body.commander-vanguard-v2 .pageTitle{
+  margin:0 0 16px!important;padding:16px 18px!important;border:1px solid var(--cmd4-line)!important;border-radius:4px!important;
+  background:linear-gradient(180deg,#111820,#0d1319)!important
+}
+body.commander-vanguard-v2 .pageTitle .eyebrow{font-size:9px!important;color:#10b981!important;letter-spacing:.14em!important}
+body.commander-vanguard-v2 .pageTitle h1{font-size:30px!important;margin:4px 0 4px!important;text-transform:uppercase!important}
+body.commander-vanguard-v2 .pageTitle p{font-size:12px!important;color:#8398ad!important}
+
+body.commander-vanguard-v2 .card{
+  border:1px solid var(--cmd4-line)!important;border-radius:4px!important;background:linear-gradient(180deg,#111820,#0d1319)!important;
+  box-shadow:none!important
+}
+body.commander-vanguard-v2 .cardKicker,
+body.commander-vanguard-v2 .eyebrow{color:#f59e0b!important;font:700 9px 'JetBrains Mono',monospace!important;letter-spacing:.12em!important}
+body.commander-vanguard-v2 .card h2{font-size:22px!important;text-transform:uppercase!important;letter-spacing:.02em!important}
+body.commander-vanguard-v2 input,
+body.commander-vanguard-v2 textarea,
+body.commander-vanguard-v2 select{
+  border-radius:3px!important;border-color:#314052!important;background:#0a1016!important;color:#e2e8f0!important
+}
+body.commander-vanguard-v2 input:focus,
+body.commander-vanguard-v2 textarea:focus,
+body.commander-vanguard-v2 select:focus{border-color:#f59e0b!important;box-shadow:0 0 0 2px rgba(245,158,11,.09)!important}
+body.commander-vanguard-v2 .goldbtn{border-radius:3px!important;background:#f59e0b!important;color:#111827!important}
+body.commander-vanguard-v2 .outlinebtn,
+body.commander-vanguard-v2 .mini:not(.danger){
+  border-radius:3px!important;border-color:#405166!important;background:#111820!important;color:#dbe5ee!important
+}
+body.commander-vanguard-v2 .mini.danger{border-radius:3px!important}
+
+/* Financeiro: telemetria + matriz/detalhes */
+body.commander-vanguard-v2 .vgCmdFinance .financeStats{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important
+}
+body.commander-vanguard-v2 .vgCmdFinance .financeStats>div{
+  min-height:86px!important;padding:14px!important;border:1px solid var(--cmd4-line)!important;border-radius:4px!important;background:#0b1117!important
+}
+body.commander-vanguard-v2 .vgCmdFinance .financeStats b{
+  display:block!important;color:#34d399!important;font:700 23px 'JetBrains Mono',monospace!important
+}
+body.commander-vanguard-v2 .vgCmdFinance .financeStats>div:nth-child(2) b{color:#fbbf24!important}
+body.commander-vanguard-v2 .vgCmdFinance .financeStats>div:nth-child(3) b{color:#38bdf8!important}
+body.commander-vanguard-v2 .vgCmdFinance .financeStats>div:nth-child(4) b{color:#fb7185!important}
+body.commander-vanguard-v2 .vgCmdFinance .financeSettings{border-color:rgba(245,158,11,.34)!important}
+body.commander-vanguard-v2 .vgCmdFinance .finV2Member{
+  grid-template-columns:minmax(260px,1.6fr) .7fr .7fr 34px!important;border-bottom:1px solid var(--cmd4-line)!important;
+  background:#0b1117!important;padding:12px!important
+}
+body.commander-vanguard-v2 .vgCmdFinance .finV2Member:hover{background:#111a22!important}
+body.commander-vanguard-v2 .vgCmdFinance .finV2Photo,
+body.commander-vanguard-v2 .vgCmdFinance .finV2Initial{border-radius:3px!important}
+body.commander-vanguard-v2 .vgCmdFinance .finV2Pill{border-radius:3px!important;font:700 9px 'JetBrains Mono',monospace!important}
+body.commander-vanguard-v2 .vgCmdFinance .finV2Table,
+body.commander-vanguard-v2 .vgCmdFinance .finV2PayBox,
+body.commander-vanguard-v2 .vgCmdFinance .finV2Preview,
+body.commander-vanguard-v2 .vgCmdFinance .finV2Top{border-radius:4px!important;border-color:var(--cmd4-line)!important;background:#0b1117!important}
+body.commander-vanguard-v2 .vgCmdFinance .finV2Month{
+  border-radius:3px!important;background:#0a1016!important;border-color:#2a394a!important;min-height:64px
+}
+body.commander-vanguard-v2 .vgCmdFinance .finV2Month.paid{border-color:rgba(16,185,129,.45)!important;background:rgba(16,185,129,.055)!important}
+body.commander-vanguard-v2 .vgCmdFinance .finV2TableHead{background:#101820!important}
+
+/* Jogos & missões */
+body.commander-vanguard-v2 .vgCmdMissionGrid{
+  display:grid!important;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)!important;gap:14px!important;align-items:start!important
+}
+body.commander-vanguard-v2 .vgCmdGameForm{
+  border-color:rgba(245,158,11,.43)!important;position:relative
+}
+body.commander-vanguard-v2 .vgCmdGameForm:before{
+  content:'CRIAR NOVO JOGO & BRIEFING DE MISSÃO';display:block;margin-bottom:8px;color:#10b981;
+  font:700 9px 'JetBrains Mono',monospace;letter-spacing:.12em
+}
+body.commander-vanguard-v2 .vgCmdGameForm .formGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+body.commander-vanguard-v2 .vgCmdGameForm label{font-size:10px!important;color:#94a3b8!important}
+body.commander-vanguard-v2 .vgCmdGameForm textarea{min-height:82px!important}
+body.commander-vanguard-v2 .vgCmdFieldsCard{max-height:620px;overflow:auto}
+body.commander-vanguard-v2 .vgCmdGameListCard{grid-column:1/-1}
+body.commander-vanguard-v2 .vgCmdGameListCard .gameList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body.commander-vanguard-v2 .vgCmdGameRow{
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;align-items:start!important;
+  padding:14px!important;border:1px solid var(--cmd4-line)!important;border-radius:4px!important;background:#0b1117!important
+}
+body.commander-vanguard-v2 .vgCmdGameRow>div:first-child b{display:block;color:#f8fafc;font:700 15px 'Chakra Petch',sans-serif;text-transform:uppercase}
+body.commander-vanguard-v2 .vgCmdGameRow>div:first-child small{display:block;margin-top:4px;color:#8ca0b4}
+body.commander-vanguard-v2 .vgCmdGameRow>.tag{justify-self:end}
+body.commander-vanguard-v2 .vgCmdGameRow>span:not(.tag){grid-column:1/2;color:#34d399;font:700 9px 'JetBrains Mono',monospace}
+body.commander-vanguard-v2 .vgCmdGameRow>button{grid-column:2/3;grid-row:2/3}
+body.commander-vanguard-v2 .tgaMissionCreate,
+body.commander-vanguard-v2 .tgaMissionEditor{
+  border-radius:4px!important;border-color:rgba(245,158,11,.4)!important;background:#0d1319!important
+}
+body.commander-vanguard-v2 .tgaMissionHead{border-radius:3px!important}
+
+/* Equipe / recrutamento */
+body.commander-vanguard-v2 .vgCmdRecruitCard{border-color:rgba(16,185,129,.32)!important}
+body.commander-vanguard-v2 .vgCmdRecruitCard:before{
+  content:'GERAR LINK / CÓDIGO DE RECRUTAMENTO';display:block;margin-bottom:8px;color:#10b981;
+  font:700 9px 'JetBrains Mono',monospace;letter-spacing:.1em
+}
+body.commander-vanguard-v2 .vgCmdCommanders .commandersGrid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+body.commander-vanguard-v2 .vgCmdCommanders .commanderProfile{
+  padding:12px!important;border-radius:4px!important;background:#0b1117!important
+}
+body.commander-vanguard-v2 .vgCmdOperatorsTable .table{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+body.commander-vanguard-v2 .vgCmdOperatorRow{
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;align-items:center!important;
+  padding:12px!important;border:1px solid var(--cmd4-line)!important;border-radius:4px!important;background:#0b1117!important
+}
+body.commander-vanguard-v2 .vgCmdOperatorRow>div:first-child{grid-column:1/2}
+body.commander-vanguard-v2 .vgCmdOperatorRow>select{min-width:145px}
+body.commander-vanguard-v2 .vgCmdOperatorRow button{min-height:32px!important}
+
+/* Visitantes, histórico e configurações */
+body.commander-vanguard-v2 .vgCmdVisitorRow,
+body.commander-vanguard-v2 .visit{
+  border:1px solid var(--cmd4-line)!important;border-radius:4px!important;background:#0b1117!important;padding:12px!important;margin:8px 0!important
+}
+body.commander-vanguard-v2 .vgCmdHistory .commandGame{
+  border:1px solid var(--cmd4-line)!important;border-radius:4px!important;background:#0b1117!important
+}
+body.commander-vanguard-v2 .vgCmdSettings .adminGrid{gap:12px!important}
+body.commander-vanguard-v2 .vgCmdSettings .fieldItem{border-color:var(--cmd4-line)!important}
+
+/* Tags e status */
+body.commander-vanguard-v2 .tag{
+  border-radius:3px!important;font:700 8px 'JetBrains Mono',monospace!important;letter-spacing:.03em!important;text-transform:uppercase!important
+}
+body.commander-vanguard-v2 .tag.paid{color:#34d399!important;border-color:rgba(16,185,129,.35)!important;background:rgba(16,185,129,.08)!important}
+body.commander-vanguard-v2 .tag.pending{color:#fbbf24!important;border-color:rgba(245,158,11,.35)!important;background:rgba(245,158,11,.08)!important}
+
+@media(max-width:1050px){
+  body.commander-vanguard-v2 #vgCommanderModules{grid-template-columns:1fr!important}
+  body.commander-vanguard-v2 .vgCmdMissionGrid{grid-template-columns:1fr!important}
+  body.commander-vanguard-v2 .vgCmdGameListCard{grid-column:auto}
+  body.commander-vanguard-v2 .vgCmdCommanders .commandersGrid{grid-template-columns:1fr 1fr!important}
+  body.commander-vanguard-v2 .vgCmdOperatorsTable .table{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  body.commander-vanguard-v2 main#app{padding-left:10px!important;padding-right:10px!important}
+  body.commander-vanguard-v2 .vgCommanderUtility{overflow-x:auto;flex-wrap:nowrap}
+  body.commander-vanguard-v2 .vgCommanderUtility a{white-space:nowrap}
+  body.commander-vanguard-v2 .vgCmdFinance .financeStats{grid-template-columns:1fr 1fr!important}
+  body.commander-vanguard-v2 .vgCmdGameForm .formGrid{grid-template-columns:1fr!important}
+  body.commander-vanguard-v2 .vgCmdGameListCard .gameList{grid-template-columns:1fr}
+  body.commander-vanguard-v2 .vgCmdCommanders .commandersGrid{grid-template-columns:1fr!important}
+}
+@media(max-width:480px){
+  body.commander-vanguard-v2 .vgCmdFinance .financeStats{grid-template-columns:1fr!important}
+  body.commander-vanguard-v2 .pageTitle h1{font-size:24px!important}
+}
