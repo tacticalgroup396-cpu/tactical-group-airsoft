@@ -112,7 +112,11 @@ export default async function handler(req,res){try{
       o.guardian_operator_id?sql`SELECT * FROM operators WHERE id=${o.guardian_operator_id} AND active=true LIMIT 1`:Promise.resolve([]),
       sql`SELECT * FROM operators WHERE guardian_operator_id=${id} AND active=true ORDER BY nickname`
     ])
-    return json(res,200,{user:safe(u),operator:safe(o),equipment,gallery,guardian:safe(guardian[0]),responsibleFor:responsible.map(safe)})
+    let replicas=[]
+    try{
+      replicas=await sql`SELECT id,kind,category,model,quantity,fps,joules,manufacturer,details,photo_url,public_visible,created_at FROM operator_replicas WHERE operator_id=${id} AND public_visible=true ORDER BY created_at DESC`
+    }catch{}
+    return json(res,200,{user:safe(u),operator:safe(o),equipment,gallery,replicas,guardian:safe(guardian[0]),responsibleFor:responsible.map(safe)})
   }
   if(action==='settings'&&req.method==='GET'){
     const [equipment,gallery,guardians,responsible,guardian]=await Promise.all([
