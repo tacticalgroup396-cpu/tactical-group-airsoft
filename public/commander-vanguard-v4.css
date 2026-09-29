@@ -206,3 +206,90 @@ body.commander-vanguard-v2 .eyebrow{font-size:10.5px!important}
 body.commander-vanguard-v2 .pageTitle p,
 body.commander-vanguard-v2 .card p,
 body.commander-vanguard-v2 .muted{font-size:13px!important}
+
+
+/* Navegação vertical do Comandante — mesmo padrão da Área do Operador */
+body.commander-vanguard-v2.commander-vertical-nav #vgCommanderModules{display:none!important}
+body.commander-vanguard-v2.commander-vertical-nav #app>section{max-width:1380px!important}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderSidebarLayout{
+  display:grid!important;
+  grid-template-columns:220px minmax(0,1fr)!important;
+  gap:16px!important;
+  align-items:start!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderSidebar{
+  min-width:0!important;
+  border:1px solid #263548!important;
+  border-radius:4px!important;
+  background:linear-gradient(180deg,#111820,#0c1218)!important;
+  overflow:hidden!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderIdentity{
+  display:grid!important;grid-template-columns:46px minmax(0,1fr)!important;gap:10px!important;align-items:center!important;
+  padding:12px!important;border-bottom:1px solid #263548!important;background:#0d141b!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderSideAvatar{
+  width:46px!important;height:46px!important;display:grid!important;place-items:center!important;overflow:hidden!important;
+  border:1px solid rgba(16,185,129,.45)!important;border-radius:3px!important;background:#091017!important;
+  color:#34d399!important;font:800 14px 'Chakra Petch',sans-serif!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderSideAvatar img{
+  width:100%!important;height:100%!important;object-fit:cover!important;display:block!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderIdentity strong{
+  display:block!important;color:#f8fafc!important;font-size:14px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderIdentity small{
+  display:block!important;margin-top:3px!important;color:#10b981!important;font:700 8px 'JetBrains Mono',monospace!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderPanelLabel{
+  padding:12px 14px 7px!important;color:#60758a!important;font:700 8px 'JetBrains Mono',monospace!important;letter-spacing:.12em!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderVerticalNav{
+  display:flex!important;flex-direction:column!important;gap:2px!important;padding:0 7px 10px!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderVerticalNav a{
+  display:grid!important;grid-template-columns:22px minmax(0,1fr)!important;gap:8px!important;align-items:center!important;
+  min-height:40px!important;padding:8px 9px!important;border:1px solid transparent!important;border-radius:3px!important;
+  color:#a8bacd!important;text-decoration:none!important;background:transparent!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderVerticalNav a span{
+  width:18px!important;height:18px!important;display:grid!important;place-items:center!important;color:#70859b!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderVerticalNav a svg{
+  width:16px!important;height:16px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.7!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderVerticalNav a b{
+  font-size:12px!important;line-height:1.2!important;font-weight:700!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderVerticalNav a:hover{
+  background:#121a22!important;border-color:#2d3d50!important;color:#eef4fa!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderVerticalNav a.active{
+  background:linear-gradient(90deg,rgba(16,185,129,.14),rgba(16,185,129,.04))!important;
+  border-color:rgba(16,185,129,.35)!important;color:#34d399!important;box-shadow:inset 3px 0 0 #10b981!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderVerticalNav a.active span{color:#34d399!important}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderSidebarContent{min-width:0!important}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderPageHead{
+  margin:0 0 14px!important;padding:13px 15px!important;border:1px solid #263548!important;border-radius:4px!important;
+  background:linear-gradient(180deg,#111820,#0d1319)!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderPageHead .vgLiveLabel{
+  color:#10b981!important;font:700 9px 'JetBrains Mono',monospace!important;letter-spacing:.11em!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderPageHead h2{
+  margin:4px 0 3px!important;color:#f8fafc!important;font:800 24px/1.05 'Chakra Petch',sans-serif!important;text-transform:uppercase!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderPageHead p{
+  margin:0!important;color:#8398ad!important;font-size:12px!important
+}
+body.commander-vanguard-v2.commander-vertical-nav .vgLegacyPageTitle,
+body.commander-vanguard-v2.commander-vertical-nav .commandNav{display:none!important}
+body.commander-vanguard-v2.commander-vertical-nav .vgCommanderSidebarContent>.vgFinanceAnnual{margin:0!important}
+
+@media(max-width:840px){
+  body.commander-vanguard-v2.commander-vertical-nav .vgCommanderSidebarLayout{grid-template-columns:1fr!important}
+  body.commander-vanguard-v2.commander-vertical-nav .vgCommanderSidebar{position:static!important}
+  body.commander-vanguard-v2.commander-vertical-nav .vgCommanderVerticalNav{display:flex!important;flex-direction:column!important}
+}
