@@ -13,6 +13,9 @@
     html.operator-booting main#app{visibility:hidden!important}
     html.operator-booting body::after{content:'CARREGANDO MÓDULO...';position:fixed;inset:64px 0 0;z-index:99998;display:grid;place-items:center;background:#090d11;color:#f59e0b;font:700 11px monospace;letter-spacing:.14em}
   </style>
+  <script>
+    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');const srcs=[];if(p.startsWith('/operador')&&p!=='/operador/primeiro-acesso')srcs.push('/operator-entry-router-v5.js?v=19');else srcs.push('/app.js?v=79');if(p.startsWith('/comandante'))srcs.push('/commander-pages-v5.js?v=3');if(p==='/comandante/financeiro')srcs.push('/commander-finance-v1.js?v=4');for(const href of srcs){const l=document.createElement('link');l.rel='preload';l.as='script';l.href=href;document.head.appendChild(l)}})();
+  </script>
   <link rel="stylesheet" href="/style.css?v=66">
   <link rel="stylesheet" href="/mobile-fixes.css?v=2">
   <link rel="stylesheet" href="/operator-fast.css?v=1">
@@ -34,8 +37,8 @@
   <main id="app"><div class="loading">Carregando...</div></main>
   <footer>© 2026 Tactical Group Airsoft</footer>
 
-  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw-v58.js?v=1"))}</script>
-  <script src="/pwa-force-refresh.js?v=1"></script>
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw-v59.js?v=1"))}</script>
+  <script src="/pwa-force-refresh.js?v=2"></script>
   <script>var ranks=['Recruta','Soldado','Cabo','3º Sargento','2º Sargento','1º Sargento','Subtenente','Aspirante','Tenente','Capitão','Major','Tenente-Coronel','Coronel'];</script>
   <script>window.renderFinancePage=window.renderFinancePage||async function(d){if(typeof window.financePanel!=='function')throw new Error('Financeiro ainda não carregou.');return window.financePanel(d)}</script>
   <script src="/blob-upload-router.js?v=1"></script>
@@ -55,10 +58,10 @@
     })();
   </script>
   <script>
-    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/operador')||p==='/visitante')return;const s=document.createElement('script');s.src='/api-lite-router.js?v=11';s.async=false;document.body.appendChild(s)})();
+    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/operador')||p==='/visitante')return;const s=document.createElement('script');s.src='/api-lite-router.js?v=12';s.async=false;document.body.appendChild(s)})();
   </script>
   <script>
-    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=2';pre.async=false;document.body.appendChild(pre);if(p==='/comandante/financeiro'){const fin=document.createElement('script');fin.src='/commander-finance-v1.js?v=4';fin.async=false;document.body.appendChild(fin)}}const s=document.createElement('script');if(p==='/visitante')s.src='/visitor-access-v1.js?v=5';else if(p==='/operador/primeiro-acesso')s.src='/app.js?v=78';else if(p.startsWith('/operador'))s.src='/operator-entry-router-v5.js?v=18';else s.src='/app.js?v=78';s.async=false;document.body.appendChild(s)})();
+    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=3';pre.async=false;document.body.appendChild(pre);if(p==='/comandante/financeiro'){const fin=document.createElement('script');fin.src='/commander-finance-v1.js?v=4';fin.async=false;document.body.appendChild(fin)}}const s=document.createElement('script');if(p==='/visitante')s.src='/visitor-access-v1.js?v=5';else if(p==='/operador/primeiro-acesso')s.src='/app.js?v=79';else if(p.startsWith('/operador'))s.src='/operator-entry-router-v5.js?v=19';else s.src='/app.js?v=79';s.async=false;document.body.appendChild(s)})();
   </script>
   <script>
     (()=>{
@@ -124,7 +127,7 @@
   <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p!=='/visitantes')return;const load=()=>{for(const src of ['/visitor-profile-mobile-fix.js?v=5','/mobile-public-profile.js?v=4','/operator-guardian-fix.js?v=3']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load()})();
   </script>
-  <script src="/vanguard-structure-v2.js?v=14" defer></script>
+  <script src="/vanguard-structure-v2.js?v=15" defer></script>
   <script>if(location.pathname.startsWith("/comandante")){const s=document.createElement("script");s.src="/commander-vanguard-v4.js?v=1";s.defer=true;document.body.appendChild(s)}</script>
 </body>
 </html>
