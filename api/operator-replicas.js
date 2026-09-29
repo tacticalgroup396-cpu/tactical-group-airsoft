@@ -21,6 +21,11 @@ async function schema(){if(!ready)ready=(async()=>{
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`
   await sql`CREATE INDEX IF NOT EXISTS operator_replicas_operator_idx ON operator_replicas(operator_id,kind,created_at)`
+  await sql`ALTER TABLE operator_replicas ADD COLUMN IF NOT EXISTS category TEXT`
+  await sql`ALTER TABLE operator_replicas ADD COLUMN IF NOT EXISTS fps INTEGER`
+  await sql`ALTER TABLE operator_replicas ADD COLUMN IF NOT EXISTS joules NUMERIC(8,2)`
+  await sql`ALTER TABLE operator_replicas ADD COLUMN IF NOT EXISTS manufacturer TEXT`
+  await sql`ALTER TABLE operator_replicas ADD COLUMN IF NOT EXISTS details TEXT`
   await sql`ALTER TABLE operators ADD COLUMN IF NOT EXISTS primary_replica_qty INTEGER NOT NULL DEFAULT 0`
   await sql`ALTER TABLE operators ADD COLUMN IF NOT EXISTS secondary_replica_qty INTEGER NOT NULL DEFAULT 0`
   await sql`ALTER TABLE operators ADD COLUMN IF NOT EXISTS primary_replica_photo_url TEXT`
@@ -37,7 +42,7 @@ function blobToken(){if(!process.env.BLOB_READ_WRITE_TOKEN)throw new Error('Verc
 function decodeImage(data){const m=String(data||'').match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);if(!m)throw new Error('Envie uma imagem válida.');const buffer=Buffer.from(m[2],'base64');if(!buffer.length||buffer.length>3_500_000)throw new Error('Imagem muito grande. Use foto de até 3 MB.');const ext={'image/jpeg':'jpg','image/jpg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif'}[m[1].toLowerCase()]||'jpg';return {buffer,type:m[1],ext}}
 async function upload(data,operatorId,kind){const x=decodeImage(data);const pathname=`tactical-group/operators/${operatorId}/replicas/${kind}/${Date.now()}-${crypto.randomUUID()}.${x.ext}`;return (await put(pathname,x.buffer,{access:'public',contentType:x.type,addRandomSuffix:false,token:blobToken()})).url}
 async function cleanup(url){if(!/^https:\/\/[^/]+\.blob\.vercel-storage\.com\//i.test(String(url||'')))return;try{await del(url,{token:blobToken()})}catch{}}
-const clean=r=>({id:r.id,operator_id:r.operator_id,kind:r.kind,model:r.model,quantity:Number(r.quantity)||1,photo_url:r.photo_url||null,public_visible:r.public_visible!==false,created_at:r.created_at})
+const clean=r=>({id:r.id,operator_id:r.operator_id,kind:r.kind,category:r.category||'AEG',model:r.model,quantity:Number(r.quantity)||1,fps:r.fps==null?null:Number(r.fps),joules:r.joules==null?null:Number(r.joules),manufacturer:r.manufacturer||'',details:r.details||'',photo_url:r.photo_url||null,public_visible:r.public_visible!==false,created_at:r.created_at})
 
 export default async function handler(req,res){try{
   if(req.method==='OPTIONS'){res.statusCode=204;return res.end()}
@@ -52,8 +57,13 @@ export default async function handler(req,res){try{
   if(action==='add'&&req.method==='POST'){
     const b=await body(req),kind=b.kind==='secondary'?'secondary':'primary',model=String(b.model||'').trim().slice(0,180),quantity=Math.max(1,Math.min(20,Math.trunc(Number(b.quantity)||1)))
     if(!model)return json(res,400,{error:'Informe o modelo da réplica.'})
+    const category=String(b.category||'AEG').trim().slice(0,80)||'AEG'
+    const fps=b.fps===''||b.fps==null?null:Math.max(0,Math.min(2000,Math.round(Number(b.fps)||0)))
+    const joules=b.joules===''||b.joules==null?null:Math.max(0,Math.min(100,Number(b.joules)||0))
+    const manufacturer=String(b.manufacturer||'').trim().slice(0,120)||null
+    const details=String(b.details||'').trim().slice(0,1200)||null
     let photo=null;if(b.image_data)photo=await upload(String(b.image_data),u.id,kind)
-    const rows=await sql`INSERT INTO operator_replicas(operator_id,kind,model,quantity,photo_url,public_visible) VALUES(${u.id},${kind},${model},${quantity},${photo},${b.public_visible!==false}) RETURNING *`
+    const rows=await sql`INSERT INTO operator_replicas(operator_id,kind,category,model,quantity,fps,joules,manufacturer,details,photo_url,public_visible) VALUES(${u.id},${kind},${category},${model},${quantity},${fps},${joules},${manufacturer},${details},${photo},${b.public_visible!==false}) RETURNING *`
     return json(res,201,{ok:true,replica:clean(rows[0])})
   }
   if(action==='delete'&&req.method==='POST'){
