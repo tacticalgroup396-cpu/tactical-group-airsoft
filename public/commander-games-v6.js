@@ -50,7 +50,6 @@
   function render(){
     document.body.classList.add('commander-games-v6-mode');
     host=document.getElementById('commanderGamesV6Host');if(!host)return false;
-    try{fields=JSON.parse(decodeURIComponent(host.dataset.fields||'%5B%5D'))}catch{fields=[]}
     host.innerHTML=`<div class="cmdGamesV6Shell">
       <section class="cmdGamesV6Panel cmdGamesV6Create">
         <div class="cmdGamesV6Kicker">PLANEJAMENTO DE OPERAÇÕES</div>
@@ -207,9 +206,19 @@
     return `<div class="cmdGamesV6Member ${isVisitor?'visitor':''}"><span class="cmdGamesV6Badge">◆</span><div><b>@${esc(name)}</b><small>${esc(isVisitor?'VISITANTE':(o.rank||'Operador'))}</small></div><em>${esc(role)}</em>${attendance}</div>`;
   }
 
+  function rsvpMemberRow(o,state){
+    const name=o.nickname||o.name||'Operador';
+    const label=state==='going'?'VAI':state==='not_going'?'NÃO VAI':'PENDENTE';
+    const photo=o.photo_url?`<img src="${esc(o.photo_url)}" alt="" loading="lazy" decoding="async">`:`<span class="cmdGamesV6RsvpAvatar">${esc(String(name).slice(0,2).toUpperCase())}</span>`;
+    return `<div class="cmdGamesV6RsvpMember ${state}">${photo}<div><b>@${esc(name)}</b><small>${esc(o.rank||'Operador')} • ${esc(o.function||'Operador')}</small></div><em>${label}</em></div>`;
+  }
+
   function renderMission(){
-    const box=host.querySelector('#cmdGamesV6Mission'),g=current.game,m=current.mission||{},people=current.people||[];
+    const box=host.querySelector('#cmdGamesV6Mission'),g=current.game,m=current.mission||{},people=current.people||[],roster=current.roster||[];
     const goingVisitors=visitors.filter(v=>v.response==='going');
+    const goingOps=roster.filter(x=>['going','attended'].includes(x.response));
+    const noOps=roster.filter(x=>x.response==='not_going');
+    const pendingOps=roster.filter(x=>!['going','attended','not_going'].includes(x.response));
     const aOps=people.filter(x=>x.team_code==='A'),bOps=people.filter(x=>x.team_code==='B');
     const aVis=goingVisitors.filter(x=>x.team_code==='A'),bVis=goingVisitors.filter(x=>x.team_code==='B');
     const total=people.length+goingVisitors.length;
@@ -217,6 +226,14 @@
       <div><div class="cmdGamesV6Kicker">OPERAÇÃO ATIVA</div><h2>${esc(g.title)}</h2><p>${esc(g.location||'Campo não informado')} • ${fmt(g.game_date)}${g.game_time?' • '+tm(g.game_time):''}</p></div>
       <span>${total} CONFIRMADO${total===1?'':'S'}</span>
     </article>
+    <section class="cmdGamesV6RsvpBoard">
+      <div class="cmdGamesV6RsvpHead"><div><span>EFETIVO CONVOCADO</span><b>RESPOSTAS DOS OPERADORES</b></div><small>${roster.length} OPERADORES ATIVOS</small></div>
+      <div class="cmdGamesV6RsvpGrid">
+        <div class="cmdGamesV6RsvpCol going"><header><b>✓ VÃO</b><span>${goingOps.length}</span></header><div>${goingOps.map(o=>rsvpMemberRow(o,'going')).join('')||'<p>Nenhum operador confirmou.</p>'}</div></div>
+        <div class="cmdGamesV6RsvpCol notgoing"><header><b>× NÃO VÃO</b><span>${noOps.length}</span></header><div>${noOps.map(o=>rsvpMemberRow(o,'not_going')).join('')||'<p>Nenhum operador recusou.</p>'}</div></div>
+        <div class="cmdGamesV6RsvpCol pending"><header><b>… PENDENTES</b><span>${pendingOps.length}</span></header><div>${pendingOps.map(o=>rsvpMemberRow(o,'pending')).join('')||'<p>Ninguém pendente.</p>'}</div></div>
+      </div>
+    </section>
     <div class="cmdGamesV6Actions">
       <button type="button" class="cmdGamesV6Primary small" id="cmdGamesV6Balance">⬡ BALANCEAR POR PATENTE</button>
       <button type="button" class="cmdGamesV6Secondary" id="cmdGamesV6Random">⤨ SORTEIO ALEATÓRIO A/B</button>
