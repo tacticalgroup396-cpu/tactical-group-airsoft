@@ -52,21 +52,41 @@ async function loadNotifications(target='notifList'){if(!me)return;try{const d=a
 
 async function loadHeroVideo(){
   const video=document.querySelector('.heroVideo');
-  if(!video||video.dataset.loaded==='1')return;
-  if(navigator.connection?.saveData||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const src=video.dataset.src;
+  if(!video)return;
+  const src=video.dataset.src||video.getAttribute('src');
   if(!src)return;
-  video.src=src;
+  video.muted=true;
+  video.defaultMuted=true;
+  video.loop=true;
+  video.autoplay=true;
+  video.playsInline=true;
+  if(!video.getAttribute('src'))video.src=src;
   video.dataset.loaded='1';
+  const play=()=>{
+    if(!document.documentElement.contains(video)||!video.paused)return;
+    try{
+      const p=video.play();
+      if(p&&typeof p.catch==='function')p.catch(()=>{});
+    }catch{}
+  };
+  if(video.readyState>=2)play();
+  else{
+    video.addEventListener('loadeddata',play,{once:true});
+    video.addEventListener('canplay',play,{once:true});
+  }
   video.load();
-  video.play().catch(()=>{});
+  play();
+  window.addEventListener('pointerdown',play,{once:true,passive:true});
+  window.addEventListener('touchstart',play,{once:true,passive:true});
+  window.addEventListener('keydown',play,{once:true});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)play()});
 }
 
 async function home(){
   const d=await api('public');
   syncInstagramHeader(d.instagram_url);
   app.innerHTML=`<section class="homeHero">
-    <video class="heroVideo" muted loop playsinline preload="none" poster="/logo.webp" data-src="/tga-home.mp4" aria-label="Vídeo do Tactical Group Airsoft"></video>
+    <video class="heroVideo" muted autoplay loop playsinline preload="metadata" poster="/hero-airsoft.jpg" data-src="/tga-home.mp4" aria-label="Vídeo do Tactical Group Airsoft"></video>
     <div class="heroShade"></div>
     <div class="heroContent">
       <img class="heroLogo" src="/logo.webp" alt="Tactical Group Airsoft">
