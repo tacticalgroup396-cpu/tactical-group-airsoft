@@ -1041,3 +1041,124 @@ body.operator-vanguard-v2 .vgSettingsV1Error{color:#fca5a5!important;border-colo
   body.operator-vanguard-v2 .vgSettingsGearLink{align-items:flex-start!important;flex-direction:column!important}
   body.operator-vanguard-v2 .vgSettingsGearLink .goldbtn{width:100%!important;text-align:center!important}
 }
+
+
+/* Configurações — layout tático do novo sistema */
+body.operator-vanguard-v2 .vgSettingsV2Page{max-width:1320px!important}
+body.operator-vanguard-v2 .vgSettingsV2Page .vgOperatorPageHead{display:none!important}
+body.operator-vanguard-v2 .vgSettingsV2Content{min-width:0}
+body.operator-vanguard-v2 .vgSettingsConsole{
+  border:1px solid #27364a;
+  border-radius:4px;
+  background:linear-gradient(180deg,#111820,#0c1218);
+  padding:18px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.01) inset;
+}
+body.operator-vanguard-v2 .vgSettingsConsoleHead{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+  padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #263548
+}
+body.operator-vanguard-v2 .vgSettingsConsoleHead h2{
+  margin:4px 0 3px!important;color:#fff!important;
+  font:800 24px/1.05 'Chakra Petch',sans-serif!important;text-transform:uppercase!important
+}
+body.operator-vanguard-v2 .vgSettingsConsoleHead p{
+  margin:0;color:#8fa5ba;font-size:12px;line-height:1.45
+}
+body.operator-vanguard-v2 .vgMinorProtocol{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;
+  padding:14px;margin-bottom:16px;border:1px solid rgba(245,158,11,.48);
+  border-radius:4px;background:linear-gradient(90deg,rgba(245,158,11,.08),rgba(245,158,11,.035))
+}
+body.operator-vanguard-v2 .vgMinorCopy{display:flex;gap:10px;align-items:flex-start}
+body.operator-vanguard-v2 .vgMinorIcon{
+  width:30px;height:30px;display:grid;place-items:center;flex:0 0 auto;
+  border:1px solid rgba(245,158,11,.4);border-radius:3px;color:#fbbf24;background:#111820;font-size:17px
+}
+body.operator-vanguard-v2 .vgMinorCopy b{
+  display:block;color:#fbbf24;font:800 12px 'Chakra Petch',sans-serif;text-transform:uppercase
+}
+body.operator-vanguard-v2 .vgMinorCopy p{margin:4px 0 0;color:#b2c0cf;font-size:11px;line-height:1.45}
+body.operator-vanguard-v2 .vgMinorCheck{
+  min-width:185px;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:9px 11px;border:1px solid rgba(245,158,11,.45);border-radius:3px;background:#090f14
+}
+body.operator-vanguard-v2 .vgMinorCheck input{width:17px;height:17px;accent-color:#f59e0b}
+body.operator-vanguard-v2 .vgMinorCheck span{color:#fbbf24;font:800 9px/1.25 'JetBrains Mono',monospace}
+body.operator-vanguard-v2 .vgTutorSelect{
+  display:none;grid-column:1/-1;padding-top:12px;border-top:1px solid rgba(245,158,11,.22)
+}
+body.operator-vanguard-v2 .vgTutorSelect.show{display:block}
+body.operator-vanguard-v2 .vgTutorSelect label{display:grid;gap:6px;max-width:560px}
+body.operator-vanguard-v2 .vgTutorSelect label>span{color:#a8bacd;font-size:11px;font-weight:700}
+body.operator-vanguard-v2 .vgTutorSelect select{
+  min-height:42px;padding:0 10px;border:1px solid #3a4b60;border-radius:3px;background:#091017;color:#eef2f7;font-size:12px
+}
+body.operator-vanguard-v2 .vgSettingsTwin{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px
+}
+body.operator-vanguard-v2 .vgSettingsPane{
+  min-width:0;padding:14px;border:1px solid #29384a;border-radius:4px;background:#090f15
+}
+body.operator-vanguard-v2 .vgSettingsPane.security{border-color:#26384a}
+body.operator-vanguard-v2 .vgSettingsPane h3{
+  margin:0 0 13px;padding-bottom:10px;border-bottom:1px solid #263548;
+  color:#fff;font:800 14px 'Chakra Petch',sans-serif;text-transform:uppercase
+}
+body.operator-vanguard-v2 .vgSettingsPane.security h3{color:#dffcf4}
+body.operator-vanguard-v2 .vgSettingsPane>label,
+body.operator-vanguard-v2 .vgSettingsTwo label{
+  display:grid;gap:5px;margin-bottom:10px;min-width:0
+}
+body.operator-vanguard-v2 .vgSettingsPane label>span{
+  color:#7890a6;font:700 9px 'JetBrains Mono',monospace;letter-spacing:.045em;text-transform:uppercase
+}
+body.operator-vanguard-v2 .vgSettingsPane input,
+body.operator-vanguard-v2 .vgSettingsPane textarea,
+body.operator-vanguard-v2 .vgSettingsPane select{
+  width:100%;min-width:0;border:1px solid #334559;border-radius:3px;background:#0b1219;color:#f5f7fa;
+  font-size:12px;padding:9px 10px;box-sizing:border-box
+}
+body.operator-vanguard-v2 .vgSettingsPane input{min-height:40px}
+body.operator-vanguard-v2 .vgSettingsPane textarea{min-height:70px;resize:vertical}
+body.operator-vanguard-v2 .vgSettingsPane input:focus,
+body.operator-vanguard-v2 .vgSettingsPane textarea:focus,
+body.operator-vanguard-v2 .vgSettingsPane select:focus{
+  outline:none;border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.08)
+}
+body.operator-vanguard-v2 .vgSettingsPane input[readonly]{color:#fbbf24;background:#0a1016}
+body.operator-vanguard-v2 .vgSettingsTwo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+body.operator-vanguard-v2 .vgSettingsBottom{
+  display:grid;grid-template-columns:minmax(260px,1fr) auto auto;align-items:center;gap:12px;
+  margin-top:14px;padding-top:14px;border-top:1px solid #263548
+}
+body.operator-vanguard-v2 .vgSettingsPhotoCompact{display:grid;grid-template-columns:54px minmax(0,1fr);gap:10px;align-items:center}
+body.operator-vanguard-v2 .vgSettingsPhotoCompact img{
+  width:54px;height:54px;object-fit:cover;border:1px solid #415166;border-radius:4px;background:#080d12
+}
+body.operator-vanguard-v2 .vgSettingsPhotoCompact b{display:block;color:#fff;font-size:11px}
+body.operator-vanguard-v2 .vgSettingsPhotoCompact small{display:block;margin:2px 0 5px;color:#8195aa;font-size:9px}
+body.operator-vanguard-v2 .vgSettingsPhotoCompact input{max-width:260px;color:#b9c5d0;font-size:10px}
+body.operator-vanguard-v2 .vgPublicProfile{
+  display:flex;align-items:center;gap:7px;padding:10px;border:1px solid #334155;border-radius:3px;background:#0a1016
+}
+body.operator-vanguard-v2 .vgPublicProfile input{width:16px;height:16px;accent-color:#10b981}
+body.operator-vanguard-v2 .vgPublicProfile span{color:#a9b9c9;font:700 8px 'JetBrains Mono',monospace;white-space:nowrap}
+body.operator-vanguard-v2 .vgSaveAll{
+  min-height:42px!important;padding:10px 16px!important;white-space:nowrap!important
+}
+body.operator-vanguard-v2 .vgSettingsResponsibleCard{margin-top:14px!important}
+body.operator-vanguard-v2 .vgSettingsResponsibleCard h2{margin-bottom:12px!important}
+
+@media(max-width:980px){
+  body.operator-vanguard-v2 .vgSettingsTwin{grid-template-columns:1fr}
+  body.operator-vanguard-v2 .vgSettingsBottom{grid-template-columns:1fr}
+  body.operator-vanguard-v2 .vgSaveAll{width:100%!important}
+}
+@media(max-width:680px){
+  body.operator-vanguard-v2 .vgSettingsConsole{padding:12px}
+  body.operator-vanguard-v2 .vgSettingsConsoleHead h2{font-size:20px!important}
+  body.operator-vanguard-v2 .vgMinorProtocol{grid-template-columns:1fr}
+  body.operator-vanguard-v2 .vgMinorCheck{min-width:0;justify-content:flex-start}
+  body.operator-vanguard-v2 .vgSettingsTwo{grid-template-columns:1fr}
+}
