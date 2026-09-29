@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="/tga-suite-v3.css?v=1">
   <link rel="stylesheet" href="/vanguard-layout-v2.css?v=4">
   <link rel="stylesheet" href="/operator-vanguard-v3.css?v=4">
-  <link rel="stylesheet" href="/commander-vanguard-v4.css?v=1">
+  <link rel="stylesheet" href="/commander-vanguard-v4.css?v=1">\n  <link rel="stylesheet" href="/commander-games-v6.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -53,7 +53,7 @@
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/operador')||p==='/visitante')return;const s=document.createElement('script');s.src='/api-lite-router.js?v=11';s.async=false;document.body.appendChild(s)})();
   </script>
   <script>
-    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=2';pre.async=false;document.body.appendChild(pre)}const s=document.createElement('script');if(p==='/visitante')s.src='/visitor-access-v1.js?v=5';else if(p==='/operador/primeiro-acesso')s.src='/app.js?v=75';else if(p.startsWith('/operador'))s.src='/operator-entry-router-v5.js?v=7';else s.src='/app.js?v=75';s.async=false;document.body.appendChild(s)})();
+    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/comandante')){const pre=document.createElement('script');pre.src='/commander-pages-v5.js?v=2';pre.async=false;document.body.appendChild(pre)}const s=document.createElement('script');if(p==='/visitante')s.src='/visitor-access-v1.js?v=5';else if(p==='/operador/primeiro-acesso')s.src='/app.js?v=76';else if(p.startsWith('/operador'))s.src='/operator-entry-router-v5.js?v=7';else s.src='/app.js?v=76';s.async=false;document.body.appendChild(s)})();
   </script>
   <script>
     (()=>{
@@ -90,9 +90,7 @@
         const s=document.createElement('script');s.src='/visitor-admin-ui-v1.js?v=4';s.defer=true;document.body.appendChild(s);
       }
       if(p==='/comandante/jogos'){
-        for(const src of ['/visitor-game-integration-v1.js?v=1','/commander-visitor-roster-v1.js?v=5','/commander-mission-visitors-v1.js?v=4','/commander-mission-save-fix-v1.js?v=1','/game-final-team-photos-v1.js?v=1']){
-          const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s);
-        }
+        const s=document.createElement('script');s.src='/commander-games-v6.js?v=1';s.defer=true;document.body.appendChild(s);
       }
     })();
   </script>
@@ -124,7 +122,7 @@
     })();
   </script>
   <script>
-    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p==='/comandante/jogos'||p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=9';s.defer=true;document.body.appendChild(s)}if(p==='/comandante/jogos'){const s=document.createElement('script');s.src='/commander-live-v3.js?v=2';s.defer=true;document.body.appendChild(s);const d=document.createElement('script');d.src='/game-create-fix-v2.js?v=2';d.defer=true;document.body.appendChild(d)}})();
+    (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p.startsWith('/visita-jogo')){const s=document.createElement('script');s.src='/operations-features.js?v=9';s.defer=true;document.body.appendChild(s)}})();
   </script>
   <script>
     (()=>{const p=(location.pathname.replace(/\/+$/,'')||'/');if(p!=='/visitantes')return;const load=()=>{for(const src of ['/visitor-profile-mobile-fix.js?v=5','/mobile-public-profile.js?v=4','/operator-guardian-fix.js?v=3']){const s=document.createElement('script');s.src=src;s.defer=true;document.body.appendChild(s)}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load()})();
