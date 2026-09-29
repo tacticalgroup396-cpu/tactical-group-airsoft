@@ -182,3 +182,15 @@ body.commander-vanguard-v2 .tag.pending{color:#fbbf24!important;border-color:rgb
   body.commander-vanguard-v2 .vgCmdFinance .financeStats{grid-template-columns:1fr!important}
   body.commander-vanguard-v2 .pageTitle h1{font-size:24px!important}
 }
+
+
+/* Legibilidade da Área do Comandante */
+body.commander-vanguard-v2 .vgCommanderModule .vgModuleCopy strong{font-size:14px!important}
+body.commander-vanguard-v2 .vgCommanderModule .vgModuleCopy small{font-size:11px!important}
+body.commander-vanguard-v2 .vgCommanderUtility a{font-size:10.5px!important}
+body.commander-vanguard-v2 .pageTitle .eyebrow,
+body.commander-vanguard-v2 .cardKicker,
+body.commander-vanguard-v2 .eyebrow{font-size:10px!important}
+body.commander-vanguard-v2 .pageTitle p{font-size:13px!important}
+body.commander-vanguard-v2 .card p,
+body.commander-vanguard-v2 .muted{font-size:12px}
